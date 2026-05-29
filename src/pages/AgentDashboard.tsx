@@ -2,12 +2,35 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Check, Copy, ExternalLink, Loader2, Package, Settings,
-  Store, Sun, Moon, TrendingUp, Wallet,
+  ArrowDownToLine,
+  ArrowLeft,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  Copy,
+  ExternalLink,
+  Loader2,
+  LogOut,
+  Moon,
+  Package,
+  ReceiptText,
+  Search,
+  Settings2,
+  Shield,
+  Signal,
+  Store,
+  Sun,
+  TrendingUp,
+  Wallet,
+  XCircle,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BuyDataFlow } from "@/components/buy/BuyDataFlow";
+import { CustomerCRM } from "@/components/agent/CustomerCRM";
+import { WalletManager } from "@/components/agent/WalletManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -16,19 +39,20 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { useTheme } from "next-themes";
 
-type AgentTab = "buy" | "store" | "transactions" | "withdrawals" | "settings";
+type AgentTab = "buy" | "store" | "transactions" | "customers" | "withdrawals" | "settings";
 
 const TABS: { label: string; value: AgentTab; icon: React.ReactNode }[] = [
-  { label: "Buy Data", value: "buy", icon: <Wallet className="h-4 w-4" /> },
-  { label: "My Store", value: "store", icon: <Store className="h-4 w-4" /> },
-  { label: "Transactions", value: "transactions", icon: <Package className="h-4 w-4" /> },
-  { label: "Withdrawals", value: "withdrawals", icon: <Wallet className="h-4 w-4" /> },
-  { label: "Settings", value: "settings", icon: <Settings className="h-4 w-4" /> },
+  { label: "Buy Data",     value: "buy",          icon: <Signal className="h-4 w-4" /> },
+  { label: "My Store",     value: "store",         icon: <Store className="h-4 w-4" /> },
+  { label: "Transactions", value: "transactions",  icon: <ReceiptText className="h-4 w-4" /> },
+  { label: "Address Book", value: "customers",     icon: <Users className="h-4 w-4" /> },
+  { label: "Wallet & Topup",value: "withdrawals",   icon: <Wallet className="h-4 w-4" /> },
+  { label: "Settings",     value: "settings",      icon: <Settings2 className="h-4 w-4" /> },
 ];
 
 export default function AgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, signOut } = useAuth();
   const nav = useNavigate();
   const { theme, setTheme } = useTheme();
 
@@ -55,111 +79,212 @@ export default function AgentDashboard() {
 
   if (!agentProfile) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background text-center">
-        <Store className="h-12 w-12 text-muted-foreground/40" />
-        <p className="font-medium text-foreground">No agent profile found.</p>
-        <Button variant="outline" onClick={() => nav("/dashboard/agent")}>Back</Button>
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-background text-center px-6">
+        <Store className="h-12 w-12 text-muted-foreground/30" />
+        <p className="font-bold text-foreground">No agent profile found.</p>
+        <p className="text-sm text-muted-foreground">Your agent account may not be activated yet.</p>
+        <Button variant="outline" onClick={() => nav("/dashboard/agent")} className="rounded-xl">
+          Activate Agent Account
+        </Button>
       </div>
     );
   }
 
+  const initial = agentProfile.store_name?.[0]?.toUpperCase() ?? "A";
+
   return (
     <div className="min-h-dvh bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-6 md:px-8">
-        <div className="mb-5 flex items-center justify-between">
+      {/* ── Sticky header ── */}
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-white/90 backdrop-blur-sm dark:bg-background/90">
+        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-3">
             <Logo size="sm" />
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Agent Dashboard</h1>
-              <p className="text-xs text-muted-foreground">{agentProfile.store_name}</p>
-            </div>
+            <div className="hidden h-4 w-px bg-border md:block" />
+            <span className="hidden text-sm font-bold text-foreground md:block">
+              {TABS.find((t) => t.value === tab)?.label ?? "Dashboard"}
+            </span>
           </div>
+
           <div className="flex items-center gap-2">
             {isAdmin && (
-              <Button asChild variant="outline" size="sm" className="h-9 rounded-xl">
-                <Link to="/admin">Admin</Link>
+              <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs">
+                <Link to="/admin"><Shield className="mr-1 h-3 w-3" /> Admin</Link>
               </Button>
             )}
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-xl"
+              className="h-8 w-8 rounded-xl"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               aria-label="Toggle dark mode"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
-            <Link to="/" className="text-xs text-muted-foreground hover:text-foreground">Back to homepage</Link>
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={async () => {
+                await signOut();
+                nav("/");
+              }}
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+
+            {/* Store badge */}
+            <div className="hidden items-center gap-2 rounded-full border border-border/60 bg-secondary/50 py-1 pl-1.5 pr-3 md:flex">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-primary text-[10px] font-bold text-white shadow-soft">
+                {initial}
+              </div>
+              <span className="max-w-[120px] truncate text-xs font-semibold text-foreground">
+                {agentProfile.store_name}
+              </span>
+            </div>
           </div>
         </div>
+      </header>
 
+      {/* ── Body ── */}
+      <div className="mx-auto w-full max-w-6xl px-4 pb-24 pt-5 md:px-8 lg:pb-8">
         <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <aside className="rounded-2xl border border-border bg-card p-2 shadow-soft">
-            <nav className="space-y-1">
+
+          {/* ── Sidebar ── */}
+          <aside className="sticky top-20 hidden h-fit overflow-hidden rounded-3xl border border-border/60 bg-card shadow-float lg:flex lg:flex-col">
+            {/* Agent profile header */}
+            <div className="relative overflow-hidden bg-[#080c1a] p-4">
+              <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
+              <div className="relative flex items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl gradient-primary text-xl font-bold text-white shadow-soft">
+                  {initial}
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-white">{agentProfile.store_name}</p>
+                  <p className="truncate text-[10px] text-white/40">/store/{agentProfile.store_slug}</p>
+                </div>
+              </div>
+              <div className="relative mt-3 flex items-center gap-1.5">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[10px] font-bold text-green-400">Active Agent</span>
+              </div>
+            </div>
+
+            {/* Nav items */}
+            <nav className="flex-1 space-y-0.5 p-2">
               {TABS.map((t) => (
                 <button
-                  key={t.value}
                   type="button"
+                  key={t.value}
                   onClick={() => setTab(t.value)}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors",
+                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all",
                     tab === t.value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      ? "gradient-primary text-primary-foreground shadow-soft"
+                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   )}
                 >
-                  {t.icon}
-                  {t.label}
+                  <span className="shrink-0">{t.icon}</span>
+                  <span className="flex-1">{t.label}</span>
+                  {tab === t.value && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
                 </button>
               ))}
             </nav>
+
+            {/* Footer */}
+            <div className="border-t border-border/60 p-2 space-y-0.5">
+              <Link
+                to="/"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" /> Back to site
+              </Link>
+              <button
+                type="button"
+                onClick={signOut}
+                className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </button>
+            </div>
           </aside>
 
+          {/* ── Main content ── */}
           <main>
-            {tab === "buy" && <BuySection />}
-            {tab === "store" && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
+            {tab === "buy"          && <BuySection />}
+            {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
             {tab === "transactions" && <TransactionsSection agentId={agentProfile.id} />}
-            {tab === "withdrawals" && <WithdrawalsSection userId={user?.id!} />}
-            {tab === "settings" && <SettingsSection agentProfile={agentProfile} />}
+            {tab === "customers"    && <CustomerCRM />}
+            {tab === "withdrawals"  && <WithdrawalsSection userId={user?.id!} />}
+            {tab === "settings"     && <SettingsSection agentProfile={agentProfile} />}
           </main>
         </div>
       </div>
+
+      {/* ── Mobile bottom bar ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/60 bg-white/95 backdrop-blur-sm dark:bg-card/95 lg:hidden">
+        <div className="flex">
+          {TABS.map((t) => {
+            const active = tab === t.value;
+            return (
+              <button
+                type="button"
+                key={t.value}
+                onClick={() => setTab(t.value)}
+                className={cn(
+                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors",
+                  active ? "text-primary" : "text-muted-foreground"
+                )}
+              >
+                <span className={cn(
+                  "flex h-6 w-6 items-center justify-center rounded-lg transition-all [&_svg]:h-4 [&_svg]:w-4",
+                  active ? "bg-primary/10" : ""
+                )}>
+                  {t.icon}
+                </span>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
+
+// ── Buy ──────────────────────────────────────────────────────────────────────
 
 function BuySection() {
   const { data: bundles } = useQuery({
     queryKey: ["agent-buy-admin-prices"],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("bundles")
-        .select("id, base_price")
-        .eq("active", true);
+      const { data } = await supabase.from("bundles").select("id, base_price").eq("active", true);
       return data ?? [];
     },
   });
 
   const adminPrices: Record<string, number> = {};
-  (bundles ?? []).forEach((b: any) => {
-    adminPrices[b.id] = Number(b.base_price);
-  });
+  (bundles ?? []).forEach((b: any) => { adminPrices[b.id] = Number(b.base_price); });
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft md:p-6">
-      <h2 className="text-lg font-semibold text-foreground">Buy Data</h2>
-      <p className="mt-1 text-sm text-muted-foreground">You buy at admin-set base prices.</p>
-      <div className="mt-5">
+    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+      <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
+        <h2 className="text-base font-bold text-white">Buy Data</h2>
+        <p className="mt-0.5 text-xs text-white/50">You purchase at admin-set base prices.</p>
+      </div>
+      <div className="p-5 md:p-6">
         <BuyDataFlow priceOverrides={adminPrices} />
       </div>
     </div>
   );
 }
 
-// --- Store --------------------------------------------------------------------
+// ── Store ────────────────────────────────────────────────────────────────────
 
-function StoreSection({ agentProfile, userId }: { agentProfile: any; userId?: string }) {
+function StoreSection({ agentProfile }: { agentProfile: any; userId?: string }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const storeUrl = `${window.location.origin}/store/${agentProfile.store_slug}`;
@@ -210,53 +335,68 @@ function StoreSection({ agentProfile, userId }: { agentProfile: any; userId?: st
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Store link */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-        <h2 className="text-lg font-semibold text-foreground">Store Link</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">Share this link. Customers can buy without signing up.</p>
-        <div className="mt-4 flex items-center gap-2">
-          <div className="flex-1 rounded-xl border border-border bg-secondary/40 px-3 py-2.5 text-sm font-mono text-muted-foreground break-all">
-            {storeUrl}
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
+          <h2 className="text-base font-bold text-white">Store Link</h2>
+          <p className="mt-0.5 text-xs text-white/50">Share this link — customers buy without signing up.</p>
+        </div>
+        <div className="p-5 md:p-6">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 truncate rounded-xl border border-border bg-secondary/40 px-3 py-2.5 font-mono text-sm text-muted-foreground">
+              {storeUrl}
+            </div>
+            <Button type="button" variant="outline" size="sm" className="h-10 shrink-0 rounded-xl px-3" onClick={copyUrl}>
+              {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+            </Button>
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Open store in new tab"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border hover:bg-secondary/60 transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
-          <Button variant="outline" size="sm" className="shrink-0 rounded-xl" onClick={copyUrl}>
-            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-          </Button>
-          <a href={storeUrl} target="_blank" rel="noreferrer" className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border hover:bg-secondary/60">
-            <ExternalLink className="h-4 w-4" />
-          </a>
         </div>
       </div>
 
       {/* Pricing */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-        <div className="flex items-center justify-between">
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+        <div className="flex items-center justify-between border-b border-border/60 bg-secondary/30 px-5 py-4 md:px-6">
           <div>
-            <h3 className="text-lg font-semibold text-foreground">Your Pricing</h3>
-            <p className="mt-0.5 text-xs text-muted-foreground">Profit = your price minus base price</p>
+            <h3 className="text-base font-bold text-foreground">Your Pricing</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">Your profit = your price − base price</p>
           </div>
-          <Button className="h-9 rounded-xl gradient-primary" disabled={saving} onClick={savePrices}>
+          <Button type="button" className="h-9 rounded-xl gradient-primary text-sm font-bold" disabled={saving} onClick={savePrices}>
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Prices"}
           </Button>
         </div>
+
         {isLoading ? (
-          <p className="mt-6 text-sm text-muted-foreground">Loading...</p>
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
         ) : (
-          <div className="mt-5 space-y-4">
+          <div className="space-y-4 p-5 md:p-6">
             {(payload?.networks ?? []).map((n: any) => {
               const networkBundles = (payload?.bundles ?? []).filter((b: any) => b.network_id === n.id);
               if (!networkBundles.length) return null;
               return (
-                <div key={n.id} className="rounded-xl border border-border bg-secondary/30 p-4">
-                  <h4 className="mb-3 text-sm font-semibold text-foreground">{n.logo_emoji} {n.name}</h4>
+                <div key={n.id} className="overflow-hidden rounded-2xl border border-border/60 bg-secondary/20">
+                  <div className="border-b border-border/60 bg-secondary/40 px-4 py-3">
+                    <p className="text-sm font-bold text-foreground">{n.logo_emoji} {n.name}</p>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
-                        <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                          <th className="pb-2 pr-4 font-medium">Bundle</th>
-                          <th className="pb-2 pr-4 font-medium">Base</th>
-                          <th className="pb-2 pr-4 font-medium">Your Price</th>
-                          <th className="pb-2 font-medium">Profit</th>
+                        <tr className="border-b border-border/50 text-left text-xs text-muted-foreground">
+                          <th className="px-4 py-2.5 font-semibold">Bundle</th>
+                          <th className="px-4 py-2.5 font-semibold">Base</th>
+                          <th className="px-4 py-2.5 font-semibold">Your Price</th>
+                          <th className="px-4 py-2.5 font-semibold">Profit</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -264,10 +404,10 @@ function StoreSection({ agentProfile, userId }: { agentProfile: any; userId?: st
                           const sell = Number(prices[b.id] ?? 0);
                           const profit = sell - Number(b.base_price);
                           return (
-                            <tr key={b.id} className="border-b border-border/50 last:border-0">
-                              <td className="py-2.5 pr-4 font-medium">{b.size_label}</td>
-                              <td className="py-2.5 pr-4 text-muted-foreground">{formatGHS(b.base_price)}</td>
-                              <td className="py-2.5 pr-4">
+                            <tr key={b.id} className="border-b border-border/40 last:border-0 hover:bg-secondary/30 transition-colors">
+                              <td className="px-4 py-3 font-semibold">{b.size_label}</td>
+                              <td className="px-4 py-3 text-muted-foreground">{formatGHS(b.base_price)}</td>
+                              <td className="px-4 py-3">
                                 <Input
                                   type="number" min="0" step="0.5"
                                   className="h-8 w-24 rounded-lg text-sm"
@@ -276,9 +416,9 @@ function StoreSection({ agentProfile, userId }: { agentProfile: any; userId?: st
                                   onChange={(e) => setPrices((p) => ({ ...p, [b.id]: e.target.value }))}
                                 />
                               </td>
-                              <td className="py-2.5">
-                                <span className={cn("text-xs font-medium", profit > 0 ? "text-green-600" : profit < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                  {profit !== 0 ? `${profit > 0 ? "+" : ""}${formatGHS(profit)}` : "-"}
+                              <td className="px-4 py-3">
+                                <span className={cn("text-xs font-bold", profit > 0 ? "text-green-600" : profit < 0 ? "text-destructive" : "text-muted-foreground")}>
+                                  {profit !== 0 ? `${profit > 0 ? "+" : ""}${formatGHS(profit)}` : "—"}
                                 </span>
                               </td>
                             </tr>
@@ -297,25 +437,33 @@ function StoreSection({ agentProfile, userId }: { agentProfile: any; userId?: st
   );
 }
 
-// --- Status Badge -------------------------------------------------------------
+// ── Status Badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
-  const cls: Record<string, string> = {
-    delivered: "bg-green-100 text-green-700",
-    pending: "bg-yellow-100 text-yellow-700",
-    processing: "bg-blue-100 text-blue-700",
-    failed: "bg-red-100 text-red-700",
+  const map: Record<string, { bg: string; dot: string; label: string }> = {
+    delivered:  { bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400", dot: "bg-emerald-500", label: "Delivered"  },
+    paid:       { bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400", dot: "bg-emerald-500", label: "Paid"       },
+    approved:   { bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400", dot: "bg-emerald-500", label: "Approved"   },
+    pending:    { bg: "bg-amber-500/10  text-amber-600  border-amber-500/20  dark:text-amber-400",  dot: "bg-amber-500",  label: "Pending"    },
+    processing: { bg: "bg-sky-500/10   text-sky-600   border-sky-500/20   dark:text-sky-400",    dot: "bg-sky-500",    label: "Processing" },
+    failed:     { bg: "bg-rose-500/10  text-rose-600  border-rose-500/20  dark:text-rose-400",   dot: "bg-rose-500",   label: "Failed"     },
+    rejected:   { bg: "bg-rose-500/10  text-rose-600  border-rose-500/20  dark:text-rose-400",   dot: "bg-rose-500",   label: "Rejected"   },
   };
+  const cfg = map[status] ?? { bg: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground", label: status };
   return (
-    <span className={cn("inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize", cls[status] ?? "bg-muted text-muted-foreground")}>
-      {status}
+    <span className={cn("inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide", cfg.bg)}>
+      <span className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)} />
+      {cfg.label}
     </span>
   );
 }
 
-// --- Transactions -------------------------------------------------------------
+// ── Transactions ──────────────────────────────────────────────────────────────
 
 function TransactionsSection({ agentId }: { agentId: string }) {
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
   const { data: orders, isLoading } = useQuery({
     queryKey: ["agent-transactions", agentId],
     queryFn: async () => {
@@ -329,52 +477,217 @@ function TransactionsSection({ agentId }: { agentId: string }) {
     },
   });
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  const list = (orders as any[]) ?? [];
+  const delivered  = list.filter((o) => o.status === "delivered").length;
+  const inProgress = list.filter((o) => ["pending", "processing"].includes(o.status)).length;
+  const failed     = list.filter((o) => o.status === "failed").length;
+  const totalProfit = list
+    .filter((o) => o.status === "delivered")
+    .reduce((s, o) => s + Number(o.agent_profit ?? 0), 0);
+
+  const q = search.trim().toLowerCase();
+  const filtered = list
+    .filter((o) => {
+      if (statusFilter === "in_progress") return ["pending", "processing"].includes(o.status);
+      if (statusFilter !== "all") return o.status === statusFilter;
+      return true;
+    })
+    .filter((o) =>
+      !q ||
+      (o.recipient_phone ?? "").includes(q) ||
+      (o.network?.name ?? "").toLowerCase().includes(q) ||
+      (o.bundle?.size_label ?? "").toLowerCase().includes(q)
+    );
+
+  const FILTERS = [
+    { label: "All",         value: "all",         count: list.length },
+    { label: "Delivered",   value: "delivered",   count: delivered   },
+    { label: "In Progress", value: "in_progress", count: inProgress  },
+    { label: "Failed",      value: "failed",      count: failed      },
+  ];
+
   return (
-    <div>
-      <h2 className="mb-1 text-lg font-semibold text-foreground">Transactions</h2>
-      <p className="mb-5 text-sm text-muted-foreground">Orders placed through your store.</p>
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      ) : (
-        <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
+    <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+      {/* ── Stats row ── */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+        {[
+          { label: "Total Orders", value: list.length,        icon: ReceiptText,  iconBg: "bg-primary/10",     iconCl: "text-primary",    valCl: "text-foreground"  },
+          { label: "Delivered",    value: delivered,          icon: CheckCircle2, iconBg: "bg-emerald-500/10", iconCl: "text-emerald-500",valCl: "text-emerald-600" },
+          { label: "In Progress",  value: inProgress,         icon: Clock,        iconBg: "bg-amber-500/10",   iconCl: "text-amber-500",  valCl: "text-amber-600"   },
+          { label: "Failed",       value: failed,             icon: XCircle,      iconBg: "bg-rose-500/10",    iconCl: "text-rose-500",   valCl: "text-rose-600"    },
+          { label: "Total Profit", value: formatGHS(totalProfit), icon: TrendingUp, iconBg: "bg-green-500/10", iconCl: "text-green-500",  valCl: "text-green-700 dark:text-green-400" },
+        ].map(({ label, value, icon: Icon, iconBg, iconCl, valCl }) => (
+          <div key={label} className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
+            <div className={cn("mb-3 flex h-8 w-8 items-center justify-center rounded-xl", iconBg)}>
+              <Icon className={cn("h-4 w-4", iconCl)} />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{label}</p>
+            <p className={cn("mt-1 text-xl font-black tabular-nums", valCl)}>{value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filter bar ── */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search phone, network…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          />
+        </div>
+
+        <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
+          {FILTERS.map(({ label, value, count }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setStatusFilter(value)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap",
+                statusFilter === value
+                  ? "gradient-primary text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {label}
+              {count > 0 && (
+                <span className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums",
+                  statusFilter === value ? "bg-white/20 text-white" : "bg-secondary text-muted-foreground"
+                )}>
+                  {count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-soft">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60">
+              <Package className="h-7 w-7 text-muted-foreground/25" />
+            </div>
+            <p className="text-sm font-bold text-muted-foreground">
+              {list.length === 0 ? "No transactions yet" : "No orders match your filter"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground/60">
+              {list.length === 0
+                ? "Share your store link to start receiving orders."
+                : "Try adjusting your search or filter."}
+            </p>
+          </div>
+        ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-border bg-secondary/40 text-left text-xs text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">Recipient</th>
-                  <th className="px-4 py-3 font-medium">Network</th>
-                  <th className="px-4 py-3 font-medium">Bundle</th>
-                  <th className="px-4 py-3 font-medium">Amount</th>
-                  <th className="px-4 py-3 font-medium">Profit</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Time</th>
+                <tr className="border-b border-border/40 bg-secondary/30">
+                  {["Network", "Bundle", "Recipient", "Amount", "Profit", "Status", "When"].map((h) => (
+                    <th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 whitespace-nowrap">{h}</th>
+                  ))}
                 </tr>
               </thead>
-              <tbody>
-                {(orders as any[]).map((o) => (
-                  <tr key={o.id} className="border-b border-border/50 last:border-0 hover:bg-secondary/20 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs">{o.recipient_phone}</td>
-                    <td className="px-4 py-3">{o.network?.logo_emoji} {o.network?.name}</td>
-                    <td className="px-4 py-3">{o.bundle?.size_label}</td>
-                    <td className="px-4 py-3 font-semibold">{formatGHS(o.sell_price)}</td>
-                    <td className="px-4 py-3 font-medium text-green-600">+{formatGHS(o.agent_profit)}</td>
-                    <td className="px-4 py-3"><StatusBadge status={o.status} /></td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">{timeAgo(o.created_at)}</td>
+              <tbody className="divide-y divide-border/30">
+                {filtered.map((o, i) => (
+                  <tr
+                    key={o.id}
+                    className={cn(
+                      "group transition-colors hover:bg-primary/[0.025]",
+                      i % 2 !== 0 && "bg-secondary/[0.04]"
+                    )}
+                  >
+                    {/* Network */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary/70 text-lg leading-none">
+                          {o.network?.logo_emoji ?? "📦"}
+                        </div>
+                        <p className="text-sm font-semibold text-foreground">{o.network?.name}</p>
+                      </div>
+                    </td>
+
+                    {/* Bundle */}
+                    <td className="px-5 py-4">
+                      <span className="rounded-lg bg-secondary/70 px-2.5 py-1 text-xs font-bold text-foreground">
+                        {o.bundle?.size_label}
+                      </span>
+                    </td>
+
+                    {/* Recipient */}
+                    <td className="px-5 py-4">
+                      <code className="rounded-lg bg-secondary/70 px-2 py-1 text-[11px] font-mono font-semibold text-foreground tracking-tight">
+                        {o.recipient_phone}
+                      </code>
+                    </td>
+
+                    {/* Amount */}
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
+                    </td>
+
+                    {/* Profit */}
+                    <td className="px-5 py-4">
+                      {Number(o.agent_profit) > 0 ? (
+                        <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-600 dark:text-emerald-400">
+                          <TrendingUp className="h-3 w-3" />
+                          +{formatGHS(o.agent_profit)}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-5 py-4">
+                      <StatusBadge status={o.status} />
+                    </td>
+
+                    {/* Time */}
+                    <td className="px-5 py-4">
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">{timeAgo(o.created_at)}</p>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {orders?.length === 0 && (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">No transactions yet.</p>
-            )}
           </div>
-        </div>
-      )}
+        )}
+
+        {/* Footer */}
+        {filtered.length > 0 && (
+          <div className="border-t border-border/30 bg-secondary/20 px-5 py-3">
+            <p className="text-xs text-muted-foreground">
+              Showing <span className="font-bold text-foreground">{filtered.length}</span> of{" "}
+              <span className="font-bold">{list.length}</span> transactions
+              {totalProfit > 0 && (
+                <> · Profit earned:{" "}
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400">{formatGHS(totalProfit)}</span>
+                </>
+              )}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// --- Withdrawals --------------------------------------------------------------
+// ── Withdrawals ───────────────────────────────────────────────────────────────
 
 const MOMO_NETWORKS = ["MTN", "Telecel", "AirtelTigo"] as const;
 
@@ -415,69 +728,86 @@ function WithdrawalsSection({ userId }: { userId: string }) {
   };
 
   return (
-    <div className="space-y-5">
-      {/* Balance */}
+    <div className="space-y-4">
+      {/* Balance cards */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            <Wallet className="h-4 w-4" /> Available Balance
-          </p>
-          <p className="mt-2 text-3xl font-bold text-foreground">{isLoading ? "..." : formatGHS(walletData?.balance ?? 0)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Ready to withdraw</p>
+        <div className="relative overflow-hidden rounded-3xl bg-[#080c1a] p-6 shadow-float">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/20 blur-2xl" />
+          <div className="relative">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40">
+              <Wallet className="h-3.5 w-3.5" /> Available Balance
+            </div>
+            <p className="mt-3 text-4xl font-bold text-white">{isLoading ? "…" : formatGHS(walletData?.balance ?? 0)}</p>
+            <p className="mt-1 text-xs text-white/40">Ready to withdraw</p>
+          </div>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-            <TrendingUp className="h-4 w-4" /> Total Revenue
-          </p>
-          <p className="mt-2 text-3xl font-bold text-foreground">{isLoading ? "..." : formatGHS(walletData?.totalRevenue ?? 0)}</p>
+        <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <TrendingUp className="h-3.5 w-3.5" /> Total Revenue
+          </div>
+          <p className="mt-3 text-4xl font-bold text-foreground">{isLoading ? "…" : formatGHS(walletData?.totalRevenue ?? 0)}</p>
           <p className="mt-1 text-xs text-muted-foreground">Lifetime earnings</p>
         </div>
       </div>
 
+      {/* Wallet Manager (Topups) */}
+      <WalletManager />
+
       {/* Withdrawal form */}
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <h2 className="text-lg font-semibold text-foreground">Request Withdrawal</h2>
-        <p className="mt-0.5 text-sm text-muted-foreground">Minimum GHS 50. Processed within 24 hours.</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Amount (GHS)</label>
-            <Input type="number" min="50" className="mt-1 h-11" placeholder="e.g. 100" value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">MoMo Network</label>
-            <select value={momoNetwork} onChange={(e) => setMomoNetwork(e.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border bg-background px-3 text-sm text-foreground">
-              <option value="">Select network</option>
-              {MOMO_NETWORKS.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">MoMo Number</label>
-            <Input type="tel" inputMode="tel" className="mt-1 h-11" placeholder="024 000 0000" value={momoNumber} onChange={(e) => setMomoNumber(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Account Name</label>
-            <Input className="mt-1 h-11" placeholder="Name on MoMo account" value={momoName} onChange={(e) => setMomoName(e.target.value)} />
-          </div>
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+        <div className="border-b border-border/60 bg-secondary/30 px-5 py-4 md:px-6">
+          <h2 className="text-base font-bold text-foreground">Request Withdrawal</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Minimum GHS 50 · Processed within 24 hours.</p>
         </div>
-        <Button className="mt-5 h-11 rounded-xl px-6 gradient-primary" disabled={busy} onClick={requestWithdrawal}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request Withdrawal"}
-        </Button>
+        <div className="p-5 md:p-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Amount (GHS)</label>
+              <Input type="number" min="50" className="h-11 rounded-xl" placeholder="e.g. 100" value={amount} onChange={(e) => setAmount(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">MoMo Network</label>
+              <select
+                aria-label="MoMo Network"
+                value={momoNetwork}
+                onChange={(e) => setMomoNetwork(e.target.value)}
+                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="">Select network</option>
+                {MOMO_NETWORKS.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">MoMo Number</label>
+              <Input type="tel" inputMode="tel" className="h-11 rounded-xl" placeholder="024 000 0000" value={momoNumber} onChange={(e) => setMomoNumber(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Account Name</label>
+              <Input className="h-11 rounded-xl" placeholder="Name on MoMo account" value={momoName} onChange={(e) => setMomoName(e.target.value)} />
+            </div>
+          </div>
+          <Button type="button" className="mt-5 h-11 rounded-xl px-8 font-bold gradient-primary shadow-float" disabled={busy} onClick={requestWithdrawal}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request Withdrawal"}
+          </Button>
+        </div>
       </div>
 
       {/* History */}
       {(walletData?.withdrawals?.length ?? 0) > 0 && (
-        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
-          <h3 className="mb-4 text-base font-semibold text-foreground">Withdrawal History</h3>
-          <div className="space-y-2">
+        <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+          <div className="border-b border-border/60 bg-secondary/30 px-5 py-4 md:px-6">
+            <h3 className="text-base font-bold text-foreground">Withdrawal History</h3>
+          </div>
+          <div className="space-y-2 p-5 md:p-6">
             {(walletData?.withdrawals as any[]).map((w) => (
-              <div key={w.id} className="flex items-center justify-between rounded-xl border border-border/60 bg-secondary/30 p-3">
+              <div key={w.id} className="flex items-center justify-between rounded-xl border border-border/60 bg-secondary/20 p-4 hover:bg-secondary/40 transition-colors">
                 <div>
-                  <p className="font-semibold text-foreground">{formatGHS(w.amount)}</p>
-                  <p className="text-xs text-muted-foreground">{w.momo_network} / {w.momo_number} / {w.momo_name}</p>
+                  <p className="font-bold text-foreground">{formatGHS(w.amount)}</p>
+                  <p className="text-xs text-muted-foreground">{w.momo_network} · {w.momo_number} · {w.momo_name}</p>
                 </div>
                 <div className="text-right">
                   <StatusBadge status={w.status} />
-                  <p className="mt-1 text-xs text-muted-foreground">{timeAgo(w.created_at)}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{timeAgo(w.created_at)}</p>
                 </div>
               </div>
             ))}
@@ -488,7 +818,7 @@ function WithdrawalsSection({ userId }: { userId: string }) {
   );
 }
 
-// --- Settings -----------------------------------------------------------------
+// ── Settings ──────────────────────────────────────────────────────────────────
 
 function SettingsSection({ agentProfile }: { agentProfile: any }) {
   const { toast } = useToast();
@@ -501,12 +831,17 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
     support_whatsapp: agentProfile.support_whatsapp ?? "",
     support_phone: agentProfile.support_phone ?? "",
   });
+  const [widgetEnabled, setWidgetEnabled] = useState(() => {
+    return localStorage.getItem("og_whatsapp_widget") !== "false";
+  });
   const [saving, setSaving] = useState(false);
 
   const f = (key: keyof typeof form, val: string) => setForm((p) => ({ ...p, [key]: val }));
 
   const save = async () => {
     setSaving(true);
+    localStorage.setItem("og_whatsapp_widget", String(widgetEnabled));
+
     const { error } = await supabase.from("agent_profiles").update({
       store_name: form.store_name,
       store_tagline: form.store_tagline || null,
@@ -522,40 +857,66 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
   };
 
   return (
-    <div>
-      <h2 className="mb-1 text-lg font-semibold text-foreground">Store Settings</h2>
-      <p className="mb-6 text-sm text-muted-foreground">Customize how your public store looks.</p>
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+      <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
+        <h2 className="text-base font-bold text-white">Store Settings</h2>
+        <p className="mt-0.5 text-xs text-white/50">Customize how your public store looks and feels.</p>
+      </div>
+
+      <div className="p-5 md:p-6">
         <div className="grid gap-4 md:grid-cols-2">
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-muted-foreground">Store Name</label>
-            <Input className="mt-1 h-11" value={form.store_name} onChange={(e) => f("store_name", e.target.value)} placeholder="My Data Store" />
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Store Name</label>
+            <Input className="h-11 rounded-xl" value={form.store_name} onChange={(e) => f("store_name", e.target.value)} placeholder="My Data Store" />
           </div>
-          <div className="md:col-span-2">
-            <label className="text-xs font-medium text-muted-foreground">Tagline (optional)</label>
-            <Input className="mt-1 h-11" value={form.store_tagline} onChange={(e) => f("store_tagline", e.target.value)} placeholder="Fast & affordable data bundles" />
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Tagline <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <Input className="h-11 rounded-xl" value={form.store_tagline} onChange={(e) => f("store_tagline", e.target.value)} placeholder="Fast & affordable data bundles" />
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Logo URL</label>
-            <Input className="mt-1 h-11" value={form.store_logo_url} onChange={(e) => f("store_logo_url", e.target.value)} placeholder="https://example.com/logo.png" />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Logo URL</label>
+            <Input className="h-11 rounded-xl" value={form.store_logo_url} onChange={(e) => f("store_logo_url", e.target.value)} placeholder="https://example.com/logo.png" />
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Brand Colour</label>
-            <div className="mt-1 flex items-center gap-2">
-              <input type="color" value={form.store_brand_color} onChange={(e) => f("store_brand_color", e.target.value)} className="h-11 w-11 cursor-pointer rounded-lg border border-border bg-background p-1" />
-              <Input className="h-11 flex-1" value={form.store_brand_color} onChange={(e) => f("store_brand_color", e.target.value)} placeholder="#7c3aed" />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Brand Colour</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                aria-label="Brand colour picker"
+                title="Brand colour picker"
+                value={form.store_brand_color}
+                onChange={(e) => f("store_brand_color", e.target.value)}
+                className="h-11 w-11 cursor-pointer rounded-xl border border-border bg-background p-1"
+              />
+              <Input className="h-11 flex-1 rounded-xl" value={form.store_brand_color} onChange={(e) => f("store_brand_color", e.target.value)} placeholder="#7c3aed" />
             </div>
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">WhatsApp</label>
-            <Input className="mt-1 h-11" value={form.support_whatsapp} onChange={(e) => f("support_whatsapp", e.target.value)} placeholder="e.g. 024 000 0000" />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">WhatsApp</label>
+            <Input className="h-11 rounded-xl" value={form.support_whatsapp} onChange={(e) => f("support_whatsapp", e.target.value)} placeholder="e.g. 024 000 0000" />
           </div>
-          <div>
-            <label className="text-xs font-medium text-muted-foreground">Support Phone</label>
-            <Input className="mt-1 h-11" value={form.support_phone} onChange={(e) => f("support_phone", e.target.value)} placeholder="e.g. 024 000 0000" />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Support Phone</label>
+            <Input className="h-11 rounded-xl" value={form.support_phone} onChange={(e) => f("support_phone", e.target.value)} placeholder="e.g. 024 000 0000" />
+          </div>
+          
+          <div className="md:col-span-2 pt-2">
+            <div className="flex items-center justify-between p-4 bg-secondary/30 border border-border/60 rounded-xl">
+              <div>
+                <h4 className="font-bold text-foreground">Draggable WhatsApp Button</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">Show a floating chat button on your public storefront.</p>
+              </div>
+              <button
+                onClick={() => setWidgetEnabled(!widgetEnabled)}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${widgetEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${widgetEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
+              </button>
+            </div>
           </div>
         </div>
-        <Button className="mt-6 h-11 rounded-xl px-6 gradient-primary" disabled={saving} onClick={save}>
+
+        <Button type="button" className="mt-6 h-11 rounded-xl px-8 font-bold gradient-primary shadow-float" disabled={saving} onClick={save}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Settings"}
         </Button>
       </div>

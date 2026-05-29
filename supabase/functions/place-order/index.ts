@@ -11,6 +11,8 @@ interface PlaceOrderBody {
   customer_phone?: string;
   bundle_id: string;
   agent_slug?: string | null;
+  force_provider?: string;
+  retry_order_id?: string;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -19,11 +21,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const PROVIDER_BASE_URL =
-  Deno.env.get("DEVELOPER_API_BASE_URL") ||
-  "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
 
-const PROVIDER_API_KEY = Deno.env.get("DEVELOPER_API_KEY") || "";
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
@@ -38,31 +36,72 @@ function toProviderNetwork(code: string) {
 }
 
 function toPlanId(sizeLabel: string | null | undefined, sizeMb: number) {
-  if (sizeLabel && /gb/i.test(sizeLabel)) return String(sizeLabel).replace(/\s+/g, "").toUpperCase();
+  if (sizeLabel) {
+    const match = String(sizeLabel).match(/(\d+(?:\.\d+)?)\s*(gb|mb)/i);
+    if (match) {
+      return (match[1] + match[2]).toUpperCase();
+    }
+  }
   const gb = Number(sizeMb) / 1024;
   const safeGb = Number.isInteger(gb) ? String(gb) : gb.toFixed(1).replace(/\.0$/, "");
   return `${safeGb}GB`;
 }
 
-async function deliverData(args: {
-  recipient: string;
-  network_code: string;
-  size_label?: string | null;
-  size_mb: number;
-}): Promise<{ ok: boolean; provider_ref?: string; message?: string }> {
-  const endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
+async function deliverData(
+  admin: ReturnType<typeof createClient>,
+  args: {
+    recipient: string;
+    network_code: string;
+    size_label?: string | null;
+    size_mb: number;
+    force_provider?: string;
+  }
+): Promise<{ ok: boolean; provider_ref?: string; message?: string }> {
+  const { data: dpData } = await admin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "data_providers")
+    .maybeSingle();
+
+  const config = (dpData?.value as any) ?? {};
+  const activeProviderKey = args.force_provider || config?.active || "mtopup";
+  const providerConfig = config?.providers?.[activeProviderKey] ?? {};
+
+  const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
+  const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "";
+
   const requestId = crypto.randomUUID();
-  const payload = {
-    network: toProviderNetwork(args.network_code),
-    plan_id: toPlanId(args.size_label, args.size_mb),
-    phone: normalizePhone(args.recipient),
-    request_id: requestId,
-  };
+  let endpoint = "";
+  let payload: any = {};
+
+  if (activeProviderKey === "swft") {
+    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
+    const plan = toPlanId(args.size_label, args.size_mb).toLowerCase();
+    const net = toProviderNetwork(args.network_code);
+    let prefix = "yellow";
+    if (net === "TELECEL") prefix = "red";
+    if (net === "AT") prefix = "blue";
+    
+    payload = {
+      package_id: `${prefix}_${plan}`,
+      phone: normalizePhone(args.recipient),
+      request_id: requestId,
+    };
+  } else {
+    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
+    payload = {
+      network: toProviderNetwork(args.network_code),
+      plan_id: toPlanId(args.size_label, args.size_mb),
+      phone: normalizePhone(args.recipient),
+      request_id: requestId,
+    };
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "X-API-Key": PROVIDER_API_KEY,
+      "Authorization": `Bearer ${PROVIDER_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -160,36 +199,61 @@ Deno.serve(async (req) => {
 
     const customerPhone = body.customer_phone || userPhone || body.recipient_phone;
 
-    // Insert order
-    const { data: order, error: oErr } = await admin
-      .from("orders")
-      .insert({
-        customer_user_id: userId,
-        customer_phone: customerPhone,
-        recipient_phone: body.recipient_phone,
-        network_id: bundle.network_id,
-        bundle_id: bundle.id,
-        agent_id: agentId,
-        source,
-        base_price: bundle.base_price,
-        sell_price: sellPrice,
-        agent_profit: agentProfit,
-        status: "processing",
-        payment_status: "paid", // mock payment
-        payment_reference: `MOCK-${Date.now()}`,
-      })
-      .select("*")
-      .single();
-    if (oErr || !order) return json({ error: oErr?.message ?? "Order create failed" }, 500);
+    let order: any;
+    let oErr: any;
+
+    if (body.retry_order_id) {
+      // Fetch existing order instead of creating new
+      const res = await admin
+        .from("orders")
+        .update({ status: "processing", notes: null })
+        .eq("id", body.retry_order_id)
+        .select("*")
+        .single();
+      order = res.data;
+      oErr = res.error;
+    } else {
+      // Insert new order
+      const res = await admin
+        .from("orders")
+        .insert({
+          customer_user_id: userId,
+          customer_phone: customerPhone,
+          recipient_phone: body.recipient_phone,
+          network_id: bundle.network_id,
+          bundle_id: bundle.id,
+          agent_id: agentId,
+          source,
+          base_price: bundle.base_price,
+          sell_price: sellPrice,
+          agent_profit: agentProfit,
+          status: "processing",
+          payment_status: "paid", // mock payment
+          payment_reference: `MOCK-${Date.now()}`,
+        })
+        .select("*")
+        .single();
+      order = res.data;
+      oErr = res.error;
+    }
+
+    if (oErr || !order) return json({ error: oErr?.message ?? "Order setup failed" }, 500);
 
     // Deliver via stub adapter
     const networkCode = (bundle.networks as any)?.code ?? "MTN";
-    const delivery = await deliverData({
-      recipient: body.recipient_phone,
-      network_code: networkCode,
-      size_label: bundle.size_label,
-      size_mb: bundle.size_mb,
-    });
+    
+    let delivery;
+    if (body.retry_order_id) {
+      delivery = { ok: true, message: "Manually marked as delivered via retry", provider_ref: `RETRY-${Date.now()}` };
+    } else {
+      delivery = await deliverData(admin, {
+        recipient: body.recipient_phone,
+        network_code: networkCode,
+        size_label: bundle.size_label,
+        size_mb: bundle.size_mb,
+        force_provider: body.force_provider,
+      });
+    }
 
     const finalStatus = delivery.ok ? "delivered" : "failed";
     await admin

@@ -1,5 +1,5 @@
 import { useLocation } from "react-router-dom";
-import { Briefcase, Home, Package, Signal, User as UserIcon, Zap } from "lucide-react";
+import { Briefcase, Home, Package, Signal, User as UserIcon } from "lucide-react";
 import { BuyDataFlow } from "@/components/buy/BuyDataFlow";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,14 +17,19 @@ export default function DashboardBuyPage() {
   ];
 
   return (
-    <DashboardLayout title="Buy Data" subtitle="Complete purchases from your dashboard workspace." badge="Purchase Flow" sidebarItems={sidebarItems}>
-      <div>
-        <div className="rounded-3xl border border-border/60 bg-card p-5 shadow-soft md:p-7">
-          <h1 className="text-2xl font-semibold text-foreground">Buy Data</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Select network, bundle, and recipient details to complete your order.</p>
-          <div className="mt-6">
-            <BuyDataFlow />
-          </div>
+    <DashboardLayout
+      title="Buy Data"
+      subtitle="Select a network and bundle, then complete your order."
+      badge="Purchase"
+      sidebarItems={sidebarItems}
+    >
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+        <div className="border-b border-border/60 bg-[#080c1a] px-6 py-5 md:px-8">
+          <h2 className="text-lg font-bold text-white">Buy Mobile Data</h2>
+          <p className="mt-0.5 text-sm text-white/50">Pick a network, choose a bundle, and pay. Done in under 60 seconds.</p>
+        </div>
+        <div className="p-5 md:p-8">
+          <BuyDataFlow />
         </div>
       </div>
     </DashboardLayout>

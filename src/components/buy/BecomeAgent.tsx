@@ -1,37 +1,128 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useSettings } from "@/hooks/useSettings";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatGHS } from "@/lib/format";
-import { Check, Loader2, Sparkles, Store, TrendingUp } from "lucide-react";
+import { Check, Loader2, Sparkles, Store, TrendingUp, Zap, CheckCircle2, RefreshCcw } from "lucide-react";
+
+type Phase = "select" | "processing" | "polling" | "success" | "error";
 
 export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const { data: settings } = useSettings();
   const { isAgent, profile } = useAuth();
   const { toast } = useToast();
   const nav = useNavigate();
-  const [busy, setBusy] = useState(false);
+  
+  const [checkoutOpen, setCheckoutOpen] = useState(true);
+  const [momoNumber, setMomoNumber] = useState(profile?.phone || "");
+  const [momoNetwork, setMomoNetwork] = useState("MTN");
+  const [accountName, setAccountName] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [phase, setPhase] = useState<Phase>("select");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [orderRef, setOrderRef] = useState<string | null>(null);
 
   const activate = async () => {
-    setBusy(true);
-    const { error, data } = await supabase.functions.invoke("paystack-initiate", {
-      body: {
-        purpose: "agent_activation",
-        email: profile?.email,
-        return_url: `${window.location.origin}/payment/callback`,
-      },
-    });
-    setBusy(false);
-    if (error || !data?.ok || !data?.authorization_url) {
-      toast({ title: "Payment initialization failed", description: error?.message ?? data?.error, variant: "destructive" });
+    if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
+      toast({ title: "Enter mobile money number", variant: "destructive" });
       return;
     }
 
-    window.location.href = data.authorization_url;
+    setPhase("processing");
+    const { error, data } = await supabase.functions.invoke("paystack-process", {
+      body: {
+        purpose: "agent_activation",
+        momo_number: momoNumber,
+        momo_network: momoNetwork,
+      },
+    });
+
+    if (error || data?.error) {
+      const errPayload = data?.error ?? error?.message ?? "Payment initialization failed";
+      const errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
+      setErrorMsg(errMsg);
+      setPhase("error");
+      return;
+    }
+
+    setOrderRef(data.reference);
+    setPhase("polling");
   };
+
+  const reset = () => {
+    setPhase("select");
+    setOrderRef(null);
+    setErrorMsg(null);
+    setCheckoutOpen(false);
+  };
+
+  useEffect(() => {
+    const num = momoNumber.replace(/\D/g, "");
+    if (num.length >= 10 && checkoutOpen) {
+      setAccountName(null);
+      setIsVerifying(true);
+      const timer = setTimeout(async () => {
+        try {
+          const { data } = await supabase.functions.invoke("paystack-resolve", {
+            body: { momo_number: num, momo_network: momoNetwork }
+          });
+          if (data?.ok && data?.account_name) {
+            setAccountName(data.account_name);
+          } else {
+            setAccountName(data?.error ? "Account not found" : "Unknown Account");
+          }
+        } catch (e) {
+          setAccountName("Unknown Account");
+        } finally {
+          setIsVerifying(false);
+        }
+      }, 600);
+      return () => clearTimeout(timer);
+    } else {
+      setAccountName(null);
+      setIsVerifying(false);
+    }
+  }, [momoNumber, momoNetwork, checkoutOpen]);
+
+  useEffect(() => {
+    if (phase !== "polling" || !orderRef) return;
+    
+    let interval: any;
+    let attempts = 0;
+
+    const checkStatus = async () => {
+      attempts++;
+      if (attempts > 40) {
+        setPhase("error");
+        setErrorMsg("Payment timed out. Please try again.");
+        return clearInterval(interval);
+      }
+
+      const { data, error } = await supabase.functions.invoke("paystack-verify", {
+        body: { reference: orderRef }
+      });
+
+      if (data?.ok) {
+        clearInterval(interval);
+        setPhase("success");
+      } else if (data?.error) {
+        clearInterval(interval);
+        setPhase("error");
+        setErrorMsg(data.error);
+      } else if (data?.status && !["pending", "processing", "vbv required", "ongoing", "send_otp", "pay_offline"].includes(data.status.toLowerCase())) {
+        clearInterval(interval);
+        setPhase("error");
+        setErrorMsg(`Payment failed: ${data.status}`);
+      }
+    };
+
+    interval = setInterval(checkStatus, 3000);
+    return () => clearInterval(interval);
+  }, [phase, orderRef]);
 
   if (isAgent) {
     return (
@@ -46,6 +137,54 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   }
 
   const fee = settings?.agent_activation_fee ?? 50;
+
+  if (phase === "success") {
+    return (
+      <div className="text-center py-8">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
+          <CheckCircle2 className="h-10 w-10 text-success" />
+        </div>
+        <h3 className="mt-4 text-2xl font-bold">Activation Successful!</h3>
+        <p className="mt-2 text-muted-foreground">Your agent store is now active.</p>
+        <Button onClick={() => { onClose(); nav("/agent"); }} className="mt-6 rounded-2xl gradient-primary w-full h-12">
+          Open Dashboard
+        </Button>
+      </div>
+    );
+  }
+
+  if (phase === "error") {
+    return (
+      <div className="text-center py-8">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+          <RefreshCcw className="h-8 w-8 text-destructive" />
+        </div>
+        <h3 className="mt-4 text-lg font-semibold text-destructive">Activation Failed</h3>
+        <p className="mt-2 text-sm text-muted-foreground">{errorMsg}</p>
+        <Button onClick={reset} className="mt-6 rounded-2xl w-full h-12" variant="outline">
+          Try Again
+        </Button>
+      </div>
+    );
+  }
+
+  if (phase === "processing" || phase === "polling") {
+    return (
+      <div className="py-12 text-center">
+        <div className="mx-auto flex h-20 w-20 animate-float-pulse items-center justify-center rounded-full gradient-primary shadow-glow">
+          <Zap className="h-10 w-10 text-white animate-pulse" />
+        </div>
+        <h3 className="mt-6 text-xl font-bold">
+          {phase === "processing" ? "Initiating..." : "Awaiting Authorization"}
+        </h3>
+        {phase === "polling" && (
+          <p className="mt-2 text-sm font-medium text-primary">
+            Please check your phone ({momoNumber}) to authorize payment.
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -63,6 +202,45 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         <Benefit icon={<Sparkles className="h-5 w-5" />} title="Withdraw to MoMo" desc={`Cash out anytime above ${formatGHS(settings?.min_withdrawal ?? 50)}.`} />
       </div>
 
+      <div className="space-y-3">
+        <label className="text-xs font-semibold text-foreground">
+          Mobile Money Payment Number
+        </label>
+        <div className="flex gap-2">
+          <select 
+            className="w-[100px] h-12 rounded-xl border border-border/70 text-sm bg-background px-3 outline-none focus:ring-2 focus:ring-primary/20"
+            value={momoNetwork}
+            onChange={(e) => setMomoNetwork(e.target.value)}
+          >
+            <option value="MTN">MTN</option>
+            <option value="TELECEL">Telecel</option>
+            <option value="AIRTELTIGO">AT</option>
+          </select>
+          <Input
+            inputMode="tel"
+            value={momoNumber}
+            onChange={(e) => setMomoNumber(e.target.value)}
+            placeholder="024 123 4567"
+            className="flex-1 h-12 rounded-xl border-border/70 text-base"
+          />
+        </div>
+        <p className="mt-1 text-[10px] text-muted-foreground">
+          The prompt will be sent to this number.
+        </p>
+        {isVerifying && (
+          <div className="mt-2 text-xs text-primary flex items-center gap-2">
+            <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            Verifying account...
+          </div>
+        )}
+        {accountName && !isVerifying && (
+          <div className="mt-2 text-xs font-semibold px-3 py-2 bg-success/10 text-success rounded-lg flex items-center gap-2 border border-success/20">
+            <CheckCircle2 className="h-4 w-4" />
+            {accountName}
+          </div>
+        )}
+      </div>
+
       <div className="rounded-3xl border border-border/60 p-5 flex items-center justify-between">
         <div>
           <p className="text-xs text-muted-foreground">Activation fee (one-time)</p>
@@ -70,10 +248,10 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         </div>
         <Button
           onClick={activate}
-          disabled={busy}
+          disabled={momoNumber.replace(/\D/g, "").length < 9 || isVerifying || phase === "processing"}
           className="h-14 rounded-2xl px-6 gradient-primary shadow-float"
         >
-          {busy ? <Loader2 className="animate-spin" /> : "Pay & Activate"}
+          Pay & Activate
         </Button>
       </div>
     </div>
@@ -92,4 +270,4 @@ function Benefit({ icon, title, desc }: { icon: React.ReactNode; title: string; 
       </div>
     </div>
   );
-}
+}

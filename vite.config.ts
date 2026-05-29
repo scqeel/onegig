@@ -9,6 +9,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     hmr: {
+      host: "localhost",
+      clientPort: 8080,
+      protocol: "ws",
       overlay: false,
     },
   },

@@ -58,28 +58,56 @@ export function TrackOrder() {
     if (!raw) { setOrders(null); return; }
 
     setLoading(true);
-    const digits = raw.replace(/\D/g, "");
+    const digits     = raw.replace(/\D/g, "");
+    const isPhone    = digits.length >= 9;
+    const isRef      = raw.length >= 4 && (!isPhone || /[a-zA-Z_-]/.test(raw));
 
-    // Search by phone number OR by reference/tx_ref
-    const { data } = await supabase
-      .from("orders")
-      .select(
-        "id, reference, tx_ref, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)"
-      )
-      .or(
-        [
-          digits.length >= 9 ? `recipient_phone.eq.${digits}` : null,
-          digits.length >= 9 ? `customer_phone.eq.${digits}` : null,
-          raw.length >= 4    ? `reference.ilike.%${raw}%` : null,
-          raw.length >= 4    ? `tx_ref.ilike.%${raw}%` : null,
-        ]
-          .filter(Boolean)
-          .join(",")
-      )
-      .order("created_at", { ascending: false })
-      .limit(15);
+    const base = () =>
+      supabase
+        .from("orders")
+        .select(
+          "id, reference, tx_ref, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(15);
 
-    setOrders((data ?? []) as OrderResult[]);
+    // Run separate queries to avoid double-encoding % in .or() ilike
+    const promises: Promise<{ data: OrderResult[] | null }>[] = [];
+
+    if (isPhone) {
+      promises.push(
+        base()
+          .or(`recipient_phone.eq.${digits},customer_phone.eq.${digits}`)
+          .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
+      );
+    }
+
+    if (isRef) {
+      promises.push(
+        base()
+          .ilike("reference", `%${raw}%`)
+          .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
+      );
+      promises.push(
+        base()
+          .ilike("tx_ref", `%${raw}%`)
+          .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
+      );
+    }
+
+    const results = await Promise.all(promises);
+
+    // Merge and deduplicate by id
+    const seen = new Set<string>();
+    const merged: OrderResult[] = [];
+    for (const r of results) {
+      for (const o of r.data ?? []) {
+        if (!seen.has(o.id)) { seen.add(o.id); merged.push(o); }
+      }
+    }
+    merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    setOrders(merged);
     setLastUpdated(new Date());
     setLoading(false);
   }, []);

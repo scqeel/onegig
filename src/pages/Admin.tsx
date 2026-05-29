@@ -781,31 +781,51 @@ function PricingSection() {
           <h2 className="text-xl font-bold tracking-tight">{editingId ? "Edit Package" : "Create New Package"}</h2>
           <p className="text-sm text-muted-foreground">Configure data bundle pricing and network availability.</p>
         </div>
-        <div className="p-6">
-          <div className="grid gap-4 md:grid-cols-5">
-            <select
-              value={form.network_id}
-              onChange={(e) => setForm((p) => ({ ...p, network_id: e.target.value }))}
-              className="h-12 rounded-2xl border border-border/40 bg-background/50 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-            >
-              <option value="">Select Network</option>
-              {payload?.networks.map((n: any) => <option key={n.id} value={n.id}>{n.name}</option>)}
-            </select>
-            <Input placeholder="Label (e.g. 1GB)" value={form.size_label} onChange={(e) => setForm((p) => ({ ...p, size_label: e.target.value }))} className="h-12 rounded-2xl bg-background/50" />
-            <Input placeholder="Size in GB" type="number" step="0.1" value={form.size_gb} onChange={(e) => setForm((p) => ({ ...p, size_gb: e.target.value }))} className="h-12 rounded-2xl bg-background/50" />
-            <Input placeholder="User Price (GHS)" value={form.user_price} onChange={(e) => setForm((p) => ({ ...p, user_price: e.target.value }))} className="h-12 rounded-2xl bg-background/50" />
-            <Input placeholder="Agent Price (GHS)" value={form.base_price} onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))} className="h-12 rounded-2xl bg-background/50" />
+        <div className="p-6 md:p-8">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Network Provider</label>
+              <select
+                value={form.network_id}
+                onChange={(e) => setForm((p) => ({ ...p, network_id: e.target.value }))}
+                className="h-14 w-full rounded-2xl border border-border/60 bg-background/50 px-4 text-sm font-medium focus:border-primary/50 focus:ring-4 focus:ring-primary/10 outline-none transition-all hover:bg-accent/20"
+              >
+                <option value="">Select Network...</option>
+                {payload?.networks.map((n: any) => <option key={n.id} value={n.id}>{n.name}</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Bundle Label</label>
+              <Input placeholder="e.g. 1GB Non-Expiry" value={form.size_label} onChange={(e) => setForm((p) => ({ ...p, size_label: e.target.value }))} className="h-14 rounded-2xl border-border/60 bg-background/50 px-4 text-sm focus-visible:ring-4 focus-visible:ring-primary/10 hover:bg-accent/20 transition-all" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Data Size (in GB)</label>
+              <Input placeholder="e.g. 1.0" type="number" step="0.1" value={form.size_gb} onChange={(e) => setForm((p) => ({ ...p, size_gb: e.target.value }))} className="h-14 rounded-2xl border-border/60 bg-background/50 px-4 text-sm focus-visible:ring-4 focus-visible:ring-primary/10 hover:bg-accent/20 transition-all" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Regular User Price (GHS)</label>
+              <Input placeholder="e.g. 5.50" value={form.user_price} onChange={(e) => setForm((p) => ({ ...p, user_price: e.target.value }))} className="h-14 rounded-2xl border-border/60 bg-background/50 px-4 text-sm focus-visible:ring-4 focus-visible:ring-primary/10 hover:bg-accent/20 transition-all" />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-primary">Agent Wholesale Price (GHS)</label>
+              <Input placeholder="e.g. 4.50" value={form.base_price} onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))} className="h-14 rounded-2xl border-primary/30 bg-primary/5 px-4 text-sm focus-visible:ring-4 focus-visible:ring-primary/10 hover:bg-primary/10 transition-all" />
+            </div>
           </div>
-          <div className="mt-6 flex items-center gap-3">
-            <Button className="h-12 rounded-2xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95" onClick={saveBundle}>
+          
+          <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 border-t border-border/40 pt-6">
+            <Button className="h-14 w-full sm:w-auto sm:px-10 rounded-2xl bg-primary font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98]" onClick={saveBundle}>
               {editingId ? "Update Configuration" : "Add Package"}
             </Button>
             {editingId && (
-              <Button variant="ghost" className="h-12 rounded-2xl px-6 font-medium" onClick={() => {
+              <Button variant="ghost" className="h-14 w-full sm:w-auto sm:px-8 rounded-2xl font-medium" onClick={() => {
                 setEditingId(null);
                 setForm({ network_id: "", size_label: "", size_gb: "", user_price: "", base_price: "" });
               }}>
-                Cancel
+                Cancel Edit
               </Button>
             )}
           </div>

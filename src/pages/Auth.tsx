@@ -26,6 +26,7 @@ export default function AuthPage() {
   const isSignUp = tabParam === "signup" || intent === "agent";
   const switchTo = (t: "signin" | "signup") => setSearchParams({ tab: t }, { replace: true });
 
+  const [accountType, setAccountType] = useState<"customer" | "agent">(intent === "agent" ? "agent" : "customer");
   const [busy, setBusy] = useState(false);
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
@@ -35,7 +36,7 @@ export default function AuthPage() {
   const [suPassword, setSuPassword] = useState("");
 
   useEffect(() => {
-    if (!loading && session) nav(from || "/dashboard/agent", { replace: true });
+    if (!loading && session) nav(from || "/dashboard", { replace: true });
   }, [session, loading, nav, from]);
 
   const doSignIn = async () => {
@@ -67,16 +68,16 @@ export default function AuthPage() {
       });
       if (error) { toast({ title: "Sign up failed", description: error.message, variant: "destructive" }); return; }
       if (data.session) {
-        toast({ title: "Account created", description: "Continue to activate your agent account." });
-        nav("/dashboard/agent", { replace: true });
+        toast({ title: "Account created", description: "Welcome to OneGig!" });
+        nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
         return;
       }
       const { error: signInErr } = await authClient.signInWithPassword({ email: normalizedEmail, password: suPassword });
       if (signInErr) {
         toast({ title: "Account created", description: "Please sign in to continue." });
       } else {
-        toast({ title: "Account created", description: "Continue to activate your agent account." });
-        nav("/dashboard/agent", { replace: true });
+        toast({ title: "Account created", description: "Welcome to OneGig!" });
+        nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unexpected error. Please try again.";
@@ -178,11 +179,11 @@ export default function AuthPage() {
             <div className="animate-fade-up">
               <div className="mb-7">
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                  <BriefcaseBusiness className="h-3 w-3" /> Agent Portal
+                  <Users className="h-3 w-3" /> Welcome Back
                 </span>
                 <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Sign in</h2>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  Access your reseller dashboard, store pricing, and withdrawals.
+                  Access your dashboard, track orders, and manage your account.
                 </p>
               </div>
 
@@ -234,12 +235,29 @@ export default function AuthPage() {
             <div className="animate-fade-up">
               <div className="mb-7">
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
-                  <BriefcaseBusiness className="h-3 w-3" /> Agent Registration
+                  {accountType === "agent" ? <><BriefcaseBusiness className="h-3 w-3" /> Agent Registration</> : <><Users className="h-3 w-3" /> Customer Registration</>}
                 </span>
                 <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Create account</h2>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  For resellers only. Set prices, manage your store, and earn on every sale.
+                  {accountType === "agent" ? "Set prices, manage your store, and earn on every sale." : "Track your purchases, easily reorder, and manage your account."}
                 </p>
+              </div>
+
+              <div className="mb-6 flex rounded-xl border border-border/60 bg-secondary/30 p-1">
+                <button
+                  type="button"
+                  onClick={() => setAccountType("customer")}
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${accountType === "customer" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  I want to buy data
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAccountType("agent")}
+                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${accountType === "agent" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  I want to resell
+                </button>
               </div>
 
               <div className="space-y-4">
@@ -280,17 +298,19 @@ export default function AuthPage() {
                 </div>
 
                 {/* Perks reminder */}
-                <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3">
-                  <p className="text-xs font-semibold text-primary mb-1.5">What you get as an agent</p>
-                  <div className="space-y-1">
-                    {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
-                      <div key={p} className="flex items-center gap-2">
-                        <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
-                        <span className="text-xs text-muted-foreground">{p}</span>
-                      </div>
-                    ))}
+                {accountType === "agent" && (
+                  <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2">
+                    <p className="text-xs font-semibold text-primary mb-1.5">What you get as an agent</p>
+                    <div className="space-y-1">
+                      {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
+                        <div key={p} className="flex items-center gap-2">
+                          <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
+                          <span className="text-xs text-muted-foreground">{p}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <Button onClick={doSignUp} disabled={busy} className="h-12 w-full rounded-xl font-bold gradient-primary shadow-float">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Create account <ArrowRight className="ml-1.5 h-4 w-4" /></>}

@@ -15,6 +15,7 @@ import PublicTrackPage from "./pages/PublicTrack.tsx";
 import AdminPage from "./pages/Admin.tsx";
 import AgentDashboardPage from "./pages/AgentDashboard.tsx";
 import AgentStorePage from "./pages/AgentStore.tsx";
+import DashboardProfilePage from "./pages/DashboardProfile.tsx";
 import PaymentCallbackPage from "./pages/PaymentCallback.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { useAuth } from "@/contexts/AuthContext";
@@ -46,7 +47,7 @@ const App = () => (
               <Route path="/dashboard/buy" element={<RequireAuth><Navigate to="/buy" replace /></RequireAuth>} />
               <Route path="/dashboard/track" element={<RequireAuth><Navigate to="/track" replace /></RequireAuth>} />
               <Route path="/dashboard/agent" element={<RequireAuth><DashboardAgentPage /></RequireAuth>} />
-              <Route path="/dashboard/profile" element={<RequireAuth><Navigate to="/dashboard/customer" replace /></RequireAuth>} />
+              <Route path="/dashboard/profile" element={<RequireAuth><DashboardProfilePage /></RequireAuth>} />
               <Route path="/admin" element={<RequireAuth role="admin"><AdminPage /></RequireAuth>} />
               <Route path="/agent" element={<RequireAuth role="agent"><AgentDashboardPage /></RequireAuth>} />
               <Route path="/store/:slug" element={<AgentStorePage />} />

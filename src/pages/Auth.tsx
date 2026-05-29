@@ -47,6 +47,25 @@ export default function AuthPage() {
   const [suOtp, setSuOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const [siTimer, setSiTimer] = useState(0);
+  const [suTimer, setSuTimer] = useState(0);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (siTimer > 0) {
+      interval = setInterval(() => setSiTimer((t) => t - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [siTimer]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (suTimer > 0) {
+      interval = setInterval(() => setSuTimer((t) => t - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [suTimer]);
+
   const formatPhone = (phone: string) => {
     let p = phone.replace(/[^0-9+]/g, "");
     if (p.startsWith("0")) p = "+233" + p.slice(1);
@@ -77,6 +96,7 @@ export default function AuthPage() {
           toast({ title: "Failed to send code", description: error.message, variant: "destructive" });
         } else {
           setOtpSent(true);
+          setSiTimer(60);
           toast({ title: "Code sent", description: "Check your messages for the login code." });
         }
       } else {
@@ -133,6 +153,7 @@ export default function AuthPage() {
       }
       
       setSuOtpSent(true);
+      setSuTimer(60);
       toast({ title: "Verification required", description: "Please enter the code sent to your phone." });
       return;
       
@@ -151,6 +172,34 @@ export default function AuthPage() {
       toast({ title: "Sign up failed", description: msg, variant: "destructive" });
     } finally {
       setBusy(false);
+    }
+  };
+
+  const resendSiOtp = async () => {
+    if (siTimer > 0) return;
+    setBusy(true);
+    const formattedPhone = formatPhone(siPhone);
+    const { error } = await authClient.signInWithOtp({ phone: formattedPhone });
+    setBusy(false);
+    if (error) {
+      toast({ title: "Failed to resend code", description: error.message, variant: "destructive" });
+    } else {
+      setSiTimer(60);
+      toast({ title: "Code resent", description: "A new code has been sent to your phone." });
+    }
+  };
+
+  const resendSuOtp = async () => {
+    if (suTimer > 0) return;
+    setBusy(true);
+    const formattedPhone = formatPhone(suPhone);
+    const { error } = await authClient.resend({ type: 'sms', phone: formattedPhone });
+    setBusy(false);
+    if (error) {
+      toast({ title: "Failed to resend code", description: error.message, variant: "destructive" });
+    } else {
+      setSuTimer(60);
+      toast({ title: "Code resent", description: "A new code has been sent to your phone." });
     }
   };
 
@@ -338,6 +387,14 @@ export default function AuthPage() {
                             </InputOTPGroup>
                           </InputOTP>
                         </div>
+                        <div className="flex items-center justify-between mt-3 px-1">
+                          <button type="button" onClick={() => setOtpSent(false)} className="text-xs text-primary hover:underline font-semibold">Change number</button>
+                          {siTimer > 0 ? (
+                            <span className="text-xs text-muted-foreground font-medium">Resend in <span className="text-foreground">{siTimer}s</span></span>
+                          ) : (
+                            <button type="button" onClick={resendSiOtp} className="text-xs text-primary font-bold hover:underline">Try again</button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </>
@@ -427,10 +484,14 @@ export default function AuthPage() {
                         </InputOTPGroup>
                       </InputOTP>
                     </div>
-                    <p className="text-xs text-center text-muted-foreground mt-2">
-                      We've sent a code to {formatPhone(suPhone)}. 
-                      <button type="button" onClick={() => setSuOtpSent(false)} className="text-primary ml-1 hover:underline">Change number</button>
-                    </p>
+                    <div className="flex items-center justify-between mt-3 px-1">
+                      <button type="button" onClick={() => setSuOtpSent(false)} className="text-xs text-primary hover:underline font-semibold">Change number</button>
+                      {suTimer > 0 ? (
+                        <span className="text-xs text-muted-foreground font-medium">Resend in <span className="text-foreground">{suTimer}s</span></span>
+                      ) : (
+                        <button type="button" onClick={resendSuOtp} className="text-xs text-primary font-bold hover:underline">Try again</button>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <>

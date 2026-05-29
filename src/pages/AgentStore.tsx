@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import {
   Dialog,
   DialogContent,
@@ -76,6 +77,7 @@ export default function AgentStorePage() {
   const [email, setEmail] = useState(profile?.email || "");
   const [phase, setPhase] = useState<Phase>("select");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [otpTimer, setOtpTimer] = useState(0);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
@@ -353,6 +355,7 @@ export default function AgentStorePage() {
       if (data?.status === "send_otp") {
         setOrderRef(data.reference);
         setAuthMessage(data?.message || null);
+        setOtpTimer(60);
         setPhase("otp");
         return;
       }
@@ -397,6 +400,42 @@ export default function AgentStorePage() {
       setPhase("polling");
     } catch (e: any) {
       setErrorMsg(e.message || "An unexpected error occurred.");
+      setPhase("error");
+    }
+  };
+
+  const resendPaymentOtp = async () => {
+    if (otpTimer > 0) return;
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-process", {
+        body: {
+          purpose: "order",
+          recipient_phone: phone.replace(/\D/g, ""),
+          bundle_id: selectedBundle!.id,
+          agent_slug: slug ?? null,
+          momo_number: momoNumber,
+          momo_network: momoNetwork,
+        },
+      });
+
+      if (error || data?.error) {
+        setErrorMsg(data?.error || error?.message || "Failed to resend OTP");
+        setPhase("error");
+        return;
+      }
+
+      if (data?.status === "send_otp") {
+        setOrderRef(data.reference);
+        setOtpTimer(60);
+        setPhase("otp");
+        toast({ title: "OTP Resent", description: "A new OTP has been sent." });
+      } else {
+        setOrderRef(data.reference);
+        setPhase("polling");
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || "Failed to resend OTP");
       setPhase("error");
     }
   };
@@ -500,29 +539,54 @@ export default function AgentStorePage() {
           <p className="mt-3 text-sm font-bold text-red-500">{errorMsg}</p>
         )}
 
-        <div className="mt-8 w-full max-w-[260px] space-y-4">
-          <Input
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            placeholder="Enter OTP Code"
-            className="h-14 text-center text-2xl tracking-[0.25em] font-bold rounded-2xl"
-            maxLength={6}
-            inputMode="numeric"
-          />
-          <Button
-            onClick={submitOtp}
-            disabled={otp.length < 4}
-            className="w-full h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
-          >
-            Submit OTP
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
-            className="w-full text-xs text-slate-500 hover:text-slate-800 dark:hover:text-white"
-          >
-            Cancel Order
-          </Button>
+        <div className="mt-8 w-full max-w-[280px] space-y-4">
+          <div className="flex justify-center pb-2">
+            <InputOTP 
+              maxLength={6} 
+              value={otp} 
+              onChange={(val) => {
+                setOtp(val);
+                if (val.length >= 4 && phase === "otp") {
+                  setTimeout(() => document.getElementById("btn-agent-otp-submit")?.click(), 50);
+                }
+              }}
+            >
+              <InputOTPGroup className="gap-2">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <InputOTPSlot 
+                    key={i} 
+                    index={i} 
+                    className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900" 
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          
+          <div className="flex items-center justify-between px-2 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
+              className="h-auto p-0 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white"
+            >
+              Cancel Order
+            </Button>
+            
+            {otpTimer > 0 ? (
+              <span className="text-xs text-slate-500 font-medium">Resend in <span className="text-slate-800 dark:text-slate-200 font-bold">{otpTimer}s</span></span>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={resendPaymentOtp}
+                className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline hover:text-blue-700 dark:hover:text-blue-300"
+              >
+                Try again
+              </Button>
+            )}
+          </div>
+
+          {/* Hidden submit button to allow auto-submit from InputOTP */}
+          <button id="btn-agent-otp-submit" onClick={submitOtp} className="hidden" />
         </div>
       </div>
     );

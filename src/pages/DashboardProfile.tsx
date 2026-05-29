@@ -1,15 +1,66 @@
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Briefcase, Home, LogOut, Mail, Package, Phone, Shield, Signal, Store, User as UserIcon } from "lucide-react";
+import { Briefcase, Home, LogOut, Mail, Package, Phone, Shield, Signal, Store, User as UserIcon, Edit2, Check, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import { useSettings } from "@/hooks/useSettings";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 
 export default function DashboardProfilePage() {
   const nav = useNavigate();
   const loc = useLocation();
-  const { profile, isAdmin, isAgent, signOut } = useAuth();
+  const { profile, isAdmin, isAgent, signOut, refresh } = useAuth();
   const { data: settings } = useSettings();
+  const { toast } = useToast();
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      setUsername(profile.username || "");
+      setEmail(profile.email || "");
+    }
+  }, [profile, isEditing]);
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setBusy(true);
+    
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        full_name: fullName.trim(),
+        username: username.trim().toLowerCase(),
+        email: email.trim().toLowerCase()
+      })
+      .eq('id', profile.id);
+
+    // Also update auth metadata
+    await supabase.auth.updateUser({
+      data: {
+        full_name: fullName.trim(),
+        username: username.trim().toLowerCase(),
+        email_address: email.trim().toLowerCase()
+      }
+    });
+
+    setBusy(false);
+    if (error) {
+      toast({ title: "Failed to update profile", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Profile updated", description: "Your details have been saved successfully." });
+      refresh();
+      setIsEditing(false);
+    }
+  };
 
   const sidebarItems = [
     { label: "Overview", to: "/dashboard", icon: <Home className="h-4 w-4" />, active: loc.pathname === "/dashboard" },
@@ -52,25 +103,63 @@ export default function DashboardProfilePage() {
             </div>
           </div>
 
-          {/* Info fields */}
           <div className="p-6 md:p-8">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {[
-                { icon: UserIcon, label: "Full name", value: profile?.full_name || "—" },
-                { icon: UserIcon, label: "Username", value: profile?.username ? `@${profile.username}` : "—" },
-                { icon: Phone, label: "Phone", value: profile?.phone || "—" },
-                { icon: Mail, label: "Email", value: profile?.email || "—" },
-              ].map(({ icon: Icon, label, value }) => (
-                <div key={label} className="flex items-start gap-3 rounded-xl border border-border/60 bg-secondary/30 p-4">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
-                    <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
-                  </div>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-foreground">Personal Details</h3>
+              {!isEditing ? (
+                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)} className="rounded-xl h-8 px-3">
+                  <Edit2 className="mr-1.5 h-3.5 w-3.5" /> Edit
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)} disabled={busy} className="rounded-xl h-8 px-3">
+                    <X className="mr-1.5 h-3.5 w-3.5" /> Cancel
+                  </Button>
+                  <Button size="sm" onClick={handleSave} disabled={busy} className="rounded-xl h-8 px-3">
+                    {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-1.5 h-3.5 w-3.5" />} Save
+                  </Button>
                 </div>
-              ))}
+              )}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {!isEditing ? (
+                [
+                  { icon: UserIcon, label: "Full name", value: profile?.full_name || "—" },
+                  { icon: UserIcon, label: "Username", value: profile?.username ? `@${profile.username}` : "—" },
+                  { icon: Phone, label: "Phone", value: profile?.phone || "—" },
+                  { icon: Mail, label: "Email", value: profile?.email || "—" },
+                ].map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex items-start gap-3 rounded-xl border border-border/60 bg-secondary/30 p-4">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                      <Icon className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+                      <p className="mt-0.5 text-sm font-semibold text-foreground">{value}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Full Name</label>
+                    <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className="h-11 rounded-xl" placeholder="Your name" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Username</label>
+                    <Input value={username} onChange={(e) => setUsername(e.target.value)} className="h-11 rounded-xl" placeholder="Username" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Phone Number (Verified)</label>
+                    <Input value={profile?.phone || ""} disabled className="h-11 rounded-xl bg-secondary/50 cursor-not-allowed opacity-70" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Email Address</label>
+                    <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="h-11 rounded-xl" placeholder="Email address" />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Actions */}

@@ -3,12 +3,13 @@ import { Link, useLocation, useNavigate, useSearchParams } from "react-router-do
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
-import { ArrowRight, BriefcaseBusiness, CheckCircle, Loader2, ShieldCheck, TrendingUp, Users } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, CheckCircle, Loader2, ShieldCheck, TrendingUp, Users, Eye, EyeOff } from "lucide-react";
 
-const inputCls = "h-12 rounded-xl border-border/50 bg-secondary/40 text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/50 transition-all";
+const inputCls = "h-12 rounded-[14px] border border-slate-200 bg-white px-4 text-sm font-semibold text-foreground shadow-sm transition-all focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50";
 
 export default function AuthPage() {
   const nav = useNavigate();
@@ -30,51 +31,117 @@ export default function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [siEmail, setSiEmail] = useState("");
   const [siPassword, setSiPassword] = useState("");
+  const [siMethod, setSiMethod] = useState<"email" | "phone">("email");
+  const [siPhone, setSiPhone] = useState("");
+  const [siOtp, setSiOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+
+  const [suMethod, setSuMethod] = useState<"email" | "phone">("email");
   const [suFullName, setSuFullName] = useState("");
   const [suUsername, setSuUsername] = useState("");
   const [suEmail, setSuEmail] = useState("");
+  const [suPhone, setSuPhone] = useState("");
   const [suPassword, setSuPassword] = useState("");
+  const [suConfirmPassword, setSuConfirmPassword] = useState("");
+  const [suOtpSent, setSuOtpSent] = useState(false);
+  const [suOtp, setSuOtp] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  const formatPhone = (phone: string) => {
+    let p = phone.replace(/[^0-9+]/g, "");
+    if (p.startsWith("0")) p = "+233" + p.slice(1);
+    else if (p.startsWith("233")) p = "+" + p;
+    else if (!p.startsWith("+")) p = "+233" + p;
+    return p;
+  };
 
   useEffect(() => {
     if (!loading && session) nav(from || "/dashboard", { replace: true });
   }, [session, loading, nav, from]);
 
   const doSignIn = async () => {
-    if (!siEmail || !siPassword) {
-      toast({ title: "Enter your email and password", variant: "destructive" });
-      return;
+    if (siMethod === "email") {
+      if (!siEmail || !siPassword) return toast({ title: "Enter your email and password", variant: "destructive" });
+      setBusy(true);
+      const { error } = await authClient.signInWithPassword({ email: siEmail.trim().toLowerCase(), password: siPassword });
+      setBusy(false);
+      if (error) toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+    } else {
+      if (!otpSent) {
+        if (!siPhone) return toast({ title: "Enter your phone number", variant: "destructive" });
+        setBusy(true);
+        const formattedPhone = formatPhone(siPhone);
+        const { error } = await authClient.signInWithOtp({ phone: formattedPhone });
+        setBusy(false);
+        if (error) {
+          toast({ title: "Failed to send code", description: error.message, variant: "destructive" });
+        } else {
+          setOtpSent(true);
+          toast({ title: "Code sent", description: "Check your messages for the login code." });
+        }
+      } else {
+        if (!siOtp) return toast({ title: "Enter the code", variant: "destructive" });
+        setBusy(true);
+        const formattedPhone = formatPhone(siPhone);
+        const { error } = await authClient.verifyOtp({ phone: formattedPhone, token: siOtp.trim(), type: 'sms' });
+        setBusy(false);
+        if (error) toast({ title: "Invalid code", description: error.message, variant: "destructive" });
+      }
     }
-    setBusy(true);
-    const { error } = await authClient.signInWithPassword({
-      email: siEmail.trim().toLowerCase(),
-      password: siPassword,
-    });
-    setBusy(false);
-    if (error) toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
   };
 
   const doSignUp = async () => {
-    if (!suFullName || !suUsername || !suEmail || !suPassword) {
+    if (!suFullName || !suUsername || !suPassword || !suConfirmPassword || !suEmail || !suPhone) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
-    const normalizedEmail = suEmail.trim().toLowerCase();
+    
+    if (suPassword !== suConfirmPassword) {
+      toast({ title: "Passwords do not match", variant: "destructive" });
+      return;
+    }
+    
+    if (suOtpSent) {
+      if (!suOtp) return toast({ title: "Enter the verification code", variant: "destructive" });
+      setBusy(true);
+      const formattedPhone = formatPhone(suPhone);
+      const { error } = await authClient.verifyOtp({ phone: formattedPhone, token: suOtp.trim(), type: 'sms' });
+      setBusy(false);
+      if (error) {
+        toast({ title: "Invalid code", description: error.message, variant: "destructive" });
+        return;
+      }
+      toast({ title: "Account verified", description: "Welcome to OneGig!" });
+      nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
+      return;
+    }
+
     setBusy(true);
     try {
-      const { data, error } = await authClient.signUp({
-        email: normalizedEmail,
-        password: suPassword,
-        options: { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim() } },
-      });
-      if (error) { toast({ title: "Sign up failed", description: error.message, variant: "destructive" }); return; }
-      if (data.session) {
+      const normalizedEmail = suEmail.trim().toLowerCase();
+      const formattedPhone = formatPhone(suPhone);
+      const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim(), email_address: normalizedEmail } };
+      
+      const res = await authClient.signUp({ phone: formattedPhone, password: suPassword, options });
+
+      if (res.error) { toast({ title: "Sign up failed", description: res.error.message, variant: "destructive" }); return; }
+      
+      if (res.data.session) {
         toast({ title: "Account created", description: "Welcome to OneGig!" });
         nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
         return;
       }
-      const { error: signInErr } = await authClient.signInWithPassword({ email: normalizedEmail, password: suPassword });
-      if (signInErr) {
+      
+      setSuOtpSent(true);
+      toast({ title: "Verification required", description: "Please enter the code sent to your phone." });
+      return;
+      
+      // Auto login attempt if no session returned immediately
+      const signInRes = await authClient.signInWithPassword({ email: suEmail.trim().toLowerCase(), password: suPassword });
+        
+      if (signInRes.error) {
         toast({ title: "Account created", description: "Please sign in to continue." });
+        switchTo("signin");
       } else {
         toast({ title: "Account created", description: "Welcome to OneGig!" });
         nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
@@ -187,27 +254,99 @@ export default function AuthPage() {
                 </p>
               </div>
 
+              <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
+                <button
+                  type="button"
+                  onClick={() => { setSiMethod("email"); setOtpSent(false); }}
+                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "email" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                >
+                  Email
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSiMethod("phone")}
+                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "phone" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                >
+                  Phone Number
+                </button>
+              </div>
+
               <div className="space-y-4">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Email address</label>
-                  <Input
-                    autoFocus type="email" inputMode="email"
-                    placeholder="you@example.com"
-                    value={siEmail} onChange={(e) => setSiEmail(e.target.value)}
-                    className={inputCls}
-                  />
+                {siMethod === "email" ? (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">Email address</label>
+                      <Input
+                        autoFocus type="email" inputMode="email"
+                        placeholder="you@example.com"
+                        value={siEmail} onChange={(e) => setSiEmail(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-foreground">Password</label>
+                    <Link to="#" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>
+                  </div>
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"} placeholder="Enter your password"
+                      value={siPassword} onChange={(e) => setSiPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && doSignIn()}
+                      className={`${inputCls} pr-10`}
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Password</label>
-                  <Input
-                    type="password" placeholder="••••••••"
-                    value={siPassword} onChange={(e) => setSiPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && doSignIn()}
-                    className={inputCls}
-                  />
-                </div>
-                <Button onClick={doSignIn} disabled={busy} className="h-12 w-full rounded-xl font-bold gradient-primary shadow-float">
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Sign in <ArrowRight className="ml-1.5 h-4 w-4" /></>}
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">Phone Number</label>
+                      <Input
+                        autoFocus={!otpSent} type="tel" inputMode="tel"
+                        placeholder="0551234567"
+                        disabled={otpSent}
+                        value={siPhone} onChange={(e) => setSiPhone(e.target.value)}
+                        className={inputCls}
+                      />
+                    </div>
+                    {otpSent && (
+                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                        <label className="text-xs font-semibold text-foreground text-center block">Verification Code</label>
+                        <div className="flex justify-center pb-2">
+                          <InputOTP 
+                            maxLength={6} 
+                            value={siOtp} 
+                            onChange={(val) => {
+                              setSiOtp(val);
+                              if (val.length === 6 && !busy) {
+                                setTimeout(() => document.getElementById("btn-signin-submit")?.click(), 50);
+                              }
+                            }}
+                          >
+                            <InputOTPGroup className="gap-2">
+                              {[0, 1, 2, 3, 4, 5].map((i) => (
+                                <InputOTPSlot 
+                                  key={i} 
+                                  index={i} 
+                                  className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50" 
+                                />
+                              ))}
+                            </InputOTPGroup>
+                          </InputOTP>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                <Button id="btn-signin-submit" onClick={doSignIn} disabled={busy} className="h-12 w-full rounded-[14px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-violet-500/40">
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
+                    {siMethod === "email" || otpSent ? "Sign in" : "Send Login Code"} <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </>}
                 </Button>
               </div>
 
@@ -243,77 +382,141 @@ export default function AuthPage() {
                 </p>
               </div>
 
-              <div className="mb-6 flex rounded-xl border border-border/60 bg-secondary/30 p-1">
+              <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
                 <button
                   type="button"
                   onClick={() => setAccountType("customer")}
-                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${accountType === "customer" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "customer" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
                 >
                   I want to buy data
                 </button>
                 <button
                   type="button"
                   onClick={() => setAccountType("agent")}
-                  className={`flex-1 rounded-lg py-2 text-xs font-bold transition-all ${accountType === "agent" ? "bg-white shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "agent" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
                 >
                   I want to resell
                 </button>
               </div>
 
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">Full name</label>
-                    <Input
-                      autoFocus placeholder="Kwame Mensah"
-                      value={suFullName} onChange={(e) => setSuFullName(e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-foreground">Username</label>
-                    <Input
-                      placeholder="kwame123"
-                      value={suUsername} onChange={(e) => setSuUsername(e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Email address</label>
-                  <Input
-                    type="email" inputMode="email" placeholder="you@example.com"
-                    value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-foreground">Password</label>
-                  <Input
-                    type="password" placeholder="Create a strong password"
-                    value={suPassword} onChange={(e) => setSuPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && doSignUp()}
-                    className={inputCls}
-                  />
-                </div>
 
-                {/* Perks reminder */}
-                {accountType === "agent" && (
-                  <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2">
-                    <p className="text-xs font-semibold text-primary mb-1.5">What you get as an agent</p>
-                    <div className="space-y-1">
-                      {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
-                        <div key={p} className="flex items-center gap-2">
-                          <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
-                          <span className="text-xs text-muted-foreground">{p}</span>
-                        </div>
-                      ))}
+
+              <div className="space-y-4">
+                {suOtpSent ? (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                    <label className="text-xs font-semibold text-foreground text-center block">Verification Code</label>
+                    <div className="flex justify-center pb-2">
+                      <InputOTP 
+                        maxLength={6} 
+                        value={suOtp} 
+                        onChange={(val) => {
+                          setSuOtp(val);
+                          if (val.length === 6 && !busy) {
+                            setTimeout(() => document.getElementById("btn-signup-submit")?.click(), 50);
+                          }
+                        }}
+                      >
+                        <InputOTPGroup className="gap-2">
+                          {[0, 1, 2, 3, 4, 5].map((i) => (
+                            <InputOTPSlot 
+                              key={i} 
+                              index={i} 
+                              className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50" 
+                            />
+                          ))}
+                        </InputOTPGroup>
+                      </InputOTP>
                     </div>
+                    <p className="text-xs text-center text-muted-foreground mt-2">
+                      We've sent a code to {formatPhone(suPhone)}. 
+                      <button type="button" onClick={() => setSuOtpSent(false)} className="text-primary ml-1 hover:underline">Change number</button>
+                    </p>
                   </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Full name</label>
+                        <Input
+                          autoFocus placeholder="Kwame Mensah"
+                          value={suFullName} onChange={(e) => setSuFullName(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Username</label>
+                        <Input
+                          placeholder="kwame123"
+                          value={suUsername} onChange={(e) => setSuUsername(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Email address</label>
+                        <Input
+                          type="email" inputMode="email" placeholder="you@example.com"
+                          value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Phone Number</label>
+                        <Input
+                          type="tel" inputMode="tel" placeholder="0551234567"
+                          value={suPhone} onChange={(e) => setSuPhone(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">Password</label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"} placeholder="Create a strong password"
+                          value={suPassword} onChange={(e) => setSuPassword(e.target.value)}
+                          className={`${inputCls} pr-10`}
+                        />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-foreground">Confirm Password</label>
+                      <div className="relative">
+                        <Input
+                          type={showPassword ? "text" : "password"} placeholder="Confirm your password"
+                          value={suConfirmPassword} onChange={(e) => setSuConfirmPassword(e.target.value)}
+                          onKeyDown={(e) => e.key === "Enter" && doSignUp()}
+                          className={`${inputCls} pr-10`}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Perks reminder */}
+                    {accountType === "agent" && (
+                      <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2">
+                        <p className="text-xs font-semibold text-primary mb-1.5">What you get as an agent</p>
+                        <div className="space-y-1">
+                          {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
+                            <div key={p} className="flex items-center gap-2">
+                              <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
+                              <span className="text-xs text-muted-foreground">{p}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
-                <Button onClick={doSignUp} disabled={busy} className="h-12 w-full rounded-xl font-bold gradient-primary shadow-float">
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Create account <ArrowRight className="ml-1.5 h-4 w-4" /></>}
+                <Button id="btn-signup-submit" onClick={doSignUp} disabled={busy} className="h-12 w-full rounded-[14px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-violet-500/40">
+                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
+                    {suOtpSent ? "Verify Code" : "Create account"} <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </>}
                 </Button>
               </div>
 

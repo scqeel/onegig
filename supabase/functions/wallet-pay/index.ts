@@ -233,6 +233,17 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     }
   }
 
+  if (delivery.ok && customerUserId) {
+    await admin.from("app_notifications").insert({
+      title: "Purchase Successful",
+      message: `${bundle.size_label} has been successfully delivered to ${recipient}.`,
+      type: "success",
+      sound_name: "paystack",
+      target_user_id: customerUserId,
+      is_global: false
+    });
+  }
+
   return order.id;
 }
 

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Clock, Truck, X } from "lucide-react";
+import { CheckCircle2, Clock, Truck, X, Copy, Check } from "lucide-react";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,22 @@ export function TrackOrder() {
   const [phone, setPhone] = useState("");
   const [orders, setOrders] = useState<OrderResult[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedRef, setCopiedRef] = useState<string | null>(null);
+
+  const copyReceipt = (o: OrderResult) => {
+    const text = `OneGig Data Receipt
+-------------------
+Reference: ${o.reference}
+Network: ${o.network?.name}
+Bundle: ${o.bundle?.size_label}
+Recipient: ${o.recipient_phone}
+Date: ${new Date(o.created_at).toLocaleString()}
+Price: ${formatGHS(o.sell_price)}
+Status: ${o.status.toUpperCase()}`;
+    navigator.clipboard.writeText(text);
+    setCopiedRef(o.reference);
+    setTimeout(() => setCopiedRef(null), 2000);
+  };
 
   const search = async () => {
     setLoading(true);
@@ -66,12 +82,23 @@ export function TrackOrder() {
             <div key={o.reference} className="rounded-3xl border border-border/60 bg-card p-5 shadow-soft">
               <div className="flex justify-between items-start">
                 <div>
-                  <div className="text-sm text-muted-foreground">{o.network?.name} · {o.bundle?.size_label}</div>
-                  <div className="font-mono text-xs text-muted-foreground">{o.reference}</div>
+                  <div className="text-sm font-bold text-foreground">{o.network?.name} · {o.bundle?.size_label}</div>
+                  <div className="font-mono text-xs text-muted-foreground mt-1">{o.reference}</div>
                 </div>
-                <div className="text-right">
-                  <div className="font-semibold">{formatGHS(o.sell_price)}</div>
-                  <div className="text-xs text-muted-foreground">{timeAgo(o.created_at)}</div>
+                <div className="flex flex-col items-end gap-2">
+                  <div className="text-right">
+                    <div className="font-black text-lg leading-none">{formatGHS(o.sell_price)}</div>
+                    <div className="text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-wider">{timeAgo(o.created_at)}</div>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => copyReceipt(o)}
+                    className="h-7 text-[10px] uppercase tracking-wider rounded-lg border-border/60 bg-background/50 hover:bg-primary/10 hover:text-primary transition-colors"
+                  >
+                    {copiedRef === o.reference ? <Check className="mr-1 h-3 w-3 text-emerald-500" /> : <Copy className="mr-1 h-3 w-3" />}
+                    {copiedRef === o.reference ? "Copied" : "Copy Receipt"}
+                  </Button>
                 </div>
               </div>
               {failed ? (

@@ -14,6 +14,7 @@ interface PlaceOrderBody {
   agent_slug?: string | null;
   force_provider?: string;
   retry_order_id?: string;
+  manual_fulfill?: boolean;
 }
 
 const json = (body: unknown, status = 200) =>
@@ -251,8 +252,8 @@ Deno.serve(async (req) => {
     const networkCode = (bundle.networks as any)?.code ?? "MTN";
     
     let delivery;
-    if (body.retry_order_id) {
-      delivery = { ok: true, message: "Manually marked as delivered via retry", provider_ref: `RETRY-${Date.now()}` };
+    if (body.manual_fulfill) {
+      delivery = { ok: true, message: "Manually marked as delivered", provider_ref: `MANUAL-${Date.now()}` };
     } else {
       delivery = await deliverData(admin, {
         recipient: body.recipient_phone,

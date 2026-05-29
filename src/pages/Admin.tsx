@@ -4,7 +4,7 @@ import {
   Activity, BellRing, CheckCircle2, Clock, Cog, DollarSign, Globe2,
   Loader2, Package, RefreshCw, RotateCcw, Search, Settings, Shield,
   ShieldCheck, ShoppingCart, Trash2, TrendingUp, UserCog, Users,
-  Wallet, XCircle, Zap,
+  Wallet, XCircle, Zap, Megaphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
+import { AdminUserDetailsModal } from "@/components/dashboard/AdminUserDetailsModal";
+import { NOTIFICATION_SOUNDS } from "@/components/ui/InAppNotificationListener";
 import { cn } from "@/lib/utils";
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 
-type Tab = "overview" | "users" | "orders" | "withdrawals" | "pricing" | "integrations" | "settings";
+type Tab = "overview" | "users" | "orders" | "withdrawals" | "pricing" | "integrations" | "settings" | "marketing";
 
 type Profile = {
   id: string;
@@ -85,6 +88,7 @@ export default function AdminPage() {
     { label: "Orders",        value: "orders",       icon: <ShoppingCart className="h-4 w-4" /> },
     { label: "Withdrawals",   value: "withdrawals",  icon: <Wallet className="h-4 w-4" /> },
     { label: "Pricing",       value: "pricing",      icon: <Cog className="h-4 w-4" /> },
+    { label: "Marketing",     value: "marketing",    icon: <Megaphone className="h-4 w-4" /> },
     { label: "Integrations",  value: "integrations", icon: <Globe2 className="h-4 w-4" /> },
     { label: "Site Settings", value: "settings",     icon: <Settings className="h-4 w-4" /> },
   ];
@@ -116,6 +120,7 @@ export default function AdminPage() {
         {tab === "orders"       && <OrdersSection />}
         {tab === "withdrawals"  && <WithdrawalsSection />}
         {tab === "pricing"      && <PricingSection />}
+        {tab === "marketing"    && <MarketingSection />}
         {tab === "integrations" && <IntegrationsSection />}
         {tab === "settings"     && <SiteSettingsSection />}
       </div>
@@ -132,7 +137,7 @@ function OverviewSection() {
       const [profilesRes, agentsRes, ordersRes, recentRes] = await Promise.all([
         supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("user_roles").select("id", { count: "exact", head: true }).eq("role", "agent"),
-        supabase.from("orders").select("id, sell_price, created_at, status"),
+        supabase.from("orders").select("id, sell_price, created_at, status, network:networks(name)"),
         supabase
           .from("orders")
           .select("id, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)")
@@ -162,10 +167,49 @@ function OverviewSection() {
       const delivered = orders.filter((o: any) => o.status === "delivered").length;
       const failed    = orders.filter((o: any) => o.status === "failed").length;
 
+      // Prepare Chart Data
+      const last7Days = Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date();
+        d.setDate(d.getDate() - (6 - i));
+        return d.toISOString().split("T")[0]; // YYYY-MM-DD
+      });
+      const revenueMap = new Map(last7Days.map(date => [date, { date, revenue: 0, sales: 0 }]));
+      
+      const networkMap = new Map<string, number>();
+
+      orders.forEach((o: any) => {
+        if (!o.created_at || o.status === "failed") return;
+        const d = new Date(o.created_at).toISOString().split("T")[0];
+        if (revenueMap.has(d)) {
+          const current = revenueMap.get(d)!;
+          current.revenue += Number(o.sell_price ?? 0);
+          current.sales += 1;
+        }
+        
+        if (o.network?.name) {
+          const name = o.network.name;
+          networkMap.set(name, (networkMap.get(name) ?? 0) + 1);
+        }
+      });
+
+      const chartData = Array.from(revenueMap.values()).map(d => ({
+        name: new Date(d.date).toLocaleDateString("en-US", { weekday: 'short' }),
+        revenue: d.revenue,
+        sales: d.sales
+      }));
+
+      const networkColors = ["#10b981", "#8b5cf6", "#f59e0b", "#f43f5e", "#0ea5e9"];
+      const networkChartData = Array.from(networkMap.entries())
+        .map(([name, count], i) => ({ name, count, fill: networkColors[i % networkColors.length] }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
       return {
         totalUsers, totalAgents, totalOrders, revenue, revenue30d,
         todayOrders, todayRevenue, delivered, failed,
         recentOrders: recentRes.data ?? [],
+        chartData,
+        networkChartData,
       };
     },
   });
@@ -192,7 +236,7 @@ function OverviewSection() {
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-7">
+      <div className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-5 sm:p-7">
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.03]"
           style={{
@@ -207,22 +251,22 @@ function OverviewSection() {
               <Shield className="h-3.5 w-3.5 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-widest text-primary">Admin Console</span>
             </div>
-            <h2 className="text-2xl font-black text-foreground">Platform Overview</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Real-time metrics across the OneGig ecosystem.</p>
+            <h2 className="text-xl sm:text-2xl font-black text-foreground">Platform Overview</h2>
+            <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Real-time metrics across the OneGig ecosystem.</p>
           </div>
           <div className="flex flex-col gap-3 sm:items-end">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
               <span className="text-xs font-bold text-emerald-500">All Systems Operational</span>
             </div>
-            <div className="flex gap-5">
-              <div className="text-right">
+            <div className="flex gap-4 sm:gap-5">
+              <div className="text-left sm:text-right">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Today's Orders</p>
-                <p className="text-lg font-black text-foreground">{data?.todayOrders ?? 0}</p>
+                <p className="text-base sm:text-lg font-black text-foreground">{data?.todayOrders ?? 0}</p>
               </div>
-              <div className="text-right">
+              <div className="text-left sm:text-right">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Today's Revenue</p>
-                <p className="text-lg font-black text-foreground">{formatGHS(data?.todayRevenue ?? 0)}</p>
+                <p className="text-base sm:text-lg font-black text-foreground">{formatGHS(data?.todayRevenue ?? 0)}</p>
               </div>
             </div>
           </div>
@@ -232,7 +276,7 @@ function OverviewSection() {
       </div>
 
       {/* Metric cards */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
         <Metric title="Total Users"   value={String(data?.totalUsers ?? 0)}    icon={<Users className="h-5 w-5" />}        variant="indigo"  />
         <Metric title="Active Agents" value={String(data?.totalAgents ?? 0)}   icon={<UserCog className="h-5 w-5" />}      variant="amber"   />
         <Metric title="Total Orders"  value={String(data?.totalOrders ?? 0)}   icon={<ShoppingCart className="h-5 w-5" />} variant="emerald" />
@@ -307,11 +351,52 @@ function OverviewSection() {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-accent/5 p-6 text-center">
-            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-accent/30">
-              <TrendingUp className="h-5 w-5 text-muted-foreground" />
+          <div className="flex flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/40 p-5 shadow-soft">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-bold">Revenue (Last 7 Days)</h3>
             </div>
-            <p className="text-xs text-muted-foreground">Revenue charts & analytics coming soon.</p>
+            <div className="h-48 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data?.chartData ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} tickFormatter={(val) => `₵${val}`} />
+                  <RechartsTooltip
+                    contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    itemStyle={{ color: 'hsl(var(--primary))' }}
+                    formatter={(value: number) => [formatGHS(value), "Revenue"]}
+                  />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
+          <div className="flex flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/40 p-5 shadow-soft mt-4">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-emerald-500" />
+              <h3 className="text-sm font-bold">Top Networks (All Time)</h3>
+            </div>
+            <div className="h-40 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data?.networkChartData ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} />
+                  <RechartsTooltip
+                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
+                    contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px' }}
+                    formatter={(value: number) => [value, "Orders"]}
+                  />
+                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                    {(data?.networkChartData ?? []).map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
       </div>
@@ -345,6 +430,7 @@ function UsersSection() {
   const { toast } = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -473,7 +559,7 @@ function UsersSection() {
                   <p className="text-sm font-bold leading-tight text-foreground">{name}</p>
                   <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
                     {u.email && <span>{u.email}</span>}
-                    {u.phone && <><span className="opacity-40">·</span><span>{u.phone}</span></>}
+                    {u.phone && <><span className="hidden sm:inline opacity-40">·</span><span>{u.phone}</span></>}
                   </div>
                   <div className="mt-1.5 flex gap-1">
                     {u.roles.map((r: string) => (
@@ -484,38 +570,47 @@ function UsersSection() {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="grid grid-cols-2 md:flex items-center gap-2 pt-3 md:pt-0 border-t border-border/30 md:border-0">
+                <Button
+                  variant="outline" size="sm"
+                  className="col-span-full md:col-auto h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-primary hover:bg-primary hover:text-primary-foreground"
+                  onClick={() => setSelectedUser(u)}
+                >
+                  View Details
+                </Button>
                 {!u.roles.includes("agent") && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-amber-500 hover:bg-amber-500 hover:text-white"
+                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-amber-500 hover:bg-amber-500 hover:text-white"
                     disabled={busyId === u.id}
                     onClick={() => makeAgent(u.id)}
                   >
                     {busyId === u.id
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <><UserCog className="mr-1 h-3 w-3" />Make Agent</>}
+                      ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
+                      : <><UserCog className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Agent</>}
                   </Button>
                 )}
                 {!u.roles.includes("admin") && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
+                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
                     disabled={busyId === u.id}
                     onClick={() => makeAdmin(u.id)}
                   >
                     {busyId === u.id
-                      ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      : <><ShieldCheck className="mr-1 h-3 w-3" />Make Admin</>}
+                      ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
+                      : <><ShieldCheck className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Admin</>}
                   </Button>
                 )}
                 <Button
                   variant="ghost" size="sm"
-                  className="h-8 w-8 rounded-xl p-0 text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive"
+                  className="col-span-full md:col-auto h-9 md:h-8 md:w-8 rounded-xl text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive border border-border/60 bg-background/50 md:border-0 md:bg-transparent"
                   disabled={busyId === u.id}
                   onClick={() => removeUser(u.id)}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
+                  {busyId === u.id
+                    ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
+                    : <><Trash2 className="md:mr-0 mr-1.5 h-4 w-4 md:h-3.5 md:w-3.5" /><span className="md:hidden font-semibold text-xs text-foreground">Delete User</span></>}
                 </Button>
               </div>
             </div>
@@ -533,6 +628,11 @@ function UsersSection() {
           </p>
         </div>
       )}
+      <AdminUserDetailsModal 
+        user={selectedUser} 
+        isOpen={!!selectedUser} 
+        onClose={() => setSelectedUser(null)} 
+      />
     </div>
   );
 }
@@ -590,15 +690,21 @@ function OrdersSection() {
     },
   });
 
-  const retryOrder = async (order: any) => {
+  const retryOrder = async (order: any, manualFulfill: boolean = false) => {
     if (!order.bundle_id || !order.recipient_phone) return;
     setRetryId(order.id);
     const { error } = await supabase.functions.invoke("place-order", {
-      body: { recipient_phone: order.recipient_phone, bundle_id: order.bundle_id, force_provider: "swft", retry_order_id: order.id },
+      body: { 
+        recipient_phone: order.recipient_phone, 
+        bundle_id: order.bundle_id, 
+        force_provider: "swft", 
+        retry_order_id: order.id,
+        manual_fulfill: manualFulfill
+      },
     });
     setRetryId(null);
-    if (error) { toast({ title: "Retry failed", description: error.message, variant: "destructive" }); return; }
-    toast({ title: "Order retried", description: "Fulfillment attempt initiated." });
+    if (error) { toast({ title: "Update failed", description: error.message, variant: "destructive" }); return; }
+    toast({ title: manualFulfill ? "Marked as delivered" : "Order retried", description: "Status updated successfully." });
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
   };
 
@@ -713,7 +819,8 @@ function OrdersSection() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            {/* Desktop Table */}
+            <table className="hidden w-full text-left md:table">
               <thead>
                 <tr className="border-b border-border/40 bg-secondary/30">
                   {["Bundle", "Recipient", "Customer", "Revenue", "Status", "When", ""].map((h) => (
@@ -773,22 +880,113 @@ function OrdersSection() {
                     </td>
                     <td className="px-5 py-4 text-right">
                       {o.status === "failed" && (
-                        <Button
-                          size="sm" variant="outline"
-                          disabled={retryId === o.id}
-                          onClick={() => retryOrder(o)}
-                          className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all"
-                        >
-                          {retryId === o.id
-                            ? <Loader2 className="h-3 w-3 animate-spin" />
-                            : <><RotateCcw className="h-3 w-3" /> Retry</>}
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm" variant="outline"
+                            disabled={retryId === o.id}
+                            onClick={() => retryOrder(o, true)}
+                            className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all"
+                          >
+                            {retryId === o.id
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <><CheckCircle2 className="h-3 w-3" /> Manual Fulfill</>}
+                          </Button>
+                          <Button
+                            size="sm" variant="outline"
+                            disabled={retryId === o.id}
+                            onClick={() => retryOrder(o, false)}
+                            className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all"
+                          >
+                            {retryId === o.id
+                              ? <Loader2 className="h-3 w-3 animate-spin" />
+                              : <><RotateCcw className="h-3 w-3" /> Retry API</>}
+                          </Button>
+                        </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {/* Mobile Cards */}
+            <div className="grid gap-3 p-4 md:hidden">
+              {filtered.map((o: any) => (
+                <div key={o.id} className="flex flex-col gap-3 rounded-3xl border border-border/50 bg-card/40 p-5 shadow-soft transition-all hover:bg-accent/10">
+                  <div className="flex items-center justify-between border-b border-border/30 pb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/70 text-xl leading-none">
+                        {o.network?.logo_emoji ?? "📦"}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-foreground leading-tight">{o.bundle?.size_label ?? "—"}</p>
+                        <p className="text-[11px] text-muted-foreground">{o.network?.name}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
+                      <p className="text-[10px] text-muted-foreground">{timeAgo(o.created_at)}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Recipient</span>
+                      <code className="rounded-lg bg-secondary/70 px-2 py-1 text-xs font-mono font-bold text-foreground tracking-tight">
+                        {o.recipient_phone}
+                      </code>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Customer</span>
+                      <div className="text-right">
+                        <p className="max-w-[150px] truncate text-sm font-semibold text-foreground">
+                          {o.customer?.full_name || o.customer?.email || (
+                            <span className="font-normal italic text-muted-foreground">Guest</span>
+                          )}
+                        </p>
+                        {o.source && (
+                          <span className="mt-0.5 inline-block rounded bg-secondary/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                            {o.source.replace("_", " ")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">Status</span>
+                      <div className="flex flex-col items-end gap-1">
+                        <StatusBadge status={o.status} />
+                        {o.status === "failed" && o.notes && (
+                          <span className="max-w-[120px] truncate text-[9px] font-medium text-rose-500/80" title={o.notes}>
+                            {o.notes}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {o.status === "failed" && (
+                    <div className="mt-2 grid grid-cols-2 gap-2 pt-4 border-t border-border/30">
+                      <Button
+                        size="sm" variant="outline"
+                        disabled={retryId === o.id}
+                        onClick={() => retryOrder(o, true)}
+                        className="h-10 rounded-xl border-emerald-500/30 bg-emerald-500/5 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:text-white"
+                      >
+                        {retryId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1.5 h-4 w-4" /> Fulfill</>}
+                      </Button>
+                      <Button
+                        size="sm" variant="outline"
+                        disabled={retryId === o.id}
+                        onClick={() => retryOrder(o, false)}
+                        className="h-10 rounded-xl border-rose-500/30 bg-rose-500/5 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:text-white"
+                      >
+                        {retryId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCcw className="mr-1.5 h-4 w-4" /> Retry API</>}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -1328,11 +1526,257 @@ function SiteSettingsSection() {
             />
           </div>
         </div>
-        <Button className="mt-8 h-12 rounded-2xl bg-primary px-10 font-bold shadow-soft transition-all hover:scale-105 active:scale-95" onClick={saveSettings}>
+        <Button className="mt-8 w-full sm:w-auto h-12 rounded-2xl bg-primary px-10 font-bold shadow-soft transition-all hover:scale-105 active:scale-95" onClick={saveSettings}>
           <BellRing className="mr-2 h-4 w-4" /> Save Configuration
         </Button>
       </div>
     </div>
+  );
+}
+
+// ── Marketing ─────────────────────────────────────────────────────────────────
+
+function MarketingSection() {
+  const { toast } = useToast();
+  const [audience, setAudience] = useState("all");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+
+  // In-App Notification state
+  const [pushTitle, setPushTitle] = useState("");
+  const [pushMessage, setPushMessage] = useState("");
+  const [pushType, setPushType] = useState("info");
+  const [pushSound, setPushSound] = useState("default");
+  const [pushing, setPushing] = useState(false);
+
+  const PUSH_TEMPLATES = [
+    { label: "-- Select Template --", title: "", message: "", type: "info", sound: "default" },
+    { label: "System Maintenance", title: "Scheduled Maintenance 🛠️", message: "Our system will undergo brief maintenance shortly. Expect 15 mins of downtime.", type: "info", sound: "alert" },
+    { label: "Flash Sale Promo", title: "Flash Sale! 🎉", message: "Get 10% extra on all MTN data purchases for the next 2 hours!", type: "success", sound: "success" },
+    { label: "Network Issue (MTN)", title: "MTN Network Delay ⚠️", message: "We are currently experiencing delays with MTN data deliveries. We are monitoring the situation.", type: "error", sound: "alert" },
+    { label: "Network Resolved", title: "Network Issues Resolved ✅", message: "All pending data orders have been delivered. Thank you for your patience!", type: "success", sound: "success" },
+    { label: "Agent Bonus", title: "Agent Bonus Received! 💰", message: "Congratulations! You've received a bonus in your wallet for reaching your weekly target.", type: "success", sound: "paystack" },
+    { label: "Wallet Top-Up Promo", title: "Top Up Bonus 🎁", message: "Fund your wallet with GHS 100 or more today and get a free 1GB data bundle!", type: "info", sound: "default" },
+    { label: "New Feature", title: "New Feature Alert 🚀", message: "You can now copy your order receipts directly from your dashboard!", type: "info", sound: "success" },
+    { label: "Failed Order Refund", title: "Order Refunded 💸", message: "Your recent failed order has been fully refunded to your wallet.", type: "info", sound: "paystack" },
+    { label: "Weekend Special", title: "Weekend Special! 🌟", message: "Happy weekend! Enjoy seamless data top-ups with zero transaction fees today.", type: "success", sound: "default" },
+    { label: "Security Notice", title: "Security Reminder 🔒", message: "Never share your password or OTP with anyone. Our staff will never ask for it.", type: "error", sound: "alert" },
+  ];
+
+  const SMS_TEMPLATES = [
+    { label: "-- Select SMS Template --", message: "" },
+    { label: "Scheduled Maintenance", message: "OneGig Update: Our system will undergo brief maintenance from 12AM to 1AM tonight. We apologize for the inconvenience." },
+    { label: "Flash Sale Promo", message: "Flash Sale! Get 10% extra on all MTN data purchases at OneGig for the next 2 hours! Buy now at onegig.com" },
+    { label: "Network Issue (MTN)", message: "Notice: We are currently experiencing delays with MTN data deliveries. Our team is monitoring the situation." },
+    { label: "Network Resolved", message: "Update: All MTN network issues have been resolved! Your pending data orders have been processed. Thank you for your patience." },
+    { label: "Agent Promo", message: "Agent Alert: Sell over GHS 500 this week and earn a special bonus credited directly to your OneGig wallet!" },
+    { label: "Welcome Bonus", message: "Welcome to OneGig! Get a free 500MB bonus on your first data purchase of GHS 20 or more today." },
+    { label: "Price Drop Alert", title: "Price Drop", message: "Great News! We've dropped prices on all Telecel data bundles. Check out the new rates on your dashboard today." },
+    { label: "Weekend Special", message: "Happy Weekend! Top up your data on OneGig with zero transaction fees all weekend long. Stay connected!" },
+    { label: "Account Security", message: "Security Reminder: OneGig staff will never call to ask for your password or OTP. Please keep your account details secure." },
+    { label: "Holiday Greeting", message: "Happy Holidays from OneGig! Enjoy 5% cashback on all data purchases today to celebrate the season with loved ones." },
+  ];
+
+  const handleSend = async () => {
+    if (!message.trim()) {
+      toast({ title: "Error", description: "Message cannot be empty.", variant: "destructive" });
+      return;
+    }
+    if (!window.confirm("Are you sure you want to send this SMS campaign? This may cost credits.")) return;
+    
+    setSending(true);
+    const { error } = await supabase.functions.invoke("send-campaign-sms", {
+      body: { audience, message },
+    });
+    setSending(false);
+
+    if (error) {
+      toast({ title: "Campaign failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Campaign sent successfully", description: "SMS messages are being dispatched in the background." });
+    setMessage("");
+  };
+
+  return (
+    <>
+    <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="border-b border-border/40 bg-card/50 p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <Megaphone className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold tracking-tight">SMS Marketing</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">Send bulk SMS messages to users or agents.</p>
+      </div>
+
+      <div className="p-6 space-y-6 max-w-2xl">
+        <div className="space-y-3">
+          <label className="text-sm font-semibold">Select Audience</label>
+          <select 
+            value={audience} 
+            onChange={(e) => setAudience(e.target.value)}
+            className="w-full rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+          >
+            <option value="all">All Users</option>
+            <option value="agents">All Agents</option>
+          </select>
+        </div>
+
+        <div className="space-y-3 pb-2 border-b border-border/40">
+          <label className="text-sm font-semibold">Load SMS Template (Optional)</label>
+          <select 
+            onChange={(e) => {
+              const tmpl = SMS_TEMPLATES[Number(e.target.value)];
+              if (tmpl && tmpl.label !== "-- Select SMS Template --") {
+                setMessage(tmpl.message);
+              }
+            }}
+            className="w-full rounded-2xl border border-border/60 bg-primary/5 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all font-semibold"
+          >
+            {SMS_TEMPLATES.map((t, idx) => (
+              <option key={idx} value={idx}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-semibold">Message</label>
+          <textarea
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type your SMS campaign message here..."
+            className="w-full min-h-[120px] rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+          />
+          <p className="text-xs text-muted-foreground text-right">{message.length} characters</p>
+        </div>
+
+        <Button 
+          onClick={handleSend} 
+          disabled={sending || !message.trim()}
+          className="w-full sm:w-auto h-12 rounded-2xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95"
+        >
+          {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Megaphone className="mr-2 h-4 w-4" />}
+          Send Campaign
+        </Button>
+      </div>
+    </div>
+    
+    <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
+      <div className="border-b border-border/40 bg-card/50 p-6">
+        <div className="flex items-center gap-2 mb-2">
+          <BellRing className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-bold tracking-tight">In-App Push Notifications</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">Send real-time alerts with sound to all users currently online.</p>
+      </div>
+
+      <div className="p-6 space-y-6 max-w-2xl">
+        <div className="space-y-3 pb-2 border-b border-border/40">
+          <label className="text-sm font-semibold">Load Template (Optional)</label>
+          <select 
+            onChange={(e) => {
+              const tmpl = PUSH_TEMPLATES[Number(e.target.value)];
+              if (tmpl && tmpl.label !== "-- Select Template --") {
+                setPushTitle(tmpl.title);
+                setPushMessage(tmpl.message);
+                setPushType(tmpl.type);
+                setPushSound(tmpl.sound);
+              }
+            }}
+            className="w-full rounded-2xl border border-border/60 bg-primary/5 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all font-semibold"
+          >
+            {PUSH_TEMPLATES.map((t, idx) => (
+              <option key={idx} value={idx}>{t.label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-semibold">Title</label>
+          <Input 
+            value={pushTitle} 
+            onChange={(e) => setPushTitle(e.target.value)} 
+            placeholder="e.g. System Maintenance" 
+            className="h-12 rounded-2xl bg-background/50" 
+          />
+        </div>
+
+        <div className="space-y-3">
+          <label className="text-sm font-semibold">Message</label>
+          <textarea
+            value={pushMessage}
+            onChange={(e) => setPushMessage(e.target.value)}
+            placeholder="Your notification message..."
+            className="w-full min-h-[100px] rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <label className="text-sm font-semibold">Type</label>
+            <select 
+              value={pushType} 
+              onChange={(e) => setPushType(e.target.value)}
+              className="w-full rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            >
+              <option value="info">Info (Default)</option>
+              <option value="success">Success</option>
+              <option value="error">Error/Warning</option>
+            </select>
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-sm font-semibold">Sound</label>
+            <select 
+              value={pushSound} 
+              onChange={(e) => {
+                setPushSound(e.target.value);
+                // Play preview
+                const url = NOTIFICATION_SOUNDS[e.target.value] || NOTIFICATION_SOUNDS.default;
+                const audio = new Audio(url);
+                audio.volume = 0.8;
+                audio.play().catch(() => {});
+              }}
+              className="w-full rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            >
+              <option value="default">Pop (Default)</option>
+              <option value="success">Chime (Success)</option>
+              <option value="paystack">Coin Drop (Paystack-like)</option>
+              <option value="alert">Alert (Urgent)</option>
+            </select>
+          </div>
+        </div>
+
+        <Button 
+          onClick={async () => {
+            if (!pushTitle.trim() || !pushMessage.trim()) return toast({ title: "Error", description: "Title and message required.", variant: "destructive" });
+            setPushing(true);
+            const { error } = await supabase.from('app_notifications').insert({
+              title: pushTitle,
+              message: pushMessage,
+              type: pushType,
+              sound_name: pushSound,
+              is_global: true
+            });
+            setPushing(false);
+            if (error) {
+              toast({ title: "Failed to send", description: error.message, variant: "destructive" });
+            } else {
+              toast({ title: "Notification Sent", description: "Sent to all active users instantly." });
+              setPushTitle("");
+              setPushMessage("");
+            }
+          }} 
+          disabled={pushing || !pushTitle.trim() || !pushMessage.trim()}
+          className="w-full sm:w-auto h-12 rounded-2xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95"
+        >
+          {pushing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4" />}
+          Send Push Notification
+        </Button>
+      </div>
+    </div>
+    </>
   );
 }
 
@@ -1361,8 +1805,8 @@ function Metric({
         {icon}
       </div>
       <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
-      <p className="mt-1 text-3xl font-bold tracking-tight text-foreground">{value}</p>
-      {helper && <p className="mt-2 text-xs font-medium text-muted-foreground/80">{helper}</p>}
+      <p className="mt-0.5 text-2xl md:text-3xl font-bold tracking-tight text-foreground">{value}</p>
+      {helper && <p className="mt-1.5 md:mt-2 text-[10px] md:text-xs font-medium text-muted-foreground/80">{helper}</p>}
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br ${variants[variant]} opacity-10 blur-2xl`} />
     </div>
   );

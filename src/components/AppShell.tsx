@@ -1,7 +1,10 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Megaphone, X } from "lucide-react";
 import { useSettings } from "@/hooks/useSettings";
+import { InstallPromptModal } from "@/components/ui/InstallPromptModal";
+import { InAppNotificationListener } from "@/components/ui/InAppNotificationListener";
+import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
@@ -34,11 +37,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh w-full pb-24">
       {inDashboard && popupNotice && !dismissed && (
-        <div className="sticky top-0 z-30 border-b border-primary/30 bg-primary/10 px-4 py-3 text-sm text-foreground backdrop-blur-sm">
+        <div className="sticky top-0 z-40 w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 px-4 py-2.5 shadow-md">
           <div className="mx-auto flex w-full max-w-[1360px] items-center justify-between gap-3">
-            <p>{popupNotice}</p>
-            <button className="text-xs text-muted-foreground hover:text-foreground" onClick={dismissNotice}>
-              Dismiss
+            <div className="flex items-center gap-3">
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 shadow-inner">
+                <Megaphone className="h-3.5 w-3.5 text-white" />
+              </span>
+              <p className="text-sm font-semibold tracking-wide text-white">
+                {popupNotice}
+              </p>
+            </div>
+            <button 
+              className="flex items-center justify-center rounded-full p-1.5 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors" 
+              onClick={dismissNotice}
+              title="Dismiss"
+            >
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -47,16 +61,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       {children}
 
       {inDashboard && supportHref && (
-        <a
-          href={supportHref}
-          target="_blank"
-          rel="noreferrer"
-          className="fixed bottom-5 left-5 z-40 inline-flex h-12 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-float hover:bg-primary/90"
-        >
-          <MessageCircle className="h-4 w-4" />
-          WhatsApp
-        </a>
+        <DraggableWhatsApp link={supportHref} />
       )}
+
+      <InstallPromptModal />
+      <InAppNotificationListener />
     </div>
   );
 }

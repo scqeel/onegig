@@ -33,6 +33,7 @@ export async function sendSMS({
         unicode: "0",
         sms: message,
       }),
+      signal: AbortSignal.timeout(3000)
     });
 
     const data = await res.json().catch(() => null);

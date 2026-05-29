@@ -1,14 +1,31 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { formatGHS } from "@/lib/format";
-import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History, BriefcaseBusiness, ArrowRight } from "lucide-react";
+import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History, BriefcaseBusiness, ArrowRight, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardCustomerPage() {
   const { session } = useAuth();
+  const [copiedRef, setCopiedRef] = useState<string | null>(null);
+
+  const copyReceipt = (o: any) => {
+    const text = `OneGig Data Receipt
+-------------------
+Reference: ${o.tx_ref}
+Network: ${o.network?.name}
+Bundle: ${o.bundle?.size_label}
+Recipient: ${o.recipient_phone}
+Date: ${new Date(o.created_at).toLocaleString()}
+Price: ${formatGHS(o.sell_price)}
+Status: ${o.status.toUpperCase()}`;
+    navigator.clipboard.writeText(text);
+    setCopiedRef(o.tx_ref);
+    setTimeout(() => setCopiedRef(null), 2000);
+  };
   
   const { data: orders, isLoading } = useQuery({
     queryKey: ["customer-orders", session?.user.id],
@@ -147,9 +164,20 @@ export default function DashboardCustomerPage() {
                     </div>
                     <div className="flex items-center justify-between sm:flex-col sm:items-end sm:gap-2">
                       <p className="text-lg font-black">{formatGHS(Number(o.sell_price))}</p>
-                      <Button asChild variant="ghost" size="sm" className="h-8 rounded-lg text-xs font-semibold">
-                        <Link to={`/track?ref=${o.tx_ref}`}>View Details <ExternalLink className="ml-1.5 h-3 w-3" /></Link>
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={() => copyReceipt(o)}
+                          className="h-8 rounded-lg text-xs font-semibold"
+                        >
+                          {copiedRef === o.tx_ref ? <Check className="mr-1 h-3 w-3 text-emerald-500" /> : <Copy className="mr-1 h-3 w-3" />}
+                          {copiedRef === o.tx_ref ? "Copied" : "Copy"}
+                        </Button>
+                        <Button asChild variant="ghost" size="sm" className="h-8 rounded-lg text-xs font-semibold">
+                          <Link to={`/track?ref=${o.tx_ref}`}>Details <ExternalLink className="ml-1.5 h-3 w-3" /></Link>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}

@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendSMS } from "../_shared/sms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -288,6 +289,13 @@ Deno.serve(async (req) => {
           description: `Profit from order ${order.reference}`,
         });
       }
+    }
+
+    if (delivery.ok) {
+      await sendSMS({
+        to: body.recipient_phone,
+        message: `Success! Your OneGig data purchase of ${bundle.size_label} is complete. Ref: ${order.reference}`,
+      });
     }
 
     return json({

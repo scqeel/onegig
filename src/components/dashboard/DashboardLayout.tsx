@@ -78,7 +78,7 @@ export function DashboardLayout({
             )}
 
             <nav className="flex gap-1 overflow-x-auto p-2 no-scrollbar lg:block lg:space-y-0.5">
-              {sidebarItems.map((item) => {
+              {sidebarItems?.map((item) => {
                 const itemCls = cn(
                   "flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all lg:w-full",
                   item.active

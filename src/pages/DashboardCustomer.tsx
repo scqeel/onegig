@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { formatGHS } from "@/lib/format";
-import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2 } from "lucide-react";
+import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardCustomerPage() {
@@ -25,11 +25,23 @@ export default function DashboardCustomerPage() {
     }
   });
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const sidebarItems = [
+    { label: "My Orders", icon: <History className="h-5 w-5" />, active: true, to: "/dashboard/customer" },
+    { label: "Sign Out", icon: <LogOut className="h-5 w-5" />, onClick: handleSignOut },
+  ];
+
+  const recentNumbers = Array.from(new Set(orders?.map(o => o.recipient_phone))).filter(Boolean).slice(0, 5);
+
   return (
     <DashboardLayout
       title="My Account"
       subtitle="Track your data purchases and purchase history."
       badge="Customer"
+      sidebarItems={sidebarItems}
       topActions={
         <Button asChild className="rounded-xl gradient-primary font-bold shadow-float">
           <Link to="/buy">Buy Data Now <ShoppingCart className="ml-2 h-4 w-4" /></Link>
@@ -55,6 +67,19 @@ export default function DashboardCustomerPage() {
             </div>
           </div>
         </div>
+
+        {recentNumbers.length > 0 && (
+          <div className="mb-6 rounded-[2rem] border border-border/40 bg-card p-6 shadow-soft">
+            <h3 className="text-sm font-semibold text-muted-foreground mb-4">Quick Top-Up Numbers</h3>
+            <div className="flex flex-wrap gap-3">
+              {recentNumbers.map(phone => (
+                <Button key={phone as string} variant="secondary" asChild className="rounded-xl h-10 px-4">
+                  <Link to={`/buy`}><Smartphone className="mr-2 h-4 w-4 text-primary" /> {phone as string}</Link>
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft">
           <div className="border-b border-border/40 bg-card/50 p-6">

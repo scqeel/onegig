@@ -17,7 +17,7 @@ export function DashboardLayout({
   subtitle,
   badge,
   sidebarHeader,
-  sidebarItems,
+  sidebarItems = [],
   topActions,
   children,
   mainClassName,
@@ -26,7 +26,7 @@ export function DashboardLayout({
   subtitle?: string;
   badge?: string;
   sidebarHeader?: ReactNode;
-  sidebarItems: SidebarItem[];
+  sidebarItems?: SidebarItem[];
   topActions?: ReactNode;
   children: ReactNode;
   mainClassName?: string;

@@ -709,7 +709,7 @@ function PricingSection() {
     queryFn: async () => {
       const [{ data: networks }, { data: bundles }, { data: feeRow }] = await Promise.all([
         supabase.from("networks").select("id, name, code").order("sort_order"),
-        supabase.from("bundles").select("*").order("sort_order"),
+        supabase.from("bundles").select("*").order("size_mb", { ascending: true }),
         supabase.from("app_settings").select("value").eq("key", "agent_activation_fee").maybeSingle(),
       ]);
       return { networks: networks ?? [], bundles: bundles ?? [], activationFee: Number(feeRow?.value ?? 50) };

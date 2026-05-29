@@ -37,9 +37,8 @@ export function useBundles(networkId: string | null) {
         .from("bundles")
         .select("*")
         .eq("active", true)
-        .eq("sort_order", 0)
         .eq("network_id", networkId)
-        .order("sort_order");
+        .order("size_mb", { ascending: true });
       if (error) throw error;
       return data as BundleRow[];
     },

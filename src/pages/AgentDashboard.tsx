@@ -301,7 +301,7 @@ function StoreSection({ agentProfile }: { agentProfile: any; userId?: string }) 
     queryFn: async () => {
       const [{ data: networks }, { data: bundles }, { data: myPrices }] = await Promise.all([
         supabase.from("networks").select("id, name, code, logo_emoji").eq("active", true).order("sort_order"),
-        supabase.from("bundles").select("id, network_id, size_label, size_mb, base_price").eq("active", true).order("sort_order"),
+        supabase.from("bundles").select("id, network_id, size_label, size_mb, base_price").eq("active", true).order("size_mb", { ascending: true }),
         supabase.from("agent_bundle_prices").select("bundle_id, sell_price, active").eq("agent_id", agentProfile.id),
       ]);
       const priceMap: Record<string, number> = {};

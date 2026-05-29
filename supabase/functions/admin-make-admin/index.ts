@@ -18,8 +18,12 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "Unauthorized" }, 401);
 
-  const { user_id } = await req.json();
+  const { user_id, code } = await req.json();
   if (!user_id) return json({ error: "user_id required" }, 400);
+  
+  if (code !== "4190") {
+    return json({ error: "Invalid security code" }, 403);
+  }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

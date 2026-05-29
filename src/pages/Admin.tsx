@@ -202,8 +202,13 @@ function UsersSection() {
   };
 
   const makeAdmin = async (userId: string) => {
+    const code = window.prompt("Enter the 4-digit security code to grant admin access:");
+    if (!code) return; // User cancelled
+    
     setBusyId(userId);
-    const { error } = await supabase.functions.invoke("admin-make-admin", { body: { user_id: userId } });
+    const { error } = await supabase.functions.invoke("admin-make-admin", { 
+      body: { user_id: userId, code: code.trim() } 
+    });
     setBusyId(null);
     if (error) {
       toast({ title: "Conversion failed", description: error.message, variant: "destructive" });

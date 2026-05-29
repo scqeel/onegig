@@ -17,6 +17,14 @@ import AgentDashboardPage from "./pages/AgentDashboard.tsx";
 import AgentStorePage from "./pages/AgentStore.tsx";
 import PaymentCallbackPage from "./pages/PaymentCallback.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { useAuth } from "@/contexts/AuthContext";
+
+const DashboardIndex = () => {
+  const { roles } = useAuth();
+  if (roles.includes("admin")) return <Navigate to="/admin" replace />;
+  if (roles.includes("agent")) return <Navigate to="/agent" replace />;
+  return <Navigate to="/dashboard/customer" replace />;
+};
 
 const queryClient = new QueryClient();
 
@@ -33,7 +41,7 @@ const App = () => (
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/buy" element={<PublicBuyPage />} />
               <Route path="/track" element={<PublicTrackPage />} />
-              <Route path="/dashboard" element={<RequireAuth><Navigate to="/dashboard/customer" replace /></RequireAuth>} />
+              <Route path="/dashboard" element={<RequireAuth><DashboardIndex /></RequireAuth>} />
               <Route path="/dashboard/customer" element={<RequireAuth><DashboardCustomerPage /></RequireAuth>} />
               <Route path="/dashboard/buy" element={<RequireAuth><Navigate to="/buy" replace /></RequireAuth>} />
               <Route path="/dashboard/track" element={<RequireAuth><Navigate to="/track" replace /></RequireAuth>} />

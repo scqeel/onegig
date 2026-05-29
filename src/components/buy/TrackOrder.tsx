@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 interface OrderResult {
   id: string;
   reference: string;
-  tx_ref?: string;
+  payment_reference: string | null;
   recipient_phone: string;
   status: string;
   sell_price: number;
@@ -66,7 +66,7 @@ export function TrackOrder() {
       supabase
         .from("orders")
         .select(
-          "id, reference, tx_ref, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)"
+          "id, reference, payment_reference, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)"
         )
         .order("created_at", { ascending: false })
         .limit(15);
@@ -90,7 +90,7 @@ export function TrackOrder() {
       );
       promises.push(
         base()
-          .ilike("tx_ref", `%${raw}%`)
+          .ilike("payment_reference", `%${raw}%`)
           .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
       );
     }

@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { CheckCircle2, Clock, Truck, X, Copy, Check } from "lucide-react";
+import { AlertCircle, Check, CheckCircle2, Clock, Copy, Loader2, Package, Search, Truck } from "lucide-react";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -17,27 +16,22 @@ interface OrderResult {
 }
 
 const STAGES = [
-  { key: "pending", label: "Ordered", icon: Clock },
-  { key: "processing", label: "Processing", icon: Truck },
-  { key: "delivered", label: "Delivered", icon: CheckCircle2 },
+  { key: "pending",    label: "Ordered",    icon: Clock        },
+  { key: "processing", label: "Processing", icon: Truck        },
+  { key: "delivered",  label: "Delivered",  icon: CheckCircle2 },
 ] as const;
 
 export function TrackOrder() {
-  const [phone, setPhone] = useState("");
-  const [orders, setOrders] = useState<OrderResult[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [phone, setPhone]         = useState("");
+  const [orders, setOrders]       = useState<OrderResult[] | null>(null);
+  const [loading, setLoading]     = useState(false);
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
 
   const copyReceipt = (o: OrderResult) => {
-    const text = `OneGig Data Receipt
--------------------
-Reference: ${o.reference}
-Network: ${o.network?.name}
-Bundle: ${o.bundle?.size_label}
-Recipient: ${o.recipient_phone}
-Date: ${new Date(o.created_at).toLocaleString()}
-Price: ${formatGHS(o.sell_price)}
-Status: ${o.status.toUpperCase()}`;
+    const text =
+      `OneGig Data Receipt\n-------------------\nReference: ${o.reference}\nNetwork: ${o.network?.name}\n` +
+      `Bundle: ${o.bundle?.size_label}\nRecipient: ${o.recipient_phone}\n` +
+      `Date: ${new Date(o.created_at).toLocaleString()}\nPrice: ${formatGHS(o.sell_price)}\nStatus: ${o.status.toUpperCase()}`;
     navigator.clipboard.writeText(text);
     setCopiedRef(o.reference);
     setTimeout(() => setCopiedRef(null), 2000);
@@ -56,83 +50,184 @@ Status: ${o.status.toUpperCase()}`;
   };
 
   return (
-    <div className="space-y-5">
-      <div className="flex gap-2">
-        <Input
-          inputMode="tel"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Phone number"
-          className="h-14 rounded-2xl px-5 bg-card text-lg"
-        />
-        <Button onClick={search} disabled={loading || phone.length < 9} className="h-14 rounded-2xl px-5 gradient-primary">
-          Track
+    <div className="space-y-6">
+      {/* ── Search input ──────────────────────────────────────────────── */}
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <div className="pointer-events-none absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+            <span className="text-base leading-none">🇬🇭</span>
+            <span className="text-sm font-bold text-muted-foreground">+233</span>
+            <div className="mx-1 h-4 w-px bg-border/70" />
+          </div>
+          <input
+            inputMode="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && phone.length >= 9 && !loading && search()}
+            placeholder="Phone number"
+            className="h-14 w-full rounded-2xl border border-border/60 bg-background/70 pl-[92px] pr-4 text-base font-medium outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+          />
+        </div>
+        <Button
+          onClick={search}
+          disabled={loading || phone.length < 9}
+          className="h-14 rounded-2xl px-5 gradient-primary font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:opacity-50"
+        >
+          {loading ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <Search className="h-5 w-5" />
+          )}
+          <span className="ml-2 hidden sm:inline">{loading ? "Searching…" : "Track"}</span>
         </Button>
       </div>
 
-      {orders && orders.length === 0 && (
-        <div className="text-center text-muted-foreground py-8">No orders found for that number.</div>
+      {/* ── Empty state ───────────────────────────────────────────────── */}
+      {orders !== null && orders.length === 0 && (
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-border/40 bg-secondary/20 py-14 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60">
+            <Package className="h-7 w-7 text-muted-foreground/30" />
+          </div>
+          <p className="text-base font-bold text-muted-foreground">No orders found</p>
+          <p className="mt-1 text-sm text-muted-foreground/60">Try a different phone number or check the digits.</p>
+        </div>
       )}
 
-      <div className="space-y-3">
+      {/* ── Order cards ───────────────────────────────────────────────── */}
+      <div className="space-y-4">
         {orders?.map((o) => {
-          const failed = o.status === "failed" || o.status === "refunded";
-          const stageIdx = failed ? -1 : Math.max(0, STAGES.findIndex((s) => s.key === o.status));
+          const failed     = o.status === "failed" || o.status === "refunded";
+          const isDelivered = o.status === "delivered";
+          const stageIdx   = failed ? -1 : Math.max(0, STAGES.findIndex((s) => s.key === o.status));
+
           return (
-            <div key={o.reference} className="rounded-3xl border border-border/60 bg-card p-5 shadow-soft">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-sm font-bold text-foreground">{o.network?.name} · {o.bundle?.size_label}</div>
-                  <div className="font-mono text-xs text-muted-foreground mt-1">{o.reference}</div>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="text-right">
-                    <div className="font-black text-lg leading-none">{formatGHS(o.sell_price)}</div>
-                    <div className="text-[10px] font-medium text-muted-foreground mt-1 uppercase tracking-wider">{timeAgo(o.created_at)}</div>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => copyReceipt(o)}
-                    className="h-7 text-[10px] uppercase tracking-wider rounded-lg border-border/60 bg-background/50 hover:bg-primary/10 hover:text-primary transition-colors"
+            <div
+              key={o.reference}
+              className={cn(
+                "relative overflow-hidden rounded-3xl border p-5 transition-all",
+                isDelivered
+                  ? "border-emerald-500/25 bg-emerald-500/[0.04]"
+                  : failed
+                  ? "border-rose-500/25 bg-rose-500/[0.04]"
+                  : "border-border/60 bg-card"
+              )}
+            >
+              {/* Top row */}
+              <div className="flex items-start justify-between gap-4">
+                {/* Left: emoji + details */}
+                <div className="flex items-center gap-4">
+                  <div
+                    className={cn(
+                      "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-2xl leading-none",
+                      isDelivered
+                        ? "bg-emerald-500/10"
+                        : failed
+                        ? "bg-rose-500/10"
+                        : "bg-secondary/60"
+                    )}
                   >
-                    {copiedRef === o.reference ? <Check className="mr-1 h-3 w-3 text-emerald-500" /> : <Copy className="mr-1 h-3 w-3" />}
-                    {copiedRef === o.reference ? "Copied" : "Copy Receipt"}
-                  </Button>
+                    {o.network?.logo_emoji ?? "📦"}
+                  </div>
+                  <div>
+                    <p className="text-base font-black leading-tight text-foreground">
+                      {o.network?.name} · {o.bundle?.size_label}
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">→ {o.recipient_phone}</p>
+                    <code className="mt-1.5 inline-block rounded-lg bg-secondary/60 px-2 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
+                      {o.reference}
+                    </code>
+                  </div>
+                </div>
+
+                {/* Right: price + copy */}
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <div className="text-right">
+                    <p className="text-xl font-black tabular-nums leading-none text-foreground">
+                      {formatGHS(o.sell_price)}
+                    </p>
+                    <p className="mt-1 text-[11px] font-medium text-muted-foreground">{timeAgo(o.created_at)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copyReceipt(o)}
+                    className={cn(
+                      "flex h-7 items-center gap-1 rounded-lg px-2.5 text-[10px] font-bold uppercase tracking-wider transition-all",
+                      copiedRef === o.reference
+                        ? "bg-emerald-500/15 text-emerald-500"
+                        : "bg-secondary/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                    )}
+                  >
+                    {copiedRef === o.reference ? (
+                      <Check className="h-3 w-3" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                    {copiedRef === o.reference ? "Copied!" : "Receipt"}
+                  </button>
                 </div>
               </div>
+
+              {/* Progress / failed state */}
               {failed ? (
-                <div className="mt-4 flex items-center gap-2 text-destructive">
-                  <X className="h-4 w-4" /> Failed — refund processing
+                <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
+                  <p className="text-sm font-semibold text-rose-600">
+                    Order failed — refund is being processed.
+                  </p>
                 </div>
               ) : (
-                <div className="mt-5 flex items-center justify-between">
-                  {STAGES.map((s, i) => {
-                    const reached = i <= stageIdx;
-                    const Icon = s.icon;
-                    return (
-                      <div key={s.key} className="flex-1 flex flex-col items-center relative">
-                        {i > 0 && (
-                          <div
-                            className={cn(
-                              "absolute top-3 right-1/2 h-0.5 w-full -z-0",
-                              i <= stageIdx ? "bg-primary" : "bg-border"
-                            )}
-                          />
-                        )}
-                        <div
-                          className={cn(
-                            "z-10 h-7 w-7 rounded-full flex items-center justify-center transition-all",
-                            reached ? "gradient-primary text-white shadow-soft" : "bg-muted text-muted-foreground"
+                <div className="mt-6">
+                  <div className="flex items-center">
+                    {STAGES.map((s, i) => {
+                      const reached = i <= stageIdx;
+                      const active  = i === stageIdx;
+                      const Icon    = s.icon;
+                      return (
+                        <div key={s.key} className="flex flex-1 items-center">
+                          <div className="flex flex-col items-center gap-2">
+                            <div
+                              className={cn(
+                                "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
+                                reached
+                                  ? "gradient-primary text-white shadow-soft"
+                                  : "bg-muted text-muted-foreground/40"
+                              )}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <span
+                              className={cn(
+                                "whitespace-nowrap text-[11px] font-bold transition-colors",
+                                reached
+                                  ? active
+                                    ? "text-primary"
+                                    : "text-foreground"
+                                  : "text-muted-foreground/40"
+                              )}
+                            >
+                              {s.label}
+                            </span>
+                          </div>
+                          {i < STAGES.length - 1 && (
+                            <div className="mx-2 mb-5 h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={cn(
+                                  "h-full rounded-full gradient-primary transition-all duration-700",
+                                  i < stageIdx ? "w-full" : "w-0"
+                                )}
+                              />
+                            </div>
                           )}
-                        >
-                          <Icon className="h-3.5 w-3.5" />
                         </div>
-                        <div className={cn("mt-2 text-xs", reached ? "text-foreground" : "text-muted-foreground")}>{s.label}</div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
+              )}
+
+              {/* Delivered ambient glow */}
+              {isDelivered && (
+                <div className="pointer-events-none absolute -right-4 -top-4 h-28 w-28 rounded-full bg-emerald-500/15 blur-2xl" />
               )}
             </div>
           );

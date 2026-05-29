@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
 
 interface Props {
-  phoneNumber: string;
+  link: string;
 }
 
-export function DraggableWhatsApp({ phoneNumber }: Props) {
+export function DraggableWhatsApp({ link }: Props) {
   const [position, setPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 100 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
@@ -60,7 +60,10 @@ export function DraggableWhatsApp({ phoneNumber }: Props) {
       e.preventDefault(); // prevent click if dragged
       return;
     }
-    window.open(phoneNumber, "_blank");
+    
+    // Support either a full HTTP URL (like a WhatsApp channel) or fallback to wa.me phone number link
+    const url = link.startsWith("http") ? link : `https://wa.me/${link.replace(/\D/g, "")}`;
+    window.open(url, "_blank");
   };
 
   return (

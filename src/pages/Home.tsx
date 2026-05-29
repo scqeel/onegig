@@ -37,6 +37,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { useEffect, useRef, useState } from "react";
+import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 
 /* ─────────────────────────────────────────────
    Scroll-reveal hook
@@ -678,6 +679,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+      <DraggableWhatsApp link="https://whatsapp.com/channel/YOUR_CHANNEL_ID" />
     </main>
   );
 }

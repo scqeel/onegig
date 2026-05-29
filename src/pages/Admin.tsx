@@ -201,6 +201,19 @@ function UsersSection() {
     qc.invalidateQueries({ queryKey: ["admin-overview"] });
   };
 
+  const makeAdmin = async (userId: string) => {
+    setBusyId(userId);
+    const { error } = await supabase.functions.invoke("admin-make-admin", { body: { user_id: userId } });
+    setBusyId(null);
+    if (error) {
+      toast({ title: "Conversion failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Account promoted to admin!" });
+    qc.invalidateQueries({ queryKey: ["admin-users"] });
+    qc.invalidateQueries({ queryKey: ["admin-overview"] });
+  };
+
   if (isLoading) return <LoadingCard text="Indexing user database..." />;
 
   return (
@@ -247,6 +260,17 @@ function UsersSection() {
                   onClick={() => makeAgent(u.id)}
                 >
                   {busyId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><UserCog className="mr-1.5 h-3.5 w-3.5" />Make Agent</>}
+                </Button>
+              )}
+              {!u.roles.includes("admin") && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-xl border-border/60 bg-background/50 hover:bg-emerald-500 hover:text-white"
+                  disabled={busyId === u.id}
+                  onClick={() => makeAdmin(u.id)}
+                >
+                  {busyId === u.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" />Make Admin</>}
                 </Button>
               )}
               <Button

@@ -1144,7 +1144,7 @@ export default function AgentStorePage() {
 
       {/* Floating Widget */}
       {widgetEnabled && agent?.support_whatsapp && (
-        <DraggableWhatsApp phoneNumber={agent.support_whatsapp} />
+        <DraggableWhatsApp link={agent.support_whatsapp} />
       )}
 
       {/* Agent Login Modal */}

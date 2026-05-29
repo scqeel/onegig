@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetworksAndBundles";
@@ -119,6 +120,7 @@ export function BuyDataFlow({
   brandColor,
   onSuccess,
 }: Props) {
+  const nav = useNavigate();
   const { profile } = useAuth();
   const { toast } = useToast();
   const { data: networks = [] } = useNetworks();
@@ -353,7 +355,10 @@ export function BuyDataFlow({
           </Button>
           <Button
             className="h-12 rounded-2xl gradient-primary"
-            onClick={() => onSuccess?.()}
+            onClick={() => {
+              if (onSuccess) onSuccess();
+              else nav(`/track?ref=${orderRef}`);
+            }}
           >
             Done
           </Button>

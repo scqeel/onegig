@@ -311,18 +311,7 @@ async function verifyAndProcess(reference: string) {
 
   const trx = verifyData.data;
   
-  // Test Environment Bypass
-  const isLive = paystackSecret.startsWith("sk_live_");
-  if (!isLive && ["pay_offline", "pending", "send_otp", "ongoing", "failed"].includes(trx?.status || "failed")) {
-    const { data: p } = await admin.from("payments").select("created_at, amount").eq("reference", reference).maybeSingle();
-    if (p && new Date().getTime() - new Date(p.created_at).getTime() > 3000) {
-      console.log("PAYSTACK TEST BYPASS: Auto-approving after 3 seconds");
-      trx.status = "success";
-      trx.amount = Number(p.amount) * 100;
-    } else {
-      return { ok: false, status: "pending", reason: "Simulating test transaction..." };
-    }
-  }
+
 
   let metadata = trx?.metadata ?? {};
   if (typeof metadata === "string") {

@@ -18,6 +18,7 @@ import AgentStorePage from "./pages/AgentStore.tsx";
 import DashboardProfilePage from "./pages/DashboardProfile.tsx";
 import PaymentCallbackPage from "./pages/PaymentCallback.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import { PWAInstallBanner } from "./components/PWAInstallBanner.tsx";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardIndex = () => {
@@ -54,6 +55,7 @@ const App = () => (
               <Route path="/payment/callback" element={<PaymentCallbackPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <PWAInstallBanner />
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

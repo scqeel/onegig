@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BellRing, CheckCircle2, Clock, Cog, DollarSign, Loader2, Package, RefreshCw, RotateCcw, Search, Settings, ShoppingCart, Trash2, TrendingUp, UserCog, Users, XCircle } from "lucide-react";
+import { BellRing, CheckCircle2, Clock, Cog, DollarSign, Loader2, Package, RefreshCw, RotateCcw, Search, Settings, ShieldCheck, ShoppingCart, Trash2, TrendingUp, UserCog, Users, XCircle } from "lucide-react";
 import { formatGB } from "@/lib/format";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

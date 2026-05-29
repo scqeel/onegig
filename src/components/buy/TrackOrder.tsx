@@ -1,18 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { AlertCircle, Check, CheckCircle2, Clock, Copy, Loader2, Package, Search, Truck } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  Clock,
+  Copy,
+  Loader2,
+  Package,
+  Radio,
+  Search,
+  Truck,
+  X,
+} from "lucide-react";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface OrderResult {
+  id: string;
   reference: string;
+  tx_ref?: string;
   recipient_phone: string;
   status: string;
   sell_price: number;
   created_at: string;
-  bundle: { size_label: string };
-  network: { name: string; logo_emoji: string };
+  bundle: { size_label: string } | null;
+  network: { name: string; logo_emoji: string } | null;
 }
 
 const STAGES = [
@@ -21,90 +36,260 @@ const STAGES = [
   { key: "delivered",  label: "Delivered",  icon: CheckCircle2 },
 ] as const;
 
-export function TrackOrder() {
-  const [phone, setPhone]         = useState("");
-  const [orders, setOrders]       = useState<OrderResult[] | null>(null);
-  const [loading, setLoading]     = useState(false);
-  const [copiedRef, setCopiedRef] = useState<string | null>(null);
+const STATUS_COMPLETE = new Set(["delivered", "failed", "refunded", "rejected"]);
 
+export function TrackOrder() {
+  const [searchParams] = useSearchParams();
+
+  const [query, setQuery]           = useState(searchParams.get("ref") ?? "");
+  const [orders, setOrders]         = useState<OrderResult[] | null>(null);
+  const [loading, setLoading]       = useState(false);
+  const [watching, setWatching]     = useState(false);
+  const [copiedRef, setCopiedRef]   = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const channelRef  = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const inputRef    = useRef<HTMLInputElement>(null);
+
+  // ── Fetch orders ─────────────────────────────────────────────────────────
+  const fetchOrders = useCallback(async (q: string) => {
+    const raw = q.trim();
+    if (!raw) { setOrders(null); return; }
+
+    setLoading(true);
+    const digits = raw.replace(/\D/g, "");
+
+    // Search by phone number OR by reference/tx_ref
+    const { data } = await supabase
+      .from("orders")
+      .select(
+        "id, reference, tx_ref, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)"
+      )
+      .or(
+        [
+          digits.length >= 9 ? `recipient_phone.eq.${digits}` : null,
+          digits.length >= 9 ? `customer_phone.eq.${digits}` : null,
+          raw.length >= 4    ? `reference.ilike.%${raw}%` : null,
+          raw.length >= 4    ? `tx_ref.ilike.%${raw}%` : null,
+        ]
+          .filter(Boolean)
+          .join(",")
+      )
+      .order("created_at", { ascending: false })
+      .limit(15);
+
+    setOrders((data ?? []) as OrderResult[]);
+    setLastUpdated(new Date());
+    setLoading(false);
+  }, []);
+
+  // ── Real-time subscription ────────────────────────────────────────────────
+  const subscribeToOrders = useCallback(
+    (orderIds: string[]) => {
+      // Tear down previous subscription
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        setWatching(false);
+      }
+      if (!orderIds.length) return;
+
+      const ch = supabase
+        .channel(`track-orders-${orderIds.join("-")}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "orders",
+            filter: `id=in.(${orderIds.join(",")})`,
+          },
+          (payload) => {
+            setOrders((prev) =>
+              prev
+                ? prev.map((o) =>
+                    o.id === payload.new.id
+                      ? { ...o, status: payload.new.status }
+                      : o
+                  )
+                : prev
+            );
+            setLastUpdated(new Date());
+          }
+        )
+        .subscribe((status) => {
+          setWatching(status === "SUBSCRIBED");
+        });
+
+      channelRef.current = ch;
+    },
+    []
+  );
+
+  // Cleanup subscription on unmount
+  useEffect(() => {
+    return () => {
+      if (channelRef.current) supabase.removeChannel(channelRef.current);
+    };
+  }, []);
+
+  // Subscribe when orders change
+  useEffect(() => {
+    if (!orders || orders.length === 0) {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        setWatching(false);
+      }
+      return;
+    }
+    // Only watch orders that aren't in a terminal state
+    const liveIds = orders
+      .filter((o) => !STATUS_COMPLETE.has(o.status))
+      .map((o) => o.id);
+
+    subscribeToOrders(liveIds);
+  }, [orders, subscribeToOrders]);
+
+  // ── Debounced auto-search ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const raw = query.trim();
+    const digits = raw.replace(/\D/g, "");
+    const isRef  = raw.length >= 6 && /[a-zA-Z]/.test(raw);
+    const isPhone = digits.length >= 9;
+
+    if (!raw) { setOrders(null); return; }
+    if (!isPhone && !isRef) return;
+
+    debounceRef.current = setTimeout(() => fetchOrders(raw), 400);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [query, fetchOrders]);
+
+  // Auto-fill from URL param
+  useEffect(() => {
+    const ref = searchParams.get("ref");
+    if (ref) { setQuery(ref); fetchOrders(ref); }
+  }, []); // eslint-disable-line
+
+  // ── Copy receipt ──────────────────────────────────────────────────────────
   const copyReceipt = (o: OrderResult) => {
     const text =
-      `OneGig Data Receipt\n-------------------\nReference: ${o.reference}\nNetwork: ${o.network?.name}\n` +
+      `OneGig Data Receipt\n-------------------\nReference: ${o.reference ?? o.tx_ref}\nNetwork: ${o.network?.name}\n` +
       `Bundle: ${o.bundle?.size_label}\nRecipient: ${o.recipient_phone}\n` +
       `Date: ${new Date(o.created_at).toLocaleString()}\nPrice: ${formatGHS(o.sell_price)}\nStatus: ${o.status.toUpperCase()}`;
     navigator.clipboard.writeText(text);
-    setCopiedRef(o.reference);
+    setCopiedRef(o.reference ?? o.tx_ref ?? o.id);
     setTimeout(() => setCopiedRef(null), 2000);
   };
 
-  const search = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("orders")
-      .select("reference, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)")
-      .or(`recipient_phone.eq.${phone.replace(/\D/g, "")},customer_phone.eq.${phone.replace(/\D/g, "")}`)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    setOrders((data ?? []) as any);
-    setLoading(false);
+  const clearSearch = () => {
+    setQuery("");
+    setOrders(null);
+    inputRef.current?.focus();
   };
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* ── Search input ──────────────────────────────────────────────── */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <div className="pointer-events-none absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
-            <span className="text-base leading-none">🇬🇭</span>
-            <span className="text-sm font-bold text-muted-foreground">+233</span>
-            <div className="mx-1 h-4 w-px bg-border/70" />
+
+      {/* ── Search bar ────────────────────────────────────────────────── */}
+      <div className="space-y-2">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            {/* Left icon / prefix */}
+            <div className="pointer-events-none absolute left-4 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+              <Search className="h-4 w-4 text-muted-foreground/60" />
+              <div className="mx-1 h-4 w-px bg-border/70" />
+            </div>
+
+            <input
+              ref={inputRef}
+              inputMode="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && fetchOrders(query)}
+              placeholder="Phone number or order reference…"
+              className="h-14 w-full rounded-2xl border border-border/60 bg-background/70 pl-[68px] pr-12 text-base font-medium outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
+            />
+
+            {/* Clear button */}
+            {query && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
-          <input
-            inputMode="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && phone.length >= 9 && !loading && search()}
-            placeholder="Phone number"
-            className="h-14 w-full rounded-2xl border border-border/60 bg-background/70 pl-[92px] pr-4 text-base font-medium outline-none transition-all placeholder:text-muted-foreground/50 focus:border-primary/50 focus:ring-4 focus:ring-primary/10"
-          />
+
+          <Button
+            onClick={() => fetchOrders(query)}
+            disabled={loading || query.trim().length < 4}
+            className="h-14 rounded-2xl px-5 gradient-primary font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:opacity-50"
+          >
+            {loading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Search className="h-5 w-5" />
+            )}
+            <span className="ml-2 hidden sm:inline">{loading ? "Searching…" : "Track"}</span>
+          </Button>
         </div>
-        <Button
-          onClick={search}
-          disabled={loading || phone.length < 9}
-          className="h-14 rounded-2xl px-5 gradient-primary font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98] disabled:scale-100 disabled:opacity-50"
-        >
-          {loading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Search className="h-5 w-5" />
-          )}
-          <span className="ml-2 hidden sm:inline">{loading ? "Searching…" : "Track"}</span>
-        </Button>
+
+        {/* Real-time status bar */}
+        {watching && orders && orders.length > 0 && (
+          <div className="flex items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+            <Radio className="h-3.5 w-3.5 text-primary animate-pulse" />
+            <p className="text-[11px] font-semibold text-primary">
+              Watching for updates in real-time
+            </p>
+            {lastUpdated && (
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                Last updated {lastUpdated.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Hint */}
+        {!orders && !loading && (
+          <p className="pl-1 text-[11px] text-muted-foreground/60">
+            Enter the phone number used at checkout, or paste an order reference.
+          </p>
+        )}
       </div>
 
-      {/* ── Empty state ───────────────────────────────────────────────── */}
-      {orders !== null && orders.length === 0 && (
+      {/* ── Empty state ────────────────────────────────────────────────── */}
+      {orders !== null && orders.length === 0 && !loading && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-border/40 bg-secondary/20 py-14 text-center">
           <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60">
             <Package className="h-7 w-7 text-muted-foreground/30" />
           </div>
           <p className="text-base font-bold text-muted-foreground">No orders found</p>
-          <p className="mt-1 text-sm text-muted-foreground/60">Try a different phone number or check the digits.</p>
+          <p className="mt-1 text-sm text-muted-foreground/60">
+            Try a different phone number or paste the full reference.
+          </p>
         </div>
       )}
 
-      {/* ── Order cards ───────────────────────────────────────────────── */}
+      {/* ── Order cards ────────────────────────────────────────────────── */}
       <div className="space-y-4">
         {orders?.map((o) => {
-          const failed     = o.status === "failed" || o.status === "refunded";
+          const failed      = o.status === "failed" || o.status === "refunded" || o.status === "rejected";
           const isDelivered = o.status === "delivered";
-          const stageIdx   = failed ? -1 : Math.max(0, STAGES.findIndex((s) => s.key === o.status));
+          const isLive      = !STATUS_COMPLETE.has(o.status);
+          const stageIdx    = failed ? -1 : Math.max(0, STAGES.findIndex((s) => s.key === o.status));
+          const ref         = o.reference ?? o.tx_ref ?? o.id;
 
           return (
             <div
-              key={o.reference}
+              key={o.id}
               className={cn(
-                "relative overflow-hidden rounded-3xl border p-5 transition-all",
+                "relative overflow-hidden rounded-3xl border p-5 transition-all duration-500",
                 isDelivered
                   ? "border-emerald-500/25 bg-emerald-500/[0.04]"
                   : failed
@@ -112,6 +297,14 @@ export function TrackOrder() {
                   : "border-border/60 bg-card"
               )}
             >
+              {/* Live badge */}
+              {isLive && watching && (
+                <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  Live
+                </span>
+              )}
+
               {/* Top row */}
               <div className="flex items-start justify-between gap-4">
                 {/* Left: emoji + details */}
@@ -134,7 +327,7 @@ export function TrackOrder() {
                     </p>
                     <p className="mt-0.5 text-xs text-muted-foreground">→ {o.recipient_phone}</p>
                     <code className="mt-1.5 inline-block rounded-lg bg-secondary/60 px-2 py-0.5 font-mono text-[10px] tracking-wide text-muted-foreground">
-                      {o.reference}
+                      {ref}
                     </code>
                   </div>
                 </div>
@@ -152,17 +345,17 @@ export function TrackOrder() {
                     onClick={() => copyReceipt(o)}
                     className={cn(
                       "flex h-7 items-center gap-1 rounded-lg px-2.5 text-[10px] font-bold uppercase tracking-wider transition-all",
-                      copiedRef === o.reference
+                      copiedRef === ref
                         ? "bg-emerald-500/15 text-emerald-500"
                         : "bg-secondary/60 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                     )}
                   >
-                    {copiedRef === o.reference ? (
+                    {copiedRef === ref ? (
                       <Check className="h-3 w-3" />
                     ) : (
                       <Copy className="h-3 w-3" />
                     )}
-                    {copiedRef === o.reference ? "Copied!" : "Receipt"}
+                    {copiedRef === ref ? "Copied!" : "Receipt"}
                   </button>
                 </div>
               </div>
@@ -172,7 +365,7 @@ export function TrackOrder() {
                 <div className="mt-4 flex items-center gap-2.5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-500" />
                   <p className="text-sm font-semibold text-rose-600">
-                    Order failed — refund is being processed.
+                    Order {o.status} — refund is being processed.
                   </p>
                 </div>
               ) : (
@@ -187,13 +380,14 @@ export function TrackOrder() {
                           <div className="flex flex-col items-center gap-2">
                             <div
                               className={cn(
-                                "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
+                                "flex h-9 w-9 items-center justify-center rounded-full transition-all duration-500",
                                 reached
                                   ? "gradient-primary text-white shadow-soft"
-                                  : "bg-muted text-muted-foreground/40"
+                                  : "bg-muted text-muted-foreground/40",
+                                active && !isDelivered && "ring-2 ring-primary/30 ring-offset-2"
                               )}
                             >
-                              <Icon className="h-4 w-4" />
+                              <Icon className={cn("h-4 w-4", active && !isDelivered && "animate-pulse")} />
                             </div>
                             <span
                               className={cn(

@@ -145,21 +145,28 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Resolve caller (optional)
+    // Resolve caller and enforce Admin-only access
     const authHeader = req.headers.get("Authorization");
-    let userId: string | null = null;
+    if (!authHeader) return json({ error: "Unauthorized: Missing authorization header" }, 401);
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    
+    const { data: ud } = await userClient.auth.getUser();
+    const userId = ud.user?.id ?? null;
     let userPhone: string | null = null;
-    if (authHeader) {
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: ud } = await userClient.auth.getUser();
-      userId = ud.user?.id ?? null;
-      if (userId) {
-        const { data: prof } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
-        userPhone = prof?.phone ?? null;
-      }
+    
+    if (!userId) return json({ error: "Unauthorized: Invalid token" }, 401);
+
+    // Explicit Admin Check
+    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isAdmin) {
+      return json({ error: "Forbidden: Admin access required" }, 403);
     }
+
+    const { data: prof } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
+    userPhone = prof?.phone ?? null;
 
     // Bundle lookup
     const { data: bundle, error: bErr } = await admin

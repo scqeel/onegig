@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { formatGHS } from "@/lib/format";
-import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History } from "lucide-react";
+import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History, BriefcaseBusiness, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardCustomerPage() {
@@ -31,6 +31,7 @@ export default function DashboardCustomerPage() {
 
   const sidebarItems = [
     { label: "My Orders", icon: <History className="h-5 w-5" />, active: true, to: "/dashboard/customer" },
+    { label: "Become an Agent", icon: <BriefcaseBusiness className="h-5 w-5" />, to: "/dashboard/agent" },
     { label: "Sign Out", icon: <LogOut className="h-5 w-5" />, onClick: handleSignOut },
   ];
 
@@ -80,6 +81,24 @@ export default function DashboardCustomerPage() {
             </div>
           </div>
         )}
+
+        <div className="mb-6 relative overflow-hidden rounded-[2rem] bg-[#080c1a] p-6 sm:p-8 shadow-float">
+          <div className="pointer-events-none absolute -right-8 -top-8 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
+          <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-md">
+              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary">
+                <BriefcaseBusiness className="h-3.5 w-3.5" /> Agent Program
+              </div>
+              <h3 className="text-xl font-bold text-white">Start your own data business</h3>
+              <p className="mt-1 text-sm text-white/50 leading-relaxed">
+                Upgrade to an agent account to get wholesale prices, a branded storefront, and keep 100% of your profits.
+              </p>
+            </div>
+            <Button asChild className="shrink-0 h-12 rounded-xl gradient-primary font-bold shadow-float">
+              <Link to="/dashboard/agent">Apply Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
+            </Button>
+          </div>
+        </div>
 
         <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft">
           <div className="border-b border-border/40 bg-card/50 p-6">

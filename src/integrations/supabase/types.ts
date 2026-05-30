@@ -64,7 +64,9 @@ export type Database = {
           activation_paid: boolean
           activation_paid_at: string | null
           created_at: string
+          custom_domain: string | null
           id: string
+          parent_agent_id: string | null
           store_brand_color: string | null
           store_logo_url: string | null
           store_name: string
@@ -77,7 +79,9 @@ export type Database = {
           activation_paid?: boolean
           activation_paid_at?: string | null
           created_at?: string
+          custom_domain?: string | null
           id?: string
+          parent_agent_id?: string | null
           store_brand_color?: string | null
           store_logo_url?: string | null
           store_name?: string
@@ -90,7 +94,9 @@ export type Database = {
           activation_paid?: boolean
           activation_paid_at?: string | null
           created_at?: string
+          custom_domain?: string | null
           id?: string
+          parent_agent_id?: string | null
           store_brand_color?: string | null
           store_logo_url?: string | null
           store_name?: string
@@ -235,6 +241,8 @@ export type Database = {
           id: string
           network_id: string
           notes: string | null
+          parent_agent_id: string | null
+          parent_agent_profit: number
           payment_reference: string | null
           payment_status: Database["public"]["Enums"]["payment_status"]
           recipient_phone: string
@@ -255,6 +263,8 @@ export type Database = {
           id?: string
           network_id: string
           notes?: string | null
+          parent_agent_id?: string | null
+          parent_agent_profit?: number
           payment_reference?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           recipient_phone: string
@@ -275,6 +285,8 @@ export type Database = {
           id?: string
           network_id?: string
           notes?: string | null
+          parent_agent_id?: string | null
+          parent_agent_profit?: number
           payment_reference?: string | null
           payment_status?: Database["public"]["Enums"]["payment_status"]
           recipient_phone?: string

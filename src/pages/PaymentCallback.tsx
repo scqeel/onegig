@@ -2,11 +2,13 @@ import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PaymentCallbackPage() {
   const nav = useNavigate();
   const { toast } = useToast();
+  const { refresh } = useAuth();
   const [searchParams] = useSearchParams();
 
   const transaction_id = useMemo(
@@ -37,6 +39,8 @@ export default function PaymentCallbackPage() {
       }
 
       if (data.purpose === "agent_activation") {
+        // Refresh roles so RequireAuth sees 'agent' immediately
+        await refresh();
         toast({ title: "Payment successful", description: "Your agent account is now active." });
         nav("/agent", { replace: true });
         return;
@@ -47,7 +51,7 @@ export default function PaymentCallbackPage() {
     };
 
     run();
-  }, [nav, transaction_id, toast]);
+  }, [nav, transaction_id, toast, refresh]);
 
   return (
     <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-[#080c1a] px-6 text-center">

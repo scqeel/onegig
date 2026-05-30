@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       amount = Number(feeRow?.value ?? 50);
-      payload = { user_id: userId };
+      payload = { user_id: userId, ref_slug: (body as any).ref_slug };
     } else if (body.purpose === "wallet_deposit") {
       if (!userId) return json({ error: "Authentication required for wallet deposit" }, 401);
       if (!body.amount || body.amount < 1) return json({ error: "Valid amount required" }, 400);

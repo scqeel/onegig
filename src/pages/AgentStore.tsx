@@ -55,8 +55,9 @@ type Tab = "orders" | "trans" | "bulk" | "store";
 type ThemeAccent = "rose" | "indigo" | "amber" | "emerald" | "violet";
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
 
-export default function AgentStorePage() {
-  const { slug } = useParams<{ slug: string }>();
+export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?: string }) {
+  const { slug: routeSlug } = useParams<{ slug: string }>();
+  const slug = customDomainSlug || routeSlug;
   const nav = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
@@ -65,7 +66,7 @@ export default function AgentStorePage() {
   const [activeTab, setActiveTab] = useState<Tab>("orders");
   const [accent, setAccent] = useState<ThemeAccent>("rose");
   const [currentTime, setCurrentTime] = useState("");
-  const [viewMode, setViewMode] = useState<"storefront" | "dashboard">("dashboard");
+  const [viewMode, setViewMode] = useState<"storefront" | "dashboard">("storefront");
   const [loginOpen, setLoginOpen] = useState(false);
 
   // Order state
@@ -684,18 +685,30 @@ export default function AgentStorePage() {
               </div>
             </div>
 
-            {/* Custom Theme Switcher */}
-            <button
-              onClick={rotateAccent}
-              title="Change Accent Color"
-              className="bg-slate-800/60 text-slate-300 p-2.5 rounded-full hover:bg-slate-700/80 transition-all border border-slate-700/50 relative group"
-            >
-              <Paintbrush className="h-4.5 w-4.5 group-hover:rotate-12 transition-transform" />
-              <span className="absolute -bottom-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-              </span>
-            </button>
+            {/* Custom Theme Switcher & Owner Dashboard Button */}
+            <div className="flex items-center gap-2">
+              {isOwner && (
+                <Button
+                  onClick={() => setViewMode("dashboard")}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/10 text-white font-extrabold shadow-sm"
+                >
+                  Workspace
+                </Button>
+              )}
+              <button
+                onClick={rotateAccent}
+                title="Change Accent Color"
+                className="bg-slate-800/60 text-slate-300 p-2.5 rounded-full hover:bg-slate-700/80 transition-all border border-slate-700/50 relative group"
+              >
+                <Paintbrush className="h-4.5 w-4.5 group-hover:rotate-12 transition-transform" />
+                <span className="absolute -bottom-1 -right-1 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Header Action Grid (Tabs) - ONLY FOR STORE OWNER */}

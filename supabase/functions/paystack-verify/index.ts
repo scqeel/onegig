@@ -119,7 +119,7 @@ async function deliverData(
   };
 }
 
-async function activateAgent(admin: ReturnType<typeof createClient>, userId: string) {
+async function activateAgent(admin: ReturnType<typeof createClient>, userId: string, refSlug?: string | null) {
   console.log(`Activating agent with userId: ${userId}`);
 
   // 1. Check if they already have an agent profile record
@@ -145,13 +145,26 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       return existingAgent.id;
     }
 
+    let parentAgentId = null;
+    if (refSlug) {
+      const { data: parentAgent } = await admin
+        .from("agent_profiles")
+        .select("id")
+        .eq("store_slug", refSlug)
+        .maybeSingle();
+      if (parentAgent?.id) {
+        parentAgentId = parentAgent.id;
+      }
+    }
+
     // Update existing inactive profile to active
-    console.log("Updating existing agent profile to paid...");
+    console.log(`Updating existing agent profile to paid... Parent: ${parentAgentId}`);
     const { data: updatedAgent, error: updateErr } = await admin
       .from("agent_profiles")
       .update({
         activation_paid: true,
         activation_paid_at: new Date().toISOString(),
+        parent_agent_id: parentAgentId,
       })
       .eq("id", existingAgent.id)
       .select("id")
@@ -190,7 +203,19 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       if (n > 50) break;
     }
 
-    console.log(`Inserting new agent profile with slug: ${slug}`);
+    let parentAgentId = null;
+    if (refSlug) {
+      const { data: parentAgent } = await admin
+        .from("agent_profiles")
+        .select("id")
+        .eq("store_slug", refSlug)
+        .maybeSingle();
+      if (parentAgent?.id) {
+        parentAgentId = parentAgent.id;
+      }
+    }
+
+    console.log(`Inserting new agent profile with slug: ${slug}, parent: ${parentAgentId}`);
     const { data: newAgent, error: insertErr } = await admin
       .from("agent_profiles")
       .insert({
@@ -199,6 +224,7 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
         store_name: `${profile?.full_name || "My"} Store`,
         activation_paid: true,
         activation_paid_at: new Date().toISOString(),
+        parent_agent_id: parentAgentId,
       })
       .select("id")
       .single();
@@ -220,16 +246,29 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
     throw roleErr;
   }
 
-  // 3. Seed default agent bundle prices (base + 1 cedi markup)
+  // 3. Seed default agent bundle prices (base + 1 cedi markup, or parent's sell price + 1)
   console.log("Seeding default agent bundle prices...");
   const { data: bundles } = await admin.from("bundles").select("id, base_price").eq("active", true);
   if (bundles?.length && finalAgentId) {
-    const rows = bundles.map((b: any) => ({
-      agent_id: finalAgentId,
-      bundle_id: b.id,
-      sell_price: Number(b.base_price) + 1,
-      active: true,
+    const rows = await Promise.all(bundles.map(async (b: any) => {
+      let baseCost = Number(b.base_price);
+      if (parentAgentId) {
+        const { data: parentAp } = await admin
+          .from("agent_bundle_prices")
+          .select("sell_price")
+          .eq("agent_id", parentAgentId)
+          .eq("bundle_id", b.id)
+          .maybeSingle();
+        if (parentAp) baseCost = Number(parentAp.sell_price);
+      }
+      return {
+        agent_id: finalAgentId,
+        bundle_id: b.id,
+        sell_price: baseCost + 1,
+        active: true,
+      };
     }));
+    
     const { error: priceErr } = await admin
       .from("agent_bundle_prices")
       .upsert(rows, { onConflict: "agent_id,bundle_id" });
@@ -272,19 +311,22 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
   if (bErr || !bundle) throw new Error("Bundle not found");
 
   let agentId: string | null = null;
+  let parentAgentId: string | null = null;
   let sellPrice = Number(payload.base_amount ?? payment.amount ?? bundle.user_price ?? bundle.base_price);
   let agentProfit = 0;
+  let parentAgentProfit = 0;
   let source: "direct" | "agent_store" = "direct";
 
   if (agentSlug) {
     const { data: agent } = await admin
       .from("agent_profiles")
-      .select("id, user_id, activation_paid")
+      .select("id, user_id, activation_paid, parent_agent_id")
       .eq("store_slug", agentSlug)
       .maybeSingle();
 
     if (agent?.activation_paid) {
       agentId = agent.id;
+      parentAgentId = agent.parent_agent_id;
       source = "agent_store";
       const { data: ap } = await admin
         .from("agent_bundle_prices")
@@ -294,7 +336,23 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
         .maybeSingle();
       if (ap) {
         sellPrice = Number(ap.sell_price);
-        agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+        
+        let parentSellPrice = Number(bundle.base_price);
+        if (parentAgentId) {
+          const { data: parentAp } = await admin
+            .from("agent_bundle_prices")
+            .select("sell_price")
+            .eq("agent_id", parentAgentId)
+            .eq("bundle_id", bundle.id)
+            .maybeSingle();
+          if (parentAp) {
+            parentSellPrice = Number(parentAp.sell_price);
+          }
+          agentProfit = Math.max(0, sellPrice - parentSellPrice);
+          parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
+        } else {
+          agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+        }
       }
     }
   }
@@ -314,10 +372,12 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       network_id: bundle.network_id || null,
       bundle_id: bundle.id || null,
       agent_id: agentId || null,
+      parent_agent_id: parentAgentId || null,
       source,
       base_price: bundle.base_price,
       sell_price: sellPrice,
       agent_profit: agentProfit,
+      parent_agent_profit: parentAgentProfit,
       status: "processing",
       payment_status: "paid",
       payment_reference: paymentReference || null,
@@ -351,44 +411,75 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     .update({ status: finalStatus, notes: delivery.message ?? null })
     .eq("id", order.id);
 
-  if (delivery.ok && agentId && agentProfit > 0) {
-    const { data: agentRow } = await admin.from("agent_profiles").select("user_id").eq("id", agentId).maybeSingle();
-    if (agentRow?.user_id) {
-      await admin.from("wallet_transactions").insert({
-        user_id: agentRow.user_id,
-        type: "earning",
-        amount: agentProfit,
-        status: "completed",
-        related_order_id: order.id,
-        description: `Profit from order ${order.reference}`,
-      });
-      
+  if (delivery.ok) {
+    if (agentId && agentProfit > 0) {
+      const { data: agentRow } = await admin.from("agent_profiles").select("user_id").eq("id", agentId).maybeSingle();
+      if (agentRow?.user_id) {
+        await admin.from("wallet_transactions").insert({
+          user_id: agentRow.user_id,
+          type: "earning",
+          amount: agentProfit,
+          status: "completed",
+          related_order_id: order.id,
+          description: `Profit from order ${order.reference}`,
+        });
+        
+        await admin.from("app_notifications").insert({
+          title: "New Store Sale!",
+          message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${recipient}.`,
+          type: "success",
+          sound_name: "paystack",
+          target_user_id: agentRow.user_id,
+          is_global: false
+        });
+        
+        await sendWebPushNotification(admin, agentRow.user_id, {
+          title: "New Store Sale!",
+          message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${recipient}.`,
+          url: "/agent"
+        });
+      }
+    }
+
+    if (parentAgentId && parentAgentProfit > 0) {
+      const { data: parentAgentRow } = await admin.from("agent_profiles").select("user_id").eq("id", parentAgentId).maybeSingle();
+      if (parentAgentRow?.user_id) {
+        await admin.from("wallet_transactions").insert({
+          user_id: parentAgentRow.user_id,
+          type: "earning",
+          amount: parentAgentProfit,
+          status: "completed",
+          related_order_id: order.id,
+          description: `Network profit from sub-agent order ${order.reference}`,
+        });
+        
+        await admin.from("app_notifications").insert({
+          title: "Sub-Agent Sale!",
+          message: `You earned GHS ${parentAgentProfit.toFixed(2)} network profit from a sale of ${bundle.size_label}.`,
+          type: "success",
+          sound_name: "paystack",
+          target_user_id: parentAgentRow.user_id,
+          is_global: false
+        });
+        
+        await sendWebPushNotification(admin, parentAgentRow.user_id, {
+          title: "Sub-Agent Sale!",
+          message: `You earned GHS ${parentAgentProfit.toFixed(2)} network profit from a sale of ${bundle.size_label}.`,
+          url: "/agent"
+        });
+      }
+    }
+
+    if (customerUserId) {
       await admin.from("app_notifications").insert({
-        title: "New Store Sale!",
-        message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${recipient}.`,
+        title: "Purchase Successful",
+        message: `${bundle.size_label} has been successfully delivered to ${recipient}.`,
         type: "success",
         sound_name: "paystack",
-        target_user_id: agentRow.user_id,
+        target_user_id: customerUserId,
         is_global: false
       });
-      
-      await sendWebPushNotification(admin, agentRow.user_id, {
-        title: "New Store Sale!",
-        message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${recipient}.`,
-        url: "/agent"
-      });
     }
-  }
-
-  if (delivery.ok && customerUserId) {
-    await admin.from("app_notifications").insert({
-      title: "Purchase Successful",
-      message: `${bundle.size_label} has been successfully delivered to ${recipient}.`,
-      type: "success",
-      sound_name: "paystack",
-      target_user_id: customerUserId,
-      is_global: false
-    });
   }
 
   return order.id;
@@ -467,7 +558,7 @@ async function verifyAndProcess(reference: string) {
     if (purpose === "agent_activation") {
       const userId = metadata?.user_id;
       if (!userId) throw new Error("Missing user for activation payment");
-      await activateAgent(admin, String(userId));
+      await activateAgent(admin, String(userId), metadata?.ref_slug || null);
     }
 
     if (purpose === "wallet_deposit") {
@@ -541,7 +632,11 @@ async function verifyAndProcess(reference: string) {
   if (payment.purpose === "agent_activation") {
     const userId = payment.user_id;
     if (!userId) throw new Error("Missing user for activation payment");
-    await activateAgent(admin, userId);
+    let payloadData = payment.payload;
+    if (typeof payloadData === "string") {
+      try { payloadData = JSON.parse(payloadData); } catch(e) { payloadData = {}; }
+    }
+    await activateAgent(admin, userId, (payloadData as any)?.ref_slug || metadata?.ref_slug || null);
   }
 
   if (payment.purpose === "wallet_deposit") {

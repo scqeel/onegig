@@ -7,13 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatGHS } from "@/lib/format";
+import { useQuery } from "@tanstack/react-query";
 import { Check, Loader2, Sparkles, Store, TrendingUp, Zap, CheckCircle2, RefreshCcw, ShieldCheck } from "lucide-react";
 
 type Phase = "select" | "processing" | "polling" | "success" | "error" | "otp";
 
 export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const { data: settings } = useSettings();
-  const { isAgent, profile } = useAuth();
+  const { isAgent, profile, refresh } = useAuth();
   const { toast } = useToast();
   const nav = useNavigate();
   
@@ -28,6 +29,24 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const [otp, setOtp] = useState("");
   const [isSubmittingOtp, setIsSubmittingOtp] = useState(false);
 
+  const refSlug = localStorage.getItem("agent_ref");
+  
+  const { data: parentAgent } = useQuery({
+    queryKey: ["become-agent-parent", refSlug],
+    enabled: !!refSlug,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("agent_profiles")
+        .select("store_name, store_logo_url, store_brand_color")
+        .eq("store_slug", refSlug)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const brandColor = parentAgent?.store_brand_color || "#7c3aed";
+  const storeName = parentAgent?.store_name || "Data Platform";
+
   const activate = async () => {
     if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
@@ -41,6 +60,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         momo_number: momoNumber,
         momo_network: momoNetwork,
         email: profile?.email || "guest@mtopup.shop",
+        ref_slug: refSlug || undefined,
       },
     });
 
@@ -171,13 +191,19 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     if (phase === "success") {
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
+        // Re-fetch roles from DB so AuthContext knows we're an agent now
+        await refresh();
         onClose();
-        nav("/agent");
+        if (parentAgent || refSlug) {
+          nav("/sub-agent", { replace: true });
+        } else {
+          nav("/agent", { replace: true });
+        }
       }, 2000);
       return () => clearTimeout(timer);
     }
-  }, [phase, nav, onClose]);
+  }, [phase, nav, onClose, refresh, parentAgent, refSlug]);
 
   if (isAgent) {
     return (
@@ -186,7 +212,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
           <Check className="h-8 w-8 text-success" />
         </div>
         <p className="mt-4 text-lg font-semibold">You're already an agent</p>
-        <Button onClick={() => { onClose(); nav("/agent"); }} className="mt-4 rounded-2xl gradient-primary">Open Agent Dashboard</Button>
+        <Button onClick={() => { onClose(); nav("/agent"); }} className="mt-4 rounded-2xl gradient-primary" style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none' } : {}}>Open Dashboard</Button>
       </div>
     );
   }
@@ -201,7 +227,11 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         </div>
         <h3 className="mt-4 text-2xl font-bold">Activation Successful!</h3>
         <p className="mt-2 text-muted-foreground">Your agent store is now active.</p>
-        <Button onClick={() => { onClose(); nav("/agent"); }} className="mt-6 rounded-2xl gradient-primary w-full h-12">
+        <Button 
+          onClick={() => { onClose(); nav("/agent"); }} 
+          className="mt-6 rounded-2xl w-full h-12 text-white font-bold"
+          style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 10px 20px -5px ${brandColor}` } : { backgroundColor: 'var(--primary)' }}
+        >
           Open Dashboard
         </Button>
       </div>
@@ -226,14 +256,17 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   if (phase === "processing" || phase === "polling") {
     return (
       <div className="py-12 text-center">
-        <div className="mx-auto flex h-20 w-20 animate-float-pulse items-center justify-center rounded-full gradient-primary shadow-glow">
+        <div 
+          className="mx-auto flex h-20 w-20 animate-float-pulse items-center justify-center rounded-full shadow-glow"
+          style={parentAgent ? { backgroundColor: brandColor, boxShadow: `0 10px 25px -5px ${brandColor}` } : { backgroundColor: 'var(--primary)' }}
+        >
           <Zap className="h-10 w-10 text-white animate-pulse" />
         </div>
         <h3 className="mt-6 text-xl font-bold">
           {phase === "processing" ? "Initiating..." : "Awaiting Authorization"}
         </h3>
         {phase === "polling" && (
-          <p className="mt-2 text-sm font-medium text-primary">
+          <p className="mt-2 text-sm font-medium text-primary" style={parentAgent ? { color: brandColor } : {}}>
             Please check your phone ({momoNumber}) to authorize payment.
           </p>
         )}
@@ -244,7 +277,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   if (phase === "otp") {
     return (
       <div className="py-8 text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary" style={parentAgent ? { backgroundColor: `${brandColor}1A`, color: brandColor } : {}}>
           <ShieldCheck className="h-8 w-8" />
         </div>
         <h3 className="text-xl font-bold">Verification Required</h3>
@@ -269,7 +302,8 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
             id="btn-activation-otp-submit"
             onClick={() => submitOtp()} 
             disabled={otp.length < 4 || isSubmittingOtp}
-            className="w-full h-12 rounded-xl gradient-primary"
+            className="w-full h-12 rounded-xl text-white font-bold"
+            style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none' } : { backgroundColor: 'var(--primary)' }}
           >
             {isSubmittingOtp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Verify Payment"}
           </Button>
@@ -280,18 +314,43 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="space-y-5">
-      <div className="rounded-3xl gradient-soft p-6 border border-border/60">
-        <Sparkles className="h-8 w-8 text-primary" />
-        <h3 className="mt-3 text-xl font-semibold">Earn with OneGig</h3>
+      <div 
+        className="rounded-3xl p-6 border"
+        style={parentAgent ? { borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : { borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}
+      >
+        <Sparkles className="h-8 w-8 text-primary" style={parentAgent ? { color: brandColor } : {}} />
+        <h3 className="mt-3 text-xl font-semibold">
+          {parentAgent ? `Earn with ${storeName}` : "Earn with OneGig"}
+        </h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Get your own data store. Set your prices. Profit on every sale.
+          {parentAgent 
+            ? "Get your own reseller data store. Set your prices. Profit on every sale." 
+            : "Get your own data store. Set your prices. Profit on every sale."}
         </p>
       </div>
 
       <div className="space-y-3">
-        <Benefit icon={<Store className="h-5 w-5" />} title="Your own mini store" desc="A clean storefront link to share with customers." />
-        <Benefit icon={<TrendingUp className="h-5 w-5" />} title="Set your own prices" desc="Profit auto-credited on every order." />
-        <Benefit icon={<Sparkles className="h-5 w-5" />} title="Withdraw to MoMo" desc={`Cash out anytime above ${formatGHS(settings?.min_withdrawal ?? 50)}.`} />
+        <Benefit 
+          icon={<Store className="h-5 w-5" style={parentAgent ? { color: brandColor } : {}} />} 
+          title="Your own mini store" 
+          desc="A clean reseller storefront link to share with customers." 
+          parentAgent={parentAgent}
+          brandColor={brandColor}
+        />
+        <Benefit 
+          icon={<TrendingUp className="h-5 w-5" style={parentAgent ? { color: brandColor } : {}} />} 
+          title="Set your own prices" 
+          desc="Profit auto-credited to your reseller wallet on every order." 
+          parentAgent={parentAgent}
+          brandColor={brandColor}
+        />
+        <Benefit 
+          icon={<Sparkles className="h-5 w-5" style={parentAgent ? { color: brandColor } : {}} />} 
+          title="Withdraw to MoMo" 
+          desc={`Cash out your earnings anytime above ${formatGHS(settings?.min_withdrawal ?? 50)}.`} 
+          parentAgent={parentAgent}
+          brandColor={brandColor}
+        />
       </div>
 
       <div className="space-y-3">
@@ -320,8 +379,8 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
           The prompt will be sent to this number.
         </p>
         {isVerifying && (
-          <div className="mt-2 text-xs text-primary flex items-center gap-2">
-            <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <div className="mt-2 text-xs text-primary flex items-center gap-2" style={parentAgent ? { color: brandColor } : {}}>
+            <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" style={parentAgent ? { borderColor: brandColor, borderTopColor: 'transparent' } : {}} />
             Verifying account...
           </div>
         )}
@@ -341,7 +400,8 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         <Button
           onClick={activate}
           disabled={momoNumber.replace(/\D/g, "").length < 9 || isVerifying || phase === "processing"}
-          className="h-14 rounded-2xl px-6 gradient-primary shadow-float"
+          className="h-14 rounded-2xl px-6 text-white font-bold shadow-float"
+          style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundColor: 'var(--primary)' }}
         >
           Pay & Activate
         </Button>
@@ -350,10 +410,13 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   );
 }
 
-function Benefit({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+function Benefit({ icon, title, desc, parentAgent, brandColor }: { icon: React.ReactNode; title: string; desc: string; parentAgent: any; brandColor: string }) {
   return (
     <div className="flex gap-3 items-start">
-      <div className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+      <div 
+        className="h-10 w-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0"
+        style={parentAgent ? { backgroundColor: `${brandColor}1A`, color: brandColor } : {}}
+      >
         {icon}
       </div>
       <div>
@@ -362,4 +425,4 @@ function Benefit({ icon, title, desc }: { icon: React.ReactNode; title: string; 
       </div>
     </div>
   );
-}
+}

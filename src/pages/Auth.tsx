@@ -7,6 +7,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, BriefcaseBusiness, CheckCircle, Loader2, ShieldCheck, TrendingUp, Users, Eye, EyeOff } from "lucide-react";
 
 const inputCls = "h-12 rounded-[14px] border border-slate-200 bg-white px-4 text-sm font-semibold text-foreground shadow-sm transition-all focus-visible:border-primary focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50";
@@ -23,6 +24,31 @@ export default function AuthPage() {
   const from = (loc.state as { from?: string } | null)?.from;
   const tabParam = searchParams.get("tab");
   const intent = searchParams.get("intent");
+  const refParam = searchParams.get("ref");
+  
+  useEffect(() => {
+    if (refParam) {
+      localStorage.setItem("agent_ref", refParam);
+    }
+  }, [refParam]);
+
+  const refSlug = refParam || localStorage.getItem("agent_ref");
+
+  const { data: parentAgent } = useQuery({
+    queryKey: ["auth-parent-agent", refSlug],
+    enabled: !!refSlug,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("agent_profiles")
+        .select("store_name, store_slug, store_logo_url, store_brand_color")
+        .eq("store_slug", refSlug)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const brandColor = parentAgent?.store_brand_color || "#7c3aed";
+  const storeName = parentAgent?.store_name || "Data Platform";
 
   const isSignUp = tabParam === "signup" || intent === "agent";
   const switchTo = (t: "signin" | "signup") => setSearchParams({ tab: t }, { replace: true });
@@ -65,19 +91,31 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-    // Only redirect to dashboard if they have a confirmed phone, or if they are a legacy user
-    if (!loading && session) {
-      const isLegacyUser = new Date(session.user.created_at) < new Date("2026-05-30T00:00:00Z");
-      const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
-      
-      if (hasVerifiedPhone || isLegacyUser) {
-        nav(from || "/dashboard", { replace: true });
-      } else if (!isSignUp) {
-        // If they are on the signin tab but have no verified phone, switch them to signup to complete verification
-        setSearchParams({ tab: "signup", intent: intent || "customer" }, { replace: true });
+    const checkRefRedirect = async () => {
+      if (!loading && session && refParam) {
+        // If they have an active session but are trying to register using a referral slug,
+        // we must sign them out to prevent auto-bouncing and let them create their new sub-agent account.
+        await supabase.auth.signOut();
+        window.location.reload();
+        return;
       }
-    }
-  }, [session, loading, nav, from, isSignUp, intent, setSearchParams]);
+
+      // Only redirect to dashboard if they have a confirmed phone, or if they are a legacy user
+      if (!loading && session && !refParam) {
+        const isLegacyUser = new Date(session.user.created_at) < new Date("2026-05-30T00:00:00Z");
+        const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
+        
+        if (hasVerifiedPhone || isLegacyUser) {
+          nav(from || "/dashboard", { replace: true });
+        } else if (!isSignUp) {
+          // If they are on the signin tab but have no verified phone, switch them to signup to complete verification
+          setSearchParams({ tab: "signup", intent: intent || "customer" }, { replace: true });
+        }
+      }
+    };
+
+    checkRefRedirect();
+  }, [session, loading, nav, from, isSignUp, intent, setSearchParams, refParam]);
 
   const doSignIn = async () => {
     if (siMethod === "email") {
@@ -189,7 +227,10 @@ export default function AuthPage() {
       <div className="relative hidden overflow-hidden bg-[#05080f] lg:flex lg:w-[460px] lg:flex-col xl:w-[520px]">
         {/* Ambient glows */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 -left-20 h-96 w-96 rounded-full bg-violet-600/20 blur-[120px]" />
+          <div 
+            className="absolute -top-40 -left-20 h-96 w-96 rounded-full blur-[120px]" 
+            style={{ backgroundColor: parentAgent ? `${brandColor}33` : 'rgba(124, 58, 237, 0.2)' }}
+          />
           <div className="absolute -bottom-20 right-0 h-64 w-64 rounded-full bg-fuchsia-600/15 blur-3xl" />
           <div className="absolute inset-0 grid-pattern-dark opacity-50" />
         </div>
@@ -197,13 +238,30 @@ export default function AuthPage() {
         <div className="relative flex flex-1 flex-col justify-between px-10 py-12 xl:px-14">
           {/* Logo */}
           <div>
-            <div className="text-2xl font-bold font-display tracking-tight">
-              <span className="gradient-text">One</span>
-              <span className="text-white">Gig</span>
-              <span className="ml-1 inline-block h-2 w-2 rounded-full bg-primary animate-float-pulse" />
-            </div>
+            {parentAgent ? (
+              <div className="flex items-center gap-3">
+                {parentAgent.store_logo_url ? (
+                  <img src={parentAgent.store_logo_url} alt={storeName} className="h-10 w-10 rounded-xl object-cover" />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl font-bold text-white text-base" style={{ backgroundColor: brandColor }}>
+                    {storeName?.[0]?.toUpperCase()}
+                  </div>
+                )}
+                <span className="text-2xl font-bold font-display text-white tracking-tight">
+                  {storeName}
+                </span>
+              </div>
+            ) : (
+              <div className="text-2xl font-bold font-display tracking-tight">
+                <span className="gradient-text">One</span>
+                <span className="text-white">Gig</span>
+                <span className="ml-1 inline-block h-2 w-2 rounded-full bg-primary animate-float-pulse" />
+              </div>
+            )}
             <p className="mt-3 text-sm text-white/38 max-w-xs leading-relaxed">
-              {settings?.platform_tagline ?? "Ghana's fastest wholesale data platform for agents and resellers."}
+              {parentAgent 
+                ? `Official reseller program for ${storeName}. Set your own margins and build your network.` 
+                : (settings?.platform_tagline ?? "Ghana's fastest wholesale data platform for agents and resellers.")}
             </p>
           </div>
 
@@ -244,8 +302,10 @@ export default function AuthPage() {
           {/* Bottom strip */}
           <div className="border-t border-white/[0.07] pt-6">
             <div className="flex items-center gap-2">
-              <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-              <p className="text-xs text-white/28">10,000+ active agents · Available 24/7</p>
+              <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
+              <p className="text-xs text-white/28">
+                {parentAgent ? `Powered by ${storeName} Network` : "10,000+ active agents · Available 24/7"}
+              </p>
             </div>
           </div>
         </div>
@@ -260,9 +320,24 @@ export default function AuthPage() {
           {/* Top bar */}
           <div className="mb-8 flex items-center justify-between">
             <div className="lg:hidden text-xl font-bold font-display tracking-tight">
-              <span className="gradient-text">One</span>
-              <span className="text-foreground">Gig</span>
-              <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-primary animate-float-pulse" />
+              {parentAgent ? (
+                <div className="flex items-center gap-2">
+                  {parentAgent.store_logo_url ? (
+                    <img src={parentAgent.store_logo_url} alt={storeName} className="h-6 w-6 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg font-bold text-white text-xs" style={{ backgroundColor: brandColor }}>
+                      {storeName?.[0]?.toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-foreground">{storeName}</span>
+                </div>
+              ) : (
+                <>
+                  <span className="gradient-text">One</span>
+                  <span className="text-foreground">Gig</span>
+                  <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-primary animate-float-pulse" />
+                </>
+              )}
             </div>
             <div className="hidden lg:block" />
             <Link to="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
@@ -274,7 +349,10 @@ export default function AuthPage() {
           {!isSignUp && (
             <div className="animate-fade-up">
               <div className="mb-7">
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                <span 
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
+                  style={parentAgent ? { color: brandColor, borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
+                >
                   <Users className="h-3 w-3" /> Welcome Back
                 </span>
                 <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Sign in</h2>
@@ -288,6 +366,7 @@ export default function AuthPage() {
                   type="button"
                   onClick={() => { setSiMethod("email"); setOtpSent(false); }}
                   className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "email" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                  style={siMethod === "email" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
                 >
                   Email
                 </button>
@@ -295,6 +374,7 @@ export default function AuthPage() {
                   type="button"
                   onClick={() => setSiMethod("phone")}
                   className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "phone" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                  style={siMethod === "phone" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
                 >
                   Phone Number
                 </button>
@@ -380,7 +460,13 @@ export default function AuthPage() {
                   </>
                 )}
 
-                <Button id="btn-signin-submit" onClick={doSignIn} disabled={busy} className="h-12 w-full rounded-[14px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-violet-500/40">
+                <Button 
+                  id="btn-signin-submit" 
+                  onClick={doSignIn} 
+                  disabled={busy} 
+                  className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundColor: 'var(--primary)', backgroundImage: 'linear-gradient(to right, var(--violet-600), var(--fuchsia-600))', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
+                >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
                     {siMethod === "email" || otpSent ? "Sign in" : "Send Login Code"} <ArrowRight className="ml-1.5 h-4 w-4" />
                   </>}
@@ -410,12 +496,17 @@ export default function AuthPage() {
           {isSignUp && (
             <div className="animate-fade-up">
               <div className="mb-7">
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+                <span 
+                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
+                  style={parentAgent ? { color: brandColor, borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
+                >
                   {accountType === "agent" ? <><BriefcaseBusiness className="h-3 w-3" /> Agent Registration</> : <><Users className="h-3 w-3" /> Customer Registration</>}
                 </span>
                 <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Create account</h2>
                 <p className="mt-1.5 text-sm text-muted-foreground">
-                  {accountType === "agent" ? "Set prices, manage your store, and earn on every sale." : "Track your purchases, easily reorder, and manage your account."}
+                  {accountType === "agent" 
+                    ? (parentAgent ? `Set prices, manage your store, and earn under ${storeName}.` : "Set prices, manage your store, and earn on every sale.") 
+                    : "Track your purchases, easily reorder, and manage your account."}
                 </p>
               </div>
 
@@ -423,14 +514,16 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setAccountType("customer")}
-                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "customer" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "customer" ? "bg-white shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                  style={accountType === "customer" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
                 >
                   I want to buy data
                 </button>
                 <button
                   type="button"
                   onClick={() => setAccountType("agent")}
-                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "agent" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "agent" ? "bg-white shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                  style={accountType === "agent" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
                 >
                   I want to resell
                 </button>
@@ -504,12 +597,17 @@ export default function AuthPage() {
 
                     {/* Perks reminder */}
                     {accountType === "agent" && (
-                      <div className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2">
-                        <p className="text-xs font-semibold text-primary mb-1.5">What you get as an agent</p>
+                      <div 
+                        className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2"
+                        style={parentAgent ? { borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
+                      >
+                        <p className="text-xs font-semibold text-primary mb-1.5" style={parentAgent ? { color: brandColor } : {}}>
+                          {parentAgent ? `What you get under ${storeName}` : "What you get as an agent"}
+                        </p>
                         <div className="space-y-1">
                           {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
                             <div key={p} className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 shrink-0 text-primary" />
+                              <CheckCircle className="h-3 w-3 shrink-0 text-primary" style={parentAgent ? { color: brandColor } : {}} />
                               <span className="text-xs text-muted-foreground">{p}</span>
                             </div>
                           ))}
@@ -518,7 +616,13 @@ export default function AuthPage() {
                     )}
                   </>
 
-                <Button id="btn-signup-submit" onClick={doSignUp} disabled={busy} className="h-12 w-full rounded-[14px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-violet-500/40">
+                <Button 
+                  id="btn-signup-submit" 
+                  onClick={doSignUp} 
+                  disabled={busy} 
+                  className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundColor: 'var(--primary)', backgroundImage: 'linear-gradient(to right, var(--violet-600), var(--fuchsia-600))', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
+                >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
                     Create account <ArrowRight className="ml-1.5 h-4 w-4" />
                   </>}

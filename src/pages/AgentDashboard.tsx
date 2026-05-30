@@ -26,6 +26,8 @@ import {
   Wallet,
   XCircle,
   Users,
+  Network,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,14 +43,15 @@ import { Logo } from "@/components/Logo";
 import { useTheme } from "next-themes";
 import { subscribeToPushNotifications } from "@/lib/push";
 
-type AgentTab = "buy" | "store" | "transactions" | "customers" | "withdrawals" | "settings";
+export type AgentTab = "buy" | "store" | "transactions" | "customers" | "withdrawals" | "sub_agents" | "settings";
 
-const TABS: { label: string; value: AgentTab; icon: React.ReactNode }[] = [
+export const ALL_TABS: { label: string; value: AgentTab; icon: React.ReactNode }[] = [
   { label: "Buy Data",     value: "buy",          icon: <Signal className="h-4 w-4" /> },
   { label: "My Store",     value: "store",         icon: <Store className="h-4 w-4" /> },
   { label: "Transactions", value: "transactions",  icon: <ReceiptText className="h-4 w-4" /> },
   { label: "Address Book", value: "customers",     icon: <Users className="h-4 w-4" /> },
   { label: "Wallet & Topup",value: "withdrawals",   icon: <Wallet className="h-4 w-4" /> },
+  { label: "Sub-Agents",   value: "sub_agents",    icon: <Network className="h-4 w-4" /> },
   { label: "Settings",     value: "settings",      icon: <Settings2 className="h-4 w-4" /> },
 ];
 
@@ -71,7 +74,19 @@ export default function AgentDashboard() {
     },
   });
 
-  if (isLoading) {
+  const initial = agentProfile?.store_name?.[0]?.toUpperCase() ?? "A";
+  const isSubAgent = !!agentProfile?.parent_agent_id;
+  
+  // Use all tabs so sub-agents can also recruit!
+  const TABS = ALL_TABS;
+
+  useEffect(() => {
+    if (isSubAgent) {
+      nav("/sub-agent", { replace: true });
+    }
+  }, [isSubAgent, nav]);
+
+  if (isLoading || isSubAgent) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -91,8 +106,6 @@ export default function AgentDashboard() {
       </div>
     );
   }
-
-  const initial = agentProfile.store_name?.[0]?.toUpperCase() ?? "A";
 
   return (
     <div className="min-h-dvh bg-background">
@@ -171,7 +184,7 @@ export default function AgentDashboard() {
               </div>
               <div className="relative mt-3 flex items-center gap-1.5">
                 <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[10px] font-bold text-green-400">Active Agent</span>
+                <span className="text-[10px] font-bold text-green-400">{isSubAgent ? "Active Sub-Agent" : "Active Agent"}</span>
               </div>
             </div>
 
@@ -227,6 +240,7 @@ export default function AgentDashboard() {
             {tab === "transactions" && <TransactionsSection agentId={agentProfile.id} />}
             {tab === "customers"    && <CustomerCRM />}
             {tab === "withdrawals"  && <WithdrawalsSection userId={user?.id!} />}
+            {tab === "sub_agents"   && <SubAgentsSection agentProfile={agentProfile} />}
             {tab === "settings"     && <SettingsSection agentProfile={agentProfile} />}
           </main>
         </div>
@@ -265,7 +279,7 @@ export default function AgentDashboard() {
 
 // ── Buy ──────────────────────────────────────────────────────────────────────
 
-function BuySection() {
+export function BuySection() {
   const { data: bundles } = useQuery({
     queryKey: ["agent-buy-admin-prices"],
     queryFn: async () => {
@@ -292,7 +306,7 @@ function BuySection() {
 
 // ── Store ────────────────────────────────────────────────────────────────────
 
-function StoreSection({ agentProfile }: { agentProfile: any; userId?: string }) {
+export function StoreSection({ agentProfile, userId }: { agentProfile: any; userId?: string }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const storeUrl = `${window.location.origin}/store/${agentProfile.store_slug}`;
@@ -447,7 +461,7 @@ function StoreSection({ agentProfile }: { agentProfile: any; userId?: string }) 
 
 // ── Status Badge ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }: { status: string }) {
+export function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { bg: string; dot: string; label: string }> = {
     delivered:  { bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400", dot: "bg-emerald-500", label: "Delivered"  },
     paid:       { bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20 dark:text-emerald-400", dot: "bg-emerald-500", label: "Paid"       },
@@ -468,7 +482,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ── Transactions ──────────────────────────────────────────────────────────────
 
-function TransactionsSection({ agentId }: { agentId: string }) {
+export function TransactionsSection({ agentId }: { agentId: string }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -699,7 +713,7 @@ function TransactionsSection({ agentId }: { agentId: string }) {
 
 const MOMO_NETWORKS = ["MTN", "Telecel", "AirtelTigo"] as const;
 
-function WithdrawalsSection({ userId }: { userId: string }) {
+export function WithdrawalsSection({ userId }: { userId: string }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [amount, setAmount] = useState("");
@@ -826,9 +840,116 @@ function WithdrawalsSection({ userId }: { userId: string }) {
   );
 }
 
+// ── Sub-Agents ──────────────────────────────────────────────────────────────────
+
+export function SubAgentsSection({ agentProfile }: { agentProfile: any }) {
+  const { toast } = useToast();
+  const [copied, setCopied] = useState(false);
+  const inviteUrl = `${window.location.origin}/join/${agentProfile.store_slug}`;
+  const { data: subAgents, isLoading } = useQuery({
+    queryKey: ["agent-sub-agents", agentProfile.id],
+    queryFn: async () => {
+      const { data: agents, error } = await supabase
+        .from("agent_profiles")
+        .select("id, user_id, store_name, store_slug, activation_paid, created_at")
+        .eq("parent_agent_id", agentProfile.id)
+        .order("created_at", { ascending: false });
+        
+      if (error) {
+        console.error("Error fetching sub-agents:", error);
+        return [];
+      }
+      if (!agents || agents.length === 0) return [];
+
+      const userIds = agents.map((a) => a.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone")
+        .in("id", userIds);
+
+      return agents.map((agent) => {
+        const profile = profiles?.find((p) => p.id === agent.user_id);
+        return {
+          ...agent,
+          profiles: profile ? { full_name: profile.full_name, phone: profile.phone } : null,
+        };
+      });
+    },
+  });
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(inviteUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast({ title: "Invite link copied!" });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
+          <h2 className="text-base font-bold text-white">Sub-Agents</h2>
+          <p className="mt-0.5 text-xs text-white/50">Invite and manage your network of sub-agents.</p>
+        </div>
+        <div className="p-5 md:p-6 space-y-6">
+          <div className="space-y-2">
+            <h3 className="text-sm font-bold text-foreground">Your Invite Link</h3>
+            <p className="text-xs text-muted-foreground">Share this link to onboard new sub-agents under your account. They will inherit your base pricing initially.</p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex-1 truncate rounded-xl border border-border bg-secondary/40 px-3 py-2.5 font-mono text-sm text-muted-foreground">
+                {inviteUrl}
+              </div>
+              <Button type="button" variant="outline" size="sm" className="h-10 shrink-0 rounded-xl px-3" onClick={copyUrl}>
+                {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-3 pt-4 border-t border-border/60">
+            <h3 className="text-sm font-bold text-foreground">Your Network</h3>
+            {isLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              </div>
+            ) : subAgents?.length === 0 ? (
+              <div className="text-center py-8">
+                <Network className="mx-auto h-8 w-8 text-muted-foreground/30 mb-3" />
+                <p className="text-sm font-semibold text-muted-foreground">No sub-agents yet</p>
+                <p className="text-xs text-muted-foreground/60 mt-1">Share your invite link to start building your network</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {subAgents?.map((sa: any) => (
+                  <div key={sa.id} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-secondary/20">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm text-foreground">{sa.store_name}</p>
+                        {!sa.activation_paid && (
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 text-[10px] font-bold">Pending Activation</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {sa.profiles?.full_name || 'No Name'} · {sa.profiles?.phone || 'No Phone'}
+                      </p>
+                    </div>
+                    {/* In future, link to a dashboard to impersonate/manage this sub-agent's prices */}
+                    <div className="text-right">
+                      <p className="text-xs text-muted-foreground">Joined {timeAgo(sa.created_at)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 
-function SettingsSection({ agentProfile }: { agentProfile: any }) {
+export function SettingsSection({ agentProfile }: { agentProfile: any }) {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [form, setForm] = useState({
@@ -838,6 +959,7 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
     store_logo_url: agentProfile.store_logo_url ?? "",
     support_whatsapp: agentProfile.support_whatsapp ?? "",
     support_phone: agentProfile.support_phone ?? "",
+    custom_domain: agentProfile.custom_domain ?? "",
   });
   const [widgetEnabled, setWidgetEnabled] = useState(() => {
     return localStorage.getItem("og_whatsapp_widget") !== "false";
@@ -868,6 +990,7 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
       store_logo_url: form.store_logo_url || null,
       support_whatsapp: form.support_whatsapp || null,
       support_phone: form.support_phone || null,
+      custom_domain: form.custom_domain || null,
     } as any).eq("id", agentProfile.id);
     setSaving(false);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
@@ -891,6 +1014,11 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
           <div className="space-y-1.5 md:col-span-2">
             <label className="text-xs font-semibold text-foreground">Tagline <span className="text-muted-foreground font-normal">(optional)</span></label>
             <Input className="h-11 rounded-xl" value={form.store_tagline} onChange={(e) => f("store_tagline", e.target.value)} placeholder="Fast & affordable data bundles" />
+          </div>
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Custom Domain <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <Input className="h-11 rounded-xl" value={form.custom_domain} onChange={(e) => f("custom_domain", e.target.value)} placeholder="e.g. data.mystore.com" />
+            <p className="text-[10px] text-muted-foreground mt-1">Point your domain's CNAME or A-record to our platform, then enter the domain here without https://</p>
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">Logo URL</label>

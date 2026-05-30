@@ -56,6 +56,21 @@ Deno.serve(async (req) => {
   let finalAgentId = existingAgent?.id || null;
   let finalAgent = existingAgent;
 
+  let parentAgentId = null;
+  const body = req.headers.get("content-type")?.includes("json") ? await req.json().catch(() => ({})) : {};
+  const refSlug = body.ref_slug;
+
+  if (refSlug) {
+    const { data: parentAgent } = await admin
+      .from("agent_profiles")
+      .select("id")
+      .eq("store_slug", refSlug)
+      .maybeSingle();
+    if (parentAgent?.id) {
+      parentAgentId = parentAgent.id;
+    }
+  }
+
   if (existingAgent) {
     console.log(`User already has an agent profile (id: ${existingAgent.id}, paid: ${existingAgent.activation_paid})`);
     
@@ -72,6 +87,7 @@ Deno.serve(async (req) => {
       .update({
         activation_paid: true,
         activation_paid_at: new Date().toISOString(),
+        parent_agent_id: parentAgentId,
       })
       .eq("id", existingAgent.id)
       .select("*")
@@ -97,7 +113,7 @@ Deno.serve(async (req) => {
       if (n > 50) break;
     }
 
-    console.log(`Inserting new agent profile with slug: ${slug}`);
+    console.log(`Inserting new agent profile with slug: ${slug}, parent: ${parentAgentId}`);
     const { data: newAgent, error: insertErr } = await admin
       .from("agent_profiles")
       .insert({
@@ -106,6 +122,7 @@ Deno.serve(async (req) => {
         store_name: `${profile?.full_name || "My"} Store`,
         activation_paid: true,
         activation_paid_at: new Date().toISOString(),
+        parent_agent_id: parentAgentId,
       })
       .select("*")
       .single();
@@ -137,16 +154,29 @@ Deno.serve(async (req) => {
     description: "Agent activation (mock pay)",
   });
 
-  // 4. Seed default agent bundle prices (base + 1 cedi markup)
+  // 4. Seed default agent bundle prices (base + 1 cedi markup, or parent's sell price + 1)
   console.log("Seeding default agent bundle prices...");
   const { data: bundles } = await admin.from("bundles").select("id, base_price").eq("active", true);
   if (bundles?.length && finalAgentId) {
-    const rows = bundles.map((b: any) => ({
-      agent_id: finalAgentId,
-      bundle_id: b.id,
-      sell_price: Number(b.base_price) + 1,
-      active: true,
+    const rows = await Promise.all(bundles.map(async (b: any) => {
+      let baseCost = Number(b.base_price);
+      if (parentAgentId) {
+        const { data: parentAp } = await admin
+          .from("agent_bundle_prices")
+          .select("sell_price")
+          .eq("agent_id", parentAgentId)
+          .eq("bundle_id", b.id)
+          .maybeSingle();
+        if (parentAp) baseCost = Number(parentAp.sell_price);
+      }
+      return {
+        agent_id: finalAgentId,
+        bundle_id: b.id,
+        sell_price: baseCost + 1,
+        active: true,
+      };
     }));
+    
     const { error: priceErr } = await admin
       .from("agent_bundle_prices")
       .upsert(rows, { onConflict: "agent_id,bundle_id" });

@@ -9,8 +9,8 @@ CREATE OR REPLACE FUNCTION public.get_wallet_balance(_user_id UUID)
 RETURNS NUMERIC LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
   SELECT COALESCE(SUM(
     CASE
-      WHEN type IN ('earning','refund','adjustment','deposit') AND status = 'completed' THEN amount
-      WHEN type IN ('withdrawal','purchase','activation_fee') AND status IN ('pending','completed') THEN -amount
+      WHEN type::text IN ('earning','refund','adjustment','deposit') AND status = 'completed' THEN amount
+      WHEN type::text IN ('withdrawal','purchase','activation_fee') AND status IN ('pending','completed') THEN -amount
       ELSE 0
     END
   ), 0)

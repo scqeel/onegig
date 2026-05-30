@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendSMS } from "../_shared/sms.ts";
+import { sendWebPushNotification } from "../_shared/push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -238,6 +240,12 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
         sound_name: "paystack",
         target_user_id: agentRow.user_id,
         is_global: false
+      });
+      
+      await sendWebPushNotification(admin, agentRow.user_id, {
+        title: "New Store Sale!",
+        message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${recipient}.`,
+        url: "/agent"
       });
     }
   }

@@ -39,6 +39,7 @@ import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { useTheme } from "next-themes";
+import { subscribeToPushNotifications } from "@/lib/push";
 
 type AgentTab = "buy" | "store" | "transactions" | "customers" | "withdrawals" | "settings";
 
@@ -841,6 +842,7 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
   const [widgetEnabled, setWidgetEnabled] = useState(() => {
     return localStorage.getItem("og_whatsapp_widget") !== "false";
   });
+  const [pushEnabled, setPushEnabled] = useState(Notification.permission === "granted");
   const [saving, setSaving] = useState(false);
 
   const f = (key: keyof typeof form, val: string) => setForm((p) => ({ ...p, [key]: val }));
@@ -848,6 +850,16 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
   const save = async () => {
     setSaving(true);
     localStorage.setItem("og_whatsapp_widget", String(widgetEnabled));
+
+    if (pushEnabled && Notification.permission !== "granted") {
+      const success = await subscribeToPushNotifications(agentProfile.user_id);
+      if (success) {
+        setPushEnabled(true);
+        toast({ title: "Push Notifications Enabled", description: "You will now receive alerts for new sales." });
+      } else {
+        setPushEnabled(false);
+      }
+    }
 
     const { error } = await supabase.from("agent_profiles").update({
       store_name: form.store_name,
@@ -907,7 +919,7 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
             <Input className="h-11 rounded-xl" value={form.support_phone} onChange={(e) => f("support_phone", e.target.value)} placeholder="e.g. 024 000 0000" />
           </div>
           
-          <div className="md:col-span-2 pt-2">
+          <div className="md:col-span-2 pt-2 space-y-3">
             <div className="flex items-center justify-between p-4 bg-secondary/30 border border-border/60 rounded-xl">
               <div>
                 <h4 className="font-bold text-foreground">Draggable WhatsApp Button</h4>
@@ -918,6 +930,20 @@ function SettingsSection({ agentProfile }: { agentProfile: any }) {
                 className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${widgetEnabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}
               >
                 <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${widgetEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
+              </button>
+            </div>
+            
+            <div className="flex items-center justify-between p-4 bg-secondary/30 border border-border/60 rounded-xl">
+              <div>
+                <h4 className="font-bold text-foreground">Push Notifications</h4>
+                <p className="text-xs text-muted-foreground mt-0.5">Receive native notifications for new sales even when closed.</p>
+              </div>
+              <button
+                onClick={() => setPushEnabled(!pushEnabled)}
+                disabled={Notification.permission === "granted"}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${pushEnabled || Notification.permission === "granted" ? 'bg-primary' : 'bg-muted-foreground/30'} disabled:opacity-50`}
+              >
+                <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${pushEnabled || Notification.permission === "granted" ? 'translate-x-8' : 'translate-x-1'}`} />
               </button>
             </div>
           </div>

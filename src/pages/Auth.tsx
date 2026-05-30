@@ -73,10 +73,12 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-    // Only redirect to dashboard if they have a confirmed phone or if they used phone signin
+    // Only redirect to dashboard if they have a confirmed phone, or if they are a legacy user
     if (!loading && session) {
+      const isLegacyUser = new Date(session.user.created_at) < new Date("2026-05-30T00:00:00Z");
       const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
-      if (hasVerifiedPhone) {
+      
+      if (hasVerifiedPhone || isLegacyUser) {
         nav(from || "/dashboard", { replace: true });
       } else if (!isSignUp) {
         // If they are on the signin tab but have no verified phone, switch them to signup to complete verification

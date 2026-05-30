@@ -15,9 +15,11 @@ export function RequireAuth({ children, role }: { children: ReactNode; role?: Ap
   }
   if (!session) return <Navigate to="/auth" state={{ from: loc.pathname }} replace />;
   
-  // Enforce phone verification
+  // Enforce phone verification only for new users (created on or after May 30, 2026)
+  const isLegacyUser = new Date(session.user.created_at) < new Date("2026-05-30T00:00:00Z");
   const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
-  if (!hasVerifiedPhone) {
+  
+  if (!isLegacyUser && !hasVerifiedPhone) {
     return <Navigate to="/verify-phone" state={{ from: loc.pathname }} replace />;
   }
 

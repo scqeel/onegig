@@ -289,6 +289,15 @@ Deno.serve(async (req) => {
           related_order_id: order.id,
           description: `Profit from order ${order.reference}`,
         });
+        
+        await admin.from("app_notifications").insert({
+          title: "New Store Sale!",
+          message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${body.recipient_phone}.`,
+          type: "success",
+          sound_name: "paystack",
+          target_user_id: agentRow.user_id,
+          is_global: false
+        });
       }
     }
 

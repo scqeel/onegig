@@ -476,7 +476,7 @@ export default function AgentStorePage() {
               value={otp} 
               onChange={(val) => {
                 setOtp(val);
-                if (val.length >= 4 && phase === "otp") {
+                if (val.length === 6 && phase === "otp") {
                   setTimeout(() => document.getElementById("btn-public-otp-submit")?.click(), 50);
                 }
               }}
@@ -510,7 +510,16 @@ export default function AgentStorePage() {
             </Button>
           </div>
 
-          <button id="btn-public-otp-submit" onClick={submitOtp} className="hidden" />
+          <div className="mt-6">
+            <Button 
+              id="btn-public-otp-submit" 
+              onClick={submitOtp} 
+              disabled={otp.length < 4}
+              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
+            >
+              Verify OTP
+            </Button>
+          </div>
         </div>
       </div>
     );

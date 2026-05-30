@@ -318,7 +318,7 @@ export const WalletManager = () => {
                     value={otp} 
                     onChange={(val) => {
                       setOtp(val);
-                      if (val.length >= 4 && phase === "otp") {
+                      if (val.length === 6 && phase === "otp") {
                         setTimeout(() => document.getElementById("btn-wallet-otp-submit")?.click(), 50);
                       }
                     }}
@@ -352,7 +352,17 @@ export const WalletManager = () => {
                   </Button>
                 </div>
                 
-                <button id="btn-wallet-otp-submit" onClick={submitOtp} className="hidden" />
+                {/* Visible submit button to allow manual submission */}
+                <div className="mt-6">
+                  <Button 
+                    id="btn-wallet-otp-submit" 
+                    onClick={submitOtp} 
+                    disabled={otp.length < 4}
+                    className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                  >
+                    Verify OTP
+                  </Button>
+                </div>
               </div>
             </div>
           )}

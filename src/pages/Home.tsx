@@ -679,7 +679,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-      <DraggableWhatsApp link="https://whatsapp.com/channel/YOUR_CHANNEL_ID" />
+      <DraggableWhatsApp link="https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y" />
     </main>
   );
 }

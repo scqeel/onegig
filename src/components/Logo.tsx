@@ -1,10 +1,14 @@
-export function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
-  const cls = size === "lg" ? "text-4xl" : size === "sm" ? "text-lg" : "text-2xl";
+export function Logo({ size = "md", className }: { size?: "sm" | "md" | "lg", className?: string }) {
+  // Map size to height classes
+  const hCls = size === "lg" ? "h-16" : size === "sm" ? "h-8" : "h-12";
+  
   return (
-    <div className={`font-display font-bold tracking-tight ${cls}`}>
-      <span className="gradient-text">One</span>
-      <span className="text-foreground">Gig</span>
-      <span className="ml-1 inline-block h-2 w-2 rounded-full bg-primary animate-float-pulse" />
+    <div className={`flex items-center ${className || ""}`}>
+      <img 
+        src="/logo.png" 
+        alt="1Gig Logo" 
+        className={`${hCls} w-auto object-contain drop-shadow-sm`}
+      />
     </div>
   );
 }

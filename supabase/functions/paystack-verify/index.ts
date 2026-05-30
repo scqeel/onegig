@@ -17,8 +17,6 @@ const getPaystackSecret = () =>
   Deno.env.get("PAYSTACK_LIVE_SECRET_KEY") ||
   "";
 
-
-
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
 }
@@ -121,51 +119,128 @@ async function deliverData(
 }
 
 async function activateAgent(admin: ReturnType<typeof createClient>, userId: string) {
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("full_name, username")
-    .eq("id", userId)
+  console.log(`Activating agent with userId: ${userId}`);
+
+  // 1. Check if they already have an agent profile record
+  const { data: existingAgent, error: checkErr } = await admin
+    .from("agent_profiles")
+    .select("id, activation_paid, store_slug, store_name")
+    .eq("user_id", userId)
     .maybeSingle();
 
-  const slugify = (s: string) =>
-    s
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9\s-]/g, "")
-      .replace(/\s+/g, "-")
-      .slice(0, 40) || "store";
-
-  const baseSlug = slugify(profile?.username || profile?.full_name || `agent-${userId.slice(0, 6)}`);
-  let slug = baseSlug;
-  let n = 0;
-  while (true) {
-    const { data: exists } = await admin.from("agent_profiles").select("id").eq("store_slug", slug).maybeSingle();
-    if (!exists) break;
-    n++;
-    slug = `${baseSlug}-${n}`;
-    if (n > 50) break;
+  if (checkErr) {
+    console.error("Error checking existing agent profile:", checkErr);
   }
 
-  const { data: agent, error: aErr } = await admin
-    .from("agent_profiles")
-    .upsert(
-      {
+  let finalAgentId = existingAgent?.id || null;
+
+  if (existingAgent) {
+    console.log(`User already has an agent profile (id: ${existingAgent.id}, paid: ${existingAgent.activation_paid})`);
+    
+    if (existingAgent.activation_paid) {
+      // Already activated! Ensure they have the role and return.
+      console.log("Agent profile already marked as active. Ensuring role...");
+      await admin.from("user_roles").upsert({ user_id: userId, role: "agent" }, { onConflict: "user_id,role" });
+      return existingAgent.id;
+    }
+
+    // Update existing inactive profile to active
+    console.log("Updating existing agent profile to paid...");
+    const { data: updatedAgent, error: updateErr } = await admin
+      .from("agent_profiles")
+      .update({
+        activation_paid: true,
+        activation_paid_at: new Date().toISOString(),
+      })
+      .eq("id", existingAgent.id)
+      .select("id")
+      .single();
+
+    if (updateErr) {
+      console.error("Error updating existing agent profile:", updateErr);
+      throw updateErr;
+    }
+    finalAgentId = updatedAgent?.id;
+  } else {
+    // Create a new agent profile
+    console.log("No existing agent profile found. Creating a new one...");
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name, username")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const slugify = (s: string) =>
+      s
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .slice(0, 40) || "store";
+
+    const baseSlug = slugify(profile?.username || profile?.full_name || `agent-${userId.slice(0, 6)}`);
+    let slug = baseSlug;
+    let n = 0;
+    while (true) {
+      const { data: exists } = await admin.from("agent_profiles").select("id").eq("store_slug", slug).maybeSingle();
+      if (!exists) break;
+      n++;
+      slug = `${baseSlug}-${n}`;
+      if (n > 50) break;
+    }
+
+    console.log(`Inserting new agent profile with slug: ${slug}`);
+    const { data: newAgent, error: insertErr } = await admin
+      .from("agent_profiles")
+      .insert({
         user_id: userId,
         store_slug: slug,
         store_name: `${profile?.full_name || "My"} Store`,
         activation_paid: true,
         activation_paid_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    )
-    .select("id")
-    .single();
+      })
+      .select("id")
+      .single();
 
-  if (aErr) throw aErr;
+    if (insertErr) {
+      console.error("Error inserting new agent profile:", insertErr);
+      throw insertErr;
+    }
+    finalAgentId = newAgent?.id;
+  }
 
-  await admin.from("user_roles").upsert({ user_id: userId, role: "agent" }, { onConflict: "user_id,role" });
+  // 2. Ensure they have the agent user role
+  console.log("Upserting agent role in user_roles...");
+  const { error: roleErr } = await admin
+    .from("user_roles")
+    .upsert({ user_id: userId, role: "agent" }, { onConflict: "user_id,role" });
+  if (roleErr) {
+    console.error("Error upserting user role:", roleErr);
+    throw roleErr;
+  }
 
-  return agent?.id;
+  // 3. Seed default agent bundle prices (base + 1 cedi markup)
+  console.log("Seeding default agent bundle prices...");
+  const { data: bundles } = await admin.from("bundles").select("id, base_price").eq("active", true);
+  if (bundles?.length && finalAgentId) {
+    const rows = bundles.map((b: any) => ({
+      agent_id: finalAgentId,
+      bundle_id: b.id,
+      sell_price: Number(b.base_price) + 1,
+      active: true,
+    }));
+    const { error: priceErr } = await admin
+      .from("agent_bundle_prices")
+      .upsert(rows, { onConflict: "agent_id,bundle_id" });
+    if (priceErr) {
+      console.error("Error seeding bundle prices:", priceErr);
+    } else {
+      console.log("Successfully seeded bundle prices!");
+    }
+  }
+
+  console.log("Activation completed successfully!");
+  return finalAgentId;
 }
 
 async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any) {
@@ -321,8 +396,6 @@ async function verifyAndProcess(reference: string) {
   }
 
   const trx = verifyData.data;
-  
-
 
   let metadata = trx?.metadata ?? {};
   if (typeof metadata === "string") {
@@ -459,7 +532,6 @@ async function verifyAndProcess(reference: string) {
     const userId = payment.user_id;
     if (!userId) throw new Error("Missing user for deposit");
     
-    // Default payload might be an object or string depending on how it was fetched
     let payloadData = payment.payload;
     if (typeof payloadData === "string") {
       try { payloadData = JSON.parse(payloadData); } catch(e) { payloadData = {}; }
@@ -509,7 +581,6 @@ Deno.serve(async (req) => {
     return json(result);
   } catch (e: any) {
     console.error("paystack-verify error", e);
-    // Return 200 OK so frontend doesn't crash during polling
     return json({ ok: false, status: "pending", error: e?.message ?? "Internal error" }, 200);
   }
 });

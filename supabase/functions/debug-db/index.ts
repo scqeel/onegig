@@ -14,25 +14,34 @@ Deno.serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
-  const { data: pay, error: payErr } = await admin.from("payments").select("*").order("created_at", { ascending: false }).limit(5);
-  const { data: wal, error: walErr } = await admin.from("wallet_transactions").select("*").order("created_at", { ascending: false }).limit(5);
-  
-  // Try querying a balance for the most recent wallet transaction user
-  let bal = null;
-  let balErr = null;
-  if (wal && wal.length > 0) {
-     const { data, error } = await admin.rpc("get_wallet_balance", { _user_id: wal[0].user_id });
-     bal = data;
-     balErr = error;
-  }
+  // 1. Get recent agent_profiles
+  const { data: agents, error: agentsErr } = await admin
+    .from("agent_profiles")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // 2. Get recent user_roles
+  const { data: roles, error: rolesErr } = await admin
+    .from("user_roles")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  // 3. Get recent orders
+  const { data: orders, error: ordersErr } = await admin
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   return new Response(JSON.stringify({
-    payments: pay,
-    payErr,
-    wallet_transactions: wal,
-    walErr,
-    last_user_balance: bal,
-    balErr
+    agents,
+    agentsErr,
+    roles,
+    rolesErr,
+    orders,
+    ordersErr
   }, null, 2), {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });

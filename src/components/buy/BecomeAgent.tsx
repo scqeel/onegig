@@ -63,24 +63,33 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
     setPhase("polling");
   };
 
-  const submitOtp = async () => {
-    if (!otp || !orderRef) return;
+  const submitOtp = async (overrideOtp?: string | React.MouseEvent) => {
+    const finalOtp = typeof overrideOtp === 'string' ? overrideOtp : otp;
+    if (!finalOtp || !orderRef) return;
     setIsSubmittingOtp(true);
-    const { data, error } = await supabase.functions.invoke("paystack-process", {
-      body: { action: "submit_otp", otp, reference: orderRef }
-    });
-    setIsSubmittingOtp(false);
+    setPhase("processing");
     
-    if (error || data?.error) {
-      setErrorMsg(data?.error ?? error?.message ?? "OTP verification failed");
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-process", {
+        body: { action: "submit_otp", otp: finalOtp, reference: orderRef }
+      });
+      setIsSubmittingOtp(false);
+      
+      if (error || data?.error) {
+        setErrorMsg(data?.error ?? error?.message ?? "OTP verification failed");
+        setPhase("error");
+        return;
+      }
+      
+      if (data?.status === "success") {
+        setPhase("success");
+      } else {
+        setPhase("polling");
+      }
+    } catch (e) {
+      setIsSubmittingOtp(false);
+      setErrorMsg("An unexpected error occurred");
       setPhase("error");
-      return;
-    }
-    
-    if (data?.status === "success") {
-      setPhase("success");
-    } else {
-      setPhase("polling");
     }
   };
 
@@ -246,13 +255,20 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
           <Input 
             placeholder="Enter OTP code" 
             value={otp} 
-            onChange={e => setOtp(e.target.value)}
+            onChange={e => {
+              const val = e.target.value;
+              setOtp(val);
+              if (val.length === 6 && phase === "otp") {
+                submitOtp(val);
+              }
+            }}
             className="text-center text-lg tracking-widest font-mono h-12"
             maxLength={6}
           />
           <Button 
-            onClick={submitOtp} 
-            disabled={!otp || isSubmittingOtp}
+            id="btn-activation-otp-submit"
+            onClick={() => submitOtp()} 
+            disabled={otp.length < 4 || isSubmittingOtp}
             className="w-full h-12 rounded-xl gradient-primary"
           >
             {isSubmittingOtp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Verify Payment"}

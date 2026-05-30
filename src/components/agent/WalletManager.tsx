@@ -91,11 +91,14 @@ export const WalletManager = () => {
     }
   };
 
-  const submitOtp = async () => {
+  const submitOtp = async (overrideOtp?: string | React.MouseEvent) => {
+    const finalOtp = typeof overrideOtp === 'string' ? overrideOtp : otp;
+    if (!finalOtp || !orderRef) return;
+    
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
-        body: { action: "submit_otp", otp, reference: orderRef, purpose: "wallet_deposit", momo_number: "0", momo_network: "MTN" },
+      const { data, error } = await supabase.functions.invoke("wallet-pay", {
+        body: { action: "submit_otp", otp: finalOtp, reference: orderRef, purpose: "wallet_deposit", momo_number: "0", momo_network: "MTN" },
       });
       if (error || data?.error) {
         setErrorMsg(data?.error || "OTP failed");
@@ -319,7 +322,7 @@ export const WalletManager = () => {
                     onChange={(val) => {
                       setOtp(val);
                       if (val.length === 6 && phase === "otp") {
-                        setTimeout(() => document.getElementById("btn-wallet-otp-submit")?.click(), 50);
+                        submitOtp(val);
                       }
                     }}
                   >
@@ -356,7 +359,7 @@ export const WalletManager = () => {
                 <div className="mt-6">
                   <Button 
                     id="btn-wallet-otp-submit" 
-                    onClick={submitOtp} 
+                    onClick={() => submitOtp()} 
                     disabled={otp.length < 4}
                     className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
                   >

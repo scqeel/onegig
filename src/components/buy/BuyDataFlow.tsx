@@ -242,17 +242,16 @@ export function BuyDataFlow({
     setAuthMessage(data?.message || null);
     setPhase("polling");
   };
-
-  const submitOtp = async () => {
-    if (!otp || !orderRef) return;
+  const submitOtp = async (overrideOtp?: string | React.MouseEvent) => {
+    const finalOtp = typeof overrideOtp === 'string' ? overrideOtp : otp;
+    if (!finalOtp || !orderRef) return;
     setPhase("processing");
     
     const { data, error } = await supabase.functions.invoke("paystack-process", {
       body: {
         action: "submit_otp",
-        otp,
+        otp: finalOtp,
         reference: orderRef,
-        // Include dummy purpose to satisfy body parsing if needed, though edge function checks action first
         purpose: "order",
         momo_number: "0",
         momo_network: "MTN"
@@ -393,7 +392,7 @@ export function BuyDataFlow({
               onChange={(val) => {
                 setOtp(val);
                 if (val.length === 6 && phase === "otp") {
-                  setTimeout(() => document.getElementById("btn-buy-otp-submit")?.click(), 50);
+                  submitOtp(val);
                 }
               }}
             >
@@ -429,7 +428,7 @@ export function BuyDataFlow({
           <div className="mt-6">
             <Button 
               id="btn-buy-otp-submit" 
-              onClick={submitOtp} 
+              onClick={() => submitOtp()} 
               disabled={otp.length < 4}
               className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >

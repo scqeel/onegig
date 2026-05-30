@@ -281,15 +281,16 @@ export default function AgentStorePage() {
     }
   };
 
-  const submitOtp = async () => {
-    if (!otp || !orderRef) return;
+  const submitOtp = async (overrideOtp?: string | React.MouseEvent) => {
+    const finalOtp = typeof overrideOtp === 'string' ? overrideOtp : otp;
+    if (!finalOtp || !orderRef) return;
     setPhase("processing");
     
     try {
       const { data, error } = await supabase.functions.invoke("paystack-process", {
         body: {
           action: "submit_otp",
-          otp,
+          otp: finalOtp,
           reference: orderRef,
           purpose: "order",
           momo_number: "0",
@@ -493,7 +494,7 @@ export default function AgentStorePage() {
               onChange={(val) => {
                 setOtp(val);
                 if (val.length === 6 && phase === "otp") {
-                  setTimeout(() => document.getElementById("btn-dash-otp-submit")?.click(), 50);
+                  submitOtp(val);
                 }
               }}
             >
@@ -529,7 +530,7 @@ export default function AgentStorePage() {
           <div className="mt-6">
             <Button 
               id="btn-dash-otp-submit" 
-              onClick={submitOtp} 
+              onClick={() => submitOtp()} 
               disabled={otp.length < 4}
               className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
             >

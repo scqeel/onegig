@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { CustomerCRM } from "@/components/agent/CustomerCRM";
-import { BuySection, StoreSection, TransactionsSection, WithdrawalsSection, SubAgentsSection, SettingsSection, ALL_TABS, AgentTab } from "./AgentDashboard";
+import { BuySection, StoreSection, LeaderboardSection, TransactionsSection, WithdrawalsSection, SubAgentsSection, SettingsSection, ALL_TABS, AgentTab } from "./AgentDashboard";
 
 export default function SubAgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
@@ -210,6 +210,7 @@ export default function SubAgentDashboard() {
           <main>
             {tab === "buy"          && <BuySection />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
+            {tab === "leaderboard"  && <LeaderboardSection agentProfile={agentProfile} />}
             {tab === "transactions" && <TransactionsSection agentId={agentProfile.id} />}
             {tab === "customers"    && <CustomerCRM />}
             {tab === "withdrawals"  && <WithdrawalsSection userId={user?.id!} />}

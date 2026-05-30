@@ -140,9 +140,9 @@ export default function AuthPage() {
     try {
       const normalizedEmail = suEmail.trim().toLowerCase();
       const formattedPhone = formatPhone(suPhone);
-      const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim(), email_address: normalizedEmail } };
+      const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim(), phone: formattedPhone } };
       
-      const res = await authClient.signUp({ phone: formattedPhone, password: suPassword, options });
+      const res = await authClient.signUp({ email: normalizedEmail, password: suPassword, options });
 
       if (res.error) { toast({ title: "Sign up failed", description: res.error.message, variant: "destructive" }); return; }
       
@@ -152,21 +152,9 @@ export default function AuthPage() {
         return;
       }
       
-      setSuOtpSent(true);
-      setSuTimer(60);
-      toast({ title: "Verification required", description: "Please enter the code sent to your phone." });
+      toast({ title: "Verification required", description: "Please check your email to verify your account." });
+      switchTo("signin");
       return;
-      
-      // Auto login attempt if no session returned immediately
-      const signInRes = await authClient.signInWithPassword({ email: suEmail.trim().toLowerCase(), password: suPassword });
-        
-      if (signInRes.error) {
-        toast({ title: "Account created", description: "Please sign in to continue." });
-        switchTo("signin");
-      } else {
-        toast({ title: "Account created", description: "Welcome to OneGig!" });
-        nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
-      }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unexpected error. Please try again.";
       toast({ title: "Sign up failed", description: msg, variant: "destructive" });

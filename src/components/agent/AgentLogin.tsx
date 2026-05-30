@@ -23,7 +23,7 @@ export function AgentLogin({ storeName, onClose }: Props) {
     setLoading(true);
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 

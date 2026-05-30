@@ -72,7 +72,7 @@ export default function AgentStorePage() {
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkRow | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<BundleRow | null>(null);
   const [phone, setPhone] = useState(profile?.phone || "");
-  const [momoNumber, setMomoNumber] = useState(profile?.phone || "");
+  const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
   const [email, setEmail] = useState(profile?.email || "");
   const [phase, setPhase] = useState<Phase>("select");
@@ -233,9 +233,15 @@ export default function AgentStorePage() {
       });
 
       if (error) {
-        setAuthMessage("Edge function error: " + error.message);
+        setAuthMessage("Network issue while checking status...");
       } else if (data) {
-        setAuthMessage(`Polling status: ${data.status || 'verified'} | OK: ${data.ok}`);
+        if (["pending", "processing", "ongoing", "pay_offline"].includes(data.status?.toLowerCase())) {
+          setAuthMessage(`Please check your phone to authorize the payment...`);
+        } else if (data.status === "send_otp") {
+          setAuthMessage("OTP is required to authorize the payment...");
+        } else {
+          setAuthMessage(`Processing payment status: ${data.status || 'verified'}...`);
+        }
       }
 
       if (data?.ok) {
@@ -341,6 +347,7 @@ export default function AgentStorePage() {
           agent_slug: slug ?? null,
           momo_number: momoNumber,
           momo_network: momoNetwork,
+          email: email || "guest@mtopup.shop",
         },
       });
 
@@ -416,6 +423,7 @@ export default function AgentStorePage() {
           agent_slug: slug ?? null,
           momo_number: momoNumber,
           momo_network: momoNetwork,
+          email: email || "guest@mtopup.shop",
         },
       });
 
@@ -595,27 +603,44 @@ export default function AgentStorePage() {
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
-        <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-rose-500/10 border border-rose-500/20 shadow-lg animate-pulse">
-          <Zap className="h-14 w-14 text-rose-500" />
+        <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg animate-pulse">
+          {phase === "delivering" ? <CheckCircle2 className="h-14 w-14 text-emerald-500" /> : <Loader2 className="h-14 w-14 text-blue-500 animate-spin" />}
         </div>
         <h3 className="mt-8 text-2xl font-black text-slate-800 dark:text-white">
           {phase === "processing" && "Initiating Payment..."}
           {phase === "polling" && "Awaiting Authorization"}
           {phase === "delivering" && "Payment Received! Sending Data..."}
         </h3>
+        
         {phase === "polling" && (
-          <p className="mt-3 text-sm font-bold text-rose-500 max-w-sm mx-auto">
-            {authMessage || `Please check your phone (${momoNumber}) to authorize the payment.`}
-          </p>
+          <div className="mt-4 flex flex-col items-center">
+            <div className="flex items-center gap-2.5 text-sm font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-5 py-2.5 rounded-full border border-blue-200 dark:border-blue-800/50 shadow-sm">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+              </span>
+              {authMessage || `Please check your phone (${momoNumber}) to authorize...`}
+            </div>
+          </div>
         )}
+
         {phase === "delivering" && (
-          <p className="mt-3 text-sm font-bold text-rose-500">
+          <p className="mt-4 text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-5 py-2.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 shadow-sm inline-block">
             Connecting to {selectedNetwork?.name} network to deliver your bundle.
           </p>
         )}
-        <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+        
+        <p className="mt-6 text-xs font-medium text-slate-500 dark:text-slate-400">
           Do not close this window. Your bundle will be delivered automatically.
         </p>
+
+        {(phase === "polling" || phase === "delivering") && (
+          <div className="mt-6 flex items-center justify-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 animate-bounce" />
+            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 animate-bounce [animation-delay:0.2s]" />
+            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 animate-bounce [animation-delay:0.4s]" />
+          </div>
+        )}
       </div>
     );
   }
@@ -1089,7 +1114,7 @@ export default function AgentStorePage() {
             <div>
               <div className="mb-1.5 flex items-center justify-between">
                 <label className="block text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Recipient Phone Number
+                  Recipient Phone (Who is receiving the data?)
                 </label>
                 {isOwner && crmCustomers && crmCustomers.length > 0 && (
                   <select 
@@ -1119,7 +1144,7 @@ export default function AgentStorePage() {
 
             <div>
               <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
-                Payment Mobile Money Number
+                Payment Mobile Money Number (Who is paying?)
               </label>
               <div className="flex gap-2">
                 <select 

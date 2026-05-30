@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { RequireAuth } from "@/components/RequireAuth";
 import HomePage from "./pages/Home.tsx";
 import AuthPage from "./pages/Auth.tsx";
+import VerifyPhonePage from "./pages/VerifyPhone.tsx";
 import DashboardCustomerPage from "./pages/DashboardCustomer.tsx";
 import DashboardAgentPage from "./pages/DashboardAgent.tsx";
 import PublicBuyPage from "./pages/PublicBuy.tsx";
@@ -41,6 +42,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/verify-phone" element={<VerifyPhonePage />} />
               <Route path="/buy" element={<PublicBuyPage />} />
               <Route path="/track" element={<PublicTrackPage />} />
               <Route path="/dashboard" element={<RequireAuth><DashboardIndex /></RequireAuth>} />

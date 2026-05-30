@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
 
     if (!amount || amount <= 0) return json({ error: "Invalid amount" }, 400);
 
-    const email = (body.email ?? userEmail ?? "guest@mtopup.shop").trim().toLowerCase();
+    const email = (body.email || userEmail || "guest@mtopup.shop").trim().toLowerCase();
     const reference = `DH-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
     const processRes = await fetch("https://api.paystack.co/charge", {

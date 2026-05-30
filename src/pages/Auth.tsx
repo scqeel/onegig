@@ -43,8 +43,6 @@ export default function AuthPage() {
   const [suPhone, setSuPhone] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suConfirmPassword, setSuConfirmPassword] = useState("");
-  const [suOtpSent, setSuOtpSent] = useState(false);
-  const [suOtp, setSuOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
   const [siTimer, setSiTimer] = useState(0);
@@ -60,11 +58,11 @@ export default function AuthPage() {
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
-    if (suTimer > 0) {
-      interval = setInterval(() => setSuTimer((t) => t - 1), 1000);
+    if (siTimer > 0) {
+      interval = setInterval(() => setTimer((t) => t - 1), 1000);
     }
     return () => clearInterval(interval);
-  }, [suTimer]);
+  }, [siTimer]);
 
   const formatPhone = (phone: string) => {
     let p = phone.replace(/[^0-9+]/g, "");
@@ -75,8 +73,17 @@ export default function AuthPage() {
   };
 
   useEffect(() => {
-    if (!loading && session) nav(from || "/dashboard", { replace: true });
-  }, [session, loading, nav, from]);
+    // Only redirect to dashboard if they have a confirmed phone or if they used phone signin
+    if (!loading && session) {
+      const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
+      if (hasVerifiedPhone) {
+        nav(from || "/dashboard", { replace: true });
+      } else if (!isSignUp) {
+        // If they are on the signin tab but have no verified phone, switch them to signup to complete verification
+        setSearchParams({ tab: "signup", intent: intent || "customer" }, { replace: true });
+      }
+    }
+  }, [session, loading, nav, from, isSignUp, intent, setSearchParams]);
 
   const doSignIn = async () => {
     if (siMethod === "email") {
@@ -120,21 +127,6 @@ export default function AuthPage() {
       toast({ title: "Passwords do not match", variant: "destructive" });
       return;
     }
-    
-    if (suOtpSent) {
-      if (!suOtp) return toast({ title: "Enter the verification code", variant: "destructive" });
-      setBusy(true);
-      const formattedPhone = formatPhone(suPhone);
-      const { error } = await authClient.verifyOtp({ phone: formattedPhone, token: suOtp.trim(), type: "phone_change" });
-      setBusy(false);
-      if (error) {
-        toast({ title: "Invalid code", description: error.message, variant: "destructive" });
-        return;
-      }
-      toast({ title: "Account verified", description: "Welcome to OneGig!" });
-      nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
-      return;
-    }
 
     setBusy(true);
     try {
@@ -142,9 +134,29 @@ export default function AuthPage() {
       const formattedPhone = formatPhone(suPhone);
       const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim() } };
       
-      const res = await authClient.signUp({ email: normalizedEmail, password: suPassword, options });
+      // If the user already has a session but their phone isn't verified, 
+      // skip signUp and jump straight to phone registration
+      let userIsRegistered = false;
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (currentSession?.user && !currentSession.user.phone_confirmed_at) {
+        userIsRegistered = true;
+      }
 
-      if (res.error) { toast({ title: "Sign up failed", description: res.error.message, variant: "destructive" }); return; }
+      if (!userIsRegistered) {
+        const res = await authClient.signUp({ email: normalizedEmail, password: suPassword, options });
+        
+        if (res.error) {
+          // If the error is "already registered", they might have failed at the OTP step previously
+          // but we can't update phone if they aren't logged in. They must log in.
+          if (res.error.message.toLowerCase().includes("already registered")) {
+             toast({ title: "Account exists", description: "Email already registered. Please sign in to continue.", variant: "destructive" });
+             switchTo("signin");
+             return;
+          }
+          toast({ title: "Sign up failed", description: res.error.message, variant: "destructive" }); 
+          return; 
+        }
+      }
       
       // Trigger OTP SMS verification by updating the user profile phone number
       const updateRes = await authClient.updateUser({ phone: formattedPhone });
@@ -153,9 +165,7 @@ export default function AuthPage() {
         return;
       }
 
-      setSuOtpSent(true);
-      setSuTimer(60);
-      toast({ title: "Verification required", description: "Please enter the code sent to your phone." });
+      nav(`/verify-phone?intent=${accountType}`, { replace: true });
       return;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unexpected error. Please try again.";
@@ -175,20 +185,6 @@ export default function AuthPage() {
       toast({ title: "Failed to resend code", description: error.message, variant: "destructive" });
     } else {
       setSiTimer(60);
-      toast({ title: "Code resent", description: "A new code has been sent to your phone." });
-    }
-  };
-
-  const resendSuOtp = async () => {
-    if (suTimer > 0) return;
-    setBusy(true);
-    const formattedPhone = formatPhone(suPhone);
-    const { error } = await authClient.updateUser({ phone: formattedPhone });
-    setBusy(false);
-    if (error) {
-      toast({ title: "Failed to resend code", description: error.message, variant: "destructive" });
-    } else {
-      setSuTimer(60);
       toast({ title: "Code resent", description: "A new code has been sent to your phone." });
     }
   };
@@ -449,41 +445,6 @@ export default function AuthPage() {
 
 
               <div className="space-y-4">
-                {suOtpSent ? (
-                  <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                    <label className="text-xs font-semibold text-foreground text-center block">Verification Code</label>
-                    <div className="flex justify-center pb-2">
-                      <InputOTP 
-                        maxLength={6} 
-                        value={suOtp} 
-                        onChange={(val) => {
-                          setSuOtp(val);
-                          if (val.length === 6 && !busy) {
-                            setTimeout(() => document.getElementById("btn-signup-submit")?.click(), 50);
-                          }
-                        }}
-                      >
-                        <InputOTPGroup className="gap-2">
-                          {[0, 1, 2, 3, 4, 5].map((i) => (
-                            <InputOTPSlot 
-                              key={i} 
-                              index={i} 
-                              className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50" 
-                            />
-                          ))}
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
-                    <div className="flex items-center justify-between mt-3 px-1">
-                      <button type="button" onClick={() => setSuOtpSent(false)} className="text-xs text-primary hover:underline font-semibold">Change number</button>
-                      {suTimer > 0 ? (
-                        <span className="text-xs text-muted-foreground font-medium">Resend in <span className="text-foreground">{suTimer}s</span></span>
-                      ) : (
-                        <button type="button" onClick={resendSuOtp} className="text-xs text-primary font-bold hover:underline">Try again</button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
                   <>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="space-y-1.5">
@@ -562,11 +523,10 @@ export default function AuthPage() {
                       </div>
                     )}
                   </>
-                )}
 
                 <Button id="btn-signup-submit" onClick={doSignUp} disabled={busy} className="h-12 w-full rounded-[14px] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-sm font-black text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-violet-500/40">
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
-                    {suOtpSent ? "Verify Code" : "Create account"} <ArrowRight className="ml-1.5 h-4 w-4" />
+                    Create account <ArrowRight className="ml-1.5 h-4 w-4" />
                   </>}
                 </Button>
               </div>

@@ -7,9 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { formatGHS } from "@/lib/format";
-import { Check, Loader2, Sparkles, Store, TrendingUp, Zap, CheckCircle2, RefreshCcw } from "lucide-react";
+import { Check, Loader2, Sparkles, Store, TrendingUp, Zap, CheckCircle2, RefreshCcw, ShieldCheck } from "lucide-react";
 
-type Phase = "select" | "processing" | "polling" | "success" | "error";
+type Phase = "select" | "processing" | "polling" | "success" | "error" | "otp";
 
 export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const { data: settings } = useSettings();
@@ -18,13 +18,15 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const nav = useNavigate();
   
   const [checkoutOpen, setCheckoutOpen] = useState(true);
-  const [momoNumber, setMomoNumber] = useState(profile?.phone || "");
+  const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState("MTN");
   const [accountName, setAccountName] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [phase, setPhase] = useState<Phase>("select");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [orderRef, setOrderRef] = useState<string | null>(null);
+  const [otp, setOtp] = useState("");
+  const [isSubmittingOtp, setIsSubmittingOtp] = useState(false);
 
   const activate = async () => {
     if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
@@ -38,6 +40,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         purpose: "agent_activation",
         momo_number: momoNumber,
         momo_network: momoNetwork,
+        email: profile?.email || "guest@mtopup.shop",
       },
     });
 
@@ -49,14 +52,43 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
       return;
     }
 
+    if (data?.status === "send_otp") {
+      setOrderRef(data.reference);
+      setErrorMsg(data.message || "Please enter the OTP sent to your phone.");
+      setPhase("otp");
+      return;
+    }
+
     setOrderRef(data.reference);
     setPhase("polling");
+  };
+
+  const submitOtp = async () => {
+    if (!otp || !orderRef) return;
+    setIsSubmittingOtp(true);
+    const { data, error } = await supabase.functions.invoke("paystack-process", {
+      body: { action: "submit_otp", otp, reference: orderRef }
+    });
+    setIsSubmittingOtp(false);
+    
+    if (error || data?.error) {
+      setErrorMsg(data?.error ?? error?.message ?? "OTP verification failed");
+      setPhase("error");
+      return;
+    }
+    
+    if (data?.status === "success") {
+      setPhase("success");
+    } else {
+      setPhase("polling");
+    }
   };
 
   const reset = () => {
     setPhase("select");
     setOrderRef(null);
     setErrorMsg(null);
+    setOtp("");
     setCheckoutOpen(false);
   };
 
@@ -109,11 +141,15 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
       if (data?.ok) {
         clearInterval(interval);
         setPhase("success");
+      } else if (data?.status === "send_otp") {
+        clearInterval(interval);
+        setPhase("otp");
+        setErrorMsg(data.message || "Please enter the OTP sent to your phone.");
       } else if (data?.error) {
         clearInterval(interval);
         setPhase("error");
         setErrorMsg(data.error);
-      } else if (data?.status && !["pending", "processing", "vbv required", "ongoing", "send_otp", "pay_offline"].includes(data.status.toLowerCase())) {
+      } else if (data?.status && !["pending", "processing", "vbv required", "ongoing", "pay_offline"].includes(data.status.toLowerCase())) {
         clearInterval(interval);
         setPhase("error");
         setErrorMsg(`Payment failed: ${data.status}`);
@@ -123,6 +159,16 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
     interval = setInterval(checkStatus, 3000);
     return () => clearInterval(interval);
   }, [phase, orderRef]);
+
+  useEffect(() => {
+    if (phase === "success") {
+      const timer = setTimeout(() => {
+        onClose();
+        nav("/agent");
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [phase, nav, onClose]);
 
   if (isAgent) {
     return (
@@ -182,6 +228,36 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
             Please check your phone ({momoNumber}) to authorize payment.
           </p>
         )}
+      </div>
+    );
+  }
+
+  if (phase === "otp") {
+    return (
+      <div className="py-8 text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <ShieldCheck className="h-8 w-8" />
+        </div>
+        <h3 className="text-xl font-bold">Verification Required</h3>
+        <p className="text-sm text-muted-foreground max-w-[280px] mx-auto leading-relaxed">
+          {errorMsg || "Please enter the OTP sent to your phone to authorize the payment."}
+        </p>
+        <div className="pt-4 max-w-[240px] mx-auto space-y-4">
+          <Input 
+            placeholder="Enter OTP code" 
+            value={otp} 
+            onChange={e => setOtp(e.target.value)}
+            className="text-center text-lg tracking-widest font-mono h-12"
+            maxLength={6}
+          />
+          <Button 
+            onClick={submitOtp} 
+            disabled={!otp || isSubmittingOtp}
+            className="w-full h-12 rounded-xl gradient-primary"
+          >
+            {isSubmittingOtp ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Verify Payment"}
+          </Button>
+        </div>
       </div>
     );
   }

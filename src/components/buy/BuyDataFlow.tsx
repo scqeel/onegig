@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetworksAndBundles";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -128,7 +129,7 @@ export function BuyDataFlow({
   const { data: bundles = [] } = useBundles(network?.id ?? null);
   const [bundle, setBundle] = useState<BundleRow | null>(null);
   const [phone, setPhone] = useState(defaultPhone || profile?.phone || "");
-  const [momoNumber, setMomoNumber] = useState(defaultPhone || profile?.phone || "");
+  const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
   const [phase, setPhase] = useState<Phase>("select");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -211,6 +212,7 @@ export function BuyDataFlow({
         agent_slug: agentSlug ?? null,
         momo_number: momoNumber,
         momo_network: momoNetwork,
+        email: profile?.email || "guest@mtopup.shop",
       },
     });
 
@@ -293,15 +295,15 @@ export function BuyDataFlow({
       });
 
       if (error) {
-        setAuthMessage("Edge function error: " + error.message);
+        setAuthMessage("Network issue while checking status...");
       } else if (data) {
-        let msg = `Polling status: ${data.status || 'verified'}`;
-        if (data.status === "pending" || data.status === "processing") {
-          msg = "Please check your phone and enter your Mobile Money PIN to approve the payment...";
-        } else if (data.reason) {
-          msg += ` | ${data.reason}`;
+        if (["pending", "processing", "ongoing", "pay_offline"].includes(data.status?.toLowerCase())) {
+          setAuthMessage(`Please check your phone to authorize the payment...`);
+        } else if (data.status === "send_otp") {
+          setAuthMessage("OTP is required to authorize the payment...");
+        } else {
+          setAuthMessage(`Processing payment status: ${data.status || 'verified'}...`);
         }
-        setAuthMessage(msg);
       }
 
       if (data?.ok) {
@@ -371,41 +373,60 @@ export function BuyDataFlow({
   if (phase === "otp") {
     return (
       <div className="py-10 text-center animate-in fade-in zoom-in duration-300">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 mb-4">
-          <Lock className="h-8 w-8 text-primary" />
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4 border border-primary/20 shadow-lg">
+          <Lock className="h-10 w-10 text-primary" />
         </div>
-        <h3 className="text-xl font-bold text-foreground">Verification Required</h3>
-        <p className="mt-2 text-sm text-muted-foreground max-w-[280px] mx-auto">
+        <h3 className="text-2xl font-black text-foreground">Verification Required</h3>
+        <p className="mt-2 text-sm font-medium text-muted-foreground max-w-[280px] mx-auto">
           Please enter the OTP or Voucher Code sent to your mobile number ({momoNumber}).
         </p>
         
         {errorMsg && (
-          <p className="mt-3 text-xs font-semibold text-destructive">{errorMsg}</p>
+          <p className="mt-3 text-xs font-bold text-destructive">{errorMsg}</p>
         )}
 
-        <div className="mt-6 max-w-[240px] mx-auto space-y-4">
-          <Input
-            value={otp}
-            onChange={(e) => setOtp(e.target.value)}
-            placeholder="Enter OTP Code"
-            className="h-14 text-center text-2xl tracking-[0.25em] font-bold rounded-2xl"
-            maxLength={6}
-            inputMode="numeric"
-          />
-          <Button
-            onClick={submitOtp}
-            disabled={otp.length < 4}
-            className="w-full h-12 rounded-xl gradient-primary shadow-float font-bold"
-          >
-            Submit OTP
-          </Button>
-          <Button
-            variant="ghost"
-            onClick={() => setPhase("select")}
-            className="w-full text-xs text-muted-foreground hover:text-foreground"
-          >
-            Cancel Order
-          </Button>
+        <div className="mt-8 max-w-[280px] mx-auto space-y-5">
+          <div className="flex justify-center pb-2">
+            <InputOTP 
+              maxLength={6} 
+              value={otp} 
+              onChange={(val) => {
+                setOtp(val);
+                if (val.length >= 4 && phase === "otp") {
+                  setTimeout(() => document.getElementById("btn-buy-otp-submit")?.click(), 50);
+                }
+              }}
+            >
+              <InputOTPGroup className="gap-2">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <InputOTPSlot 
+                    key={i} 
+                    index={i} 
+                    className="h-14 w-12 rounded-[14px] border border-border bg-background text-xl font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20" 
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+          
+          <div className="flex items-center justify-between px-2 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
+              className="h-auto p-0 text-xs font-bold text-muted-foreground hover:text-foreground"
+            >
+              Cancel Order
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={buy}
+              className="h-auto p-0 text-xs text-primary font-bold hover:underline"
+            >
+              Try again
+            </Button>
+          </div>
+
+          <button id="btn-buy-otp-submit" onClick={submitOtp} className="hidden" />
         </div>
       </div>
     );
@@ -630,7 +651,7 @@ export function BuyDataFlow({
           <div className="space-y-4 px-6 py-5">
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">
-                Recipient phone number
+                Recipient Phone (Who is receiving the data?)
               </label>
               <Input
                 inputMode="tel"
@@ -646,7 +667,7 @@ export function BuyDataFlow({
 
             <div>
               <label className="mb-1.5 block text-xs font-semibold text-foreground">
-                Payment Mobile Money Number
+                Payment Mobile Money Number (Who is paying?)
               </label>
               <div className="flex gap-2">
                 <select 

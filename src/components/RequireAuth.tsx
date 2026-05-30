@@ -14,6 +14,13 @@ export function RequireAuth({ children, role }: { children: ReactNode; role?: Ap
     );
   }
   if (!session) return <Navigate to="/auth" state={{ from: loc.pathname }} replace />;
+  
+  // Enforce phone verification
+  const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
+  if (!hasVerifiedPhone) {
+    return <Navigate to="/verify-phone" state={{ from: loc.pathname }} replace />;
+  }
+
   if (role && !roles.includes(role)) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }

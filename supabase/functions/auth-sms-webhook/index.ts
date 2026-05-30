@@ -17,13 +17,15 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
+    console.log("SMS Hook Payload:", JSON.stringify(body, null, 2));
     
-    // Supabase custom SMS webhook payload typically contains: phone, token, and message
-    const phone = body?.phone || body?.user?.phone;
+    // For updateUser, the unconfirmed phone number is in new_phone
+    const phone = body?.phone || body?.new_phone || body?.user?.new_phone || body?.user?.phone_change || body?.user?.phone;
     const token = body?.token || body?.sms?.otp;
     const messagePayload = body?.message || body?.sms?.message;
 
     if (!phone) {
+      console.error("Missing phone number. Payload was:", body);
       return json({ error: "Missing phone number" }, 400);
     }
     
@@ -35,8 +37,8 @@ Deno.serve(async (req) => {
 
     await sendSMS({ to: phone, message });
 
-    // Supabase expects a 200 OK response for successful webhook delivery
-    return json({ ok: true, sent: true });
+    // Supabase Send SMS Auth Hook expects a 200 OK response with an empty JSON object or valid schema
+    return json({});
   } catch (e: any) {
     console.error("auth-sms-webhook error", e);
     // Even if it fails, returning 200 is sometimes required by Supabase to not block the flow endlessly, 

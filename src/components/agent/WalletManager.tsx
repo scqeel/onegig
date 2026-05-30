@@ -4,7 +4,8 @@ import { formatGHS } from "@/lib/format";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, Clock, RefreshCcw, CheckCircle2 } from "lucide-react";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, Clock, RefreshCcw, CheckCircle2, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
@@ -15,7 +16,7 @@ export const WalletManager = () => {
   const [loading, setLoading] = useState(true);
   const [depositOpen, setDepositOpen] = useState(false);
   const [amount, setAmount] = useState("");
-  const [momoNumber, setMomoNumber] = useState(profile?.phone || "");
+  const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState("MTN");
 
   const [phase, setPhase] = useState<"idle" | "processing" | "otp" | "polling" | "success" | "error">("idle");
@@ -72,6 +73,7 @@ export const WalletManager = () => {
           amount: Number(amount),
           momo_number: momoNumber,
           momo_network: momoNetwork,
+          email: profile?.email || "guest@mtopup.shop",
         },
       });
 
@@ -300,10 +302,58 @@ export const WalletManager = () => {
           )}
 
           {phase === "otp" && (
-            <div className="py-6 space-y-4">
-              <p className="text-sm font-medium text-center">Enter the OTP sent to {momoNumber}</p>
-              <Input value={otp} onChange={e => setOtp(e.target.value)} className="h-12 text-center text-xl tracking-widest font-bold" />
-              <Button onClick={submitOtp} className="w-full h-12">Verify & Pay</Button>
+            <div className="py-6 text-center animate-in fade-in zoom-in duration-300">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10 mb-4 border border-blue-500/20 shadow-sm">
+                <Lock className="h-8 w-8 text-blue-500" />
+              </div>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white">Verification Required</h3>
+              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400 max-w-[260px] mx-auto">
+                Enter the OTP sent to {momoNumber}
+              </p>
+              
+              <div className="mt-6 max-w-[260px] mx-auto space-y-4">
+                <div className="flex justify-center pb-2">
+                  <InputOTP 
+                    maxLength={6} 
+                    value={otp} 
+                    onChange={(val) => {
+                      setOtp(val);
+                      if (val.length >= 4 && phase === "otp") {
+                        setTimeout(() => document.getElementById("btn-wallet-otp-submit")?.click(), 50);
+                      }
+                    }}
+                  >
+                    <InputOTPGroup className="gap-2">
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <InputOTPSlot 
+                          key={i} 
+                          index={i} 
+                          className="h-12 w-10 rounded-[10px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-500/20 dark:border-slate-800 dark:bg-slate-900" 
+                        />
+                      ))}
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+                
+                <div className="flex items-center justify-between px-1 pt-1">
+                  <Button
+                    variant="ghost"
+                    onClick={() => { setPhase("idle"); setOtp(""); }}
+                    className="h-auto p-0 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={initiateDeposit}
+                    className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline hover:text-blue-700 dark:hover:text-blue-300"
+                  >
+                    Try again
+                  </Button>
+                </div>
+                
+                <button id="btn-wallet-otp-submit" onClick={submitOtp} className="hidden" />
+              </div>
             </div>
           )}
 

@@ -9,7 +9,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Simple pass-through fetch handler
-  // You can add caching logic here if needed
-  event.respondWith(fetch(event.request));
+  // We leave this empty to satisfy PWA installability requirements
+  // without intercepting requests and causing unhandled fetch errors
+  // when the network or backend is unreachable.
 });

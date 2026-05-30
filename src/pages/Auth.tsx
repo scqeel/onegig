@@ -125,7 +125,7 @@ export default function AuthPage() {
       if (!suOtp) return toast({ title: "Enter the verification code", variant: "destructive" });
       setBusy(true);
       const formattedPhone = formatPhone(suPhone);
-      const { error } = await authClient.verifyOtp({ phone: formattedPhone, token: suOtp.trim(), type: 'sms' });
+      const { error } = await authClient.verifyOtp({ phone: formattedPhone, token: suOtp.trim(), type: "phone_change" });
       setBusy(false);
       if (error) {
         toast({ title: "Invalid code", description: error.message, variant: "destructive" });
@@ -140,20 +140,22 @@ export default function AuthPage() {
     try {
       const normalizedEmail = suEmail.trim().toLowerCase();
       const formattedPhone = formatPhone(suPhone);
-      const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim(), phone: formattedPhone } };
+      const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim() } };
       
       const res = await authClient.signUp({ email: normalizedEmail, password: suPassword, options });
 
       if (res.error) { toast({ title: "Sign up failed", description: res.error.message, variant: "destructive" }); return; }
       
-      if (res.data.session) {
-        toast({ title: "Account created", description: "Welcome to OneGig!" });
-        nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
+      // Trigger OTP SMS verification by updating the user profile phone number
+      const updateRes = await authClient.updateUser({ phone: formattedPhone });
+      if (updateRes.error) {
+        toast({ title: "Phone registration failed", description: updateRes.error.message, variant: "destructive" });
         return;
       }
-      
-      toast({ title: "Verification required", description: "Please check your email to verify your account." });
-      switchTo("signin");
+
+      setSuOtpSent(true);
+      setSuTimer(60);
+      toast({ title: "Verification required", description: "Please enter the code sent to your phone." });
       return;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unexpected error. Please try again.";
@@ -181,7 +183,7 @@ export default function AuthPage() {
     if (suTimer > 0) return;
     setBusy(true);
     const formattedPhone = formatPhone(suPhone);
-    const { error } = await authClient.resend({ type: 'sms', phone: formattedPhone });
+    const { error } = await authClient.updateUser({ phone: formattedPhone });
     setBusy(false);
     if (error) {
       toast({ title: "Failed to resend code", description: error.message, variant: "destructive" });

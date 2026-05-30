@@ -28,7 +28,7 @@ export async function subscribeToPushNotifications(userId: string) {
 
     // Save subscription to our database
     const subJson = subscription.toJSON();
-    const { supabase } = await import('@/lib/supabase');
+    const { supabase } = await import('@/integrations/supabase/client');
     
     const { error } = await supabase.from('push_subscriptions').upsert({
       user_id: userId,

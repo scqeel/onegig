@@ -56,14 +56,6 @@ export default function AuthPage() {
     return () => clearInterval(interval);
   }, [siTimer]);
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (siTimer > 0) {
-      interval = setInterval(() => setTimer((t) => t - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [siTimer]);
-
   const formatPhone = (phone: string) => {
     let p = phone.replace(/[^0-9+]/g, "");
     if (p.startsWith("0")) p = "+233" + p.slice(1);

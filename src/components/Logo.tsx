@@ -5,7 +5,7 @@ export function Logo({ size = "md", className }: { size?: "sm" | "md" | "lg", cl
   return (
     <div className={`flex items-center ${className || ""}`}>
       <img 
-        src="/logo.png" 
+        src="/logo.jpeg" 
         alt="1Gig Logo" 
         className={`${hCls} w-auto object-contain drop-shadow-sm`}
       />

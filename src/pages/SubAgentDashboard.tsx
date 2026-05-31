@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, ChevronRight, Loader2, LogOut, Moon, Sun, User, Store, Gift, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ export default function SubAgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
   const { user, signOut } = useAuth();
   const nav = useNavigate();
+  const location = useLocation();
+  const isNotifications = location.pathname === "/dashboard/notifications";
   const { theme, setTheme } = useTheme();
   const { data: unreadCount } = useUnreadNotifications();
 
@@ -100,8 +102,15 @@ export default function SubAgentDashboard() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link to="/dashboard/notifications" aria-label="Notifications" className="relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-secondary/80">
-              <Bell className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+            <Link 
+              to="/dashboard/notifications" 
+              aria-label="Notifications" 
+              className={cn(
+                "relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors",
+                isNotifications ? "bg-primary/10 text-primary" : "hover:bg-secondary/80 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Bell className="h-4 w-4 transition-colors" fill={isNotifications ? "currentColor" : "none"} />
               {!!unreadCount && unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-background animate-in zoom-in">
                   {unreadCount > 99 ? '99+' : unreadCount}

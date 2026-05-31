@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Bell, MessageCircle, Search, Menu, X, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,8 @@ export function DashboardLayout({
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadCount } = useUnreadNotifications();
+  const location = useLocation();
+  const isNotifications = location.pathname === "/dashboard/notifications";
 
   return (
     <AppShell>
@@ -69,8 +71,15 @@ export function DashboardLayout({
             <button type="button" aria-label="Messages" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
               <MessageCircle className="h-4 w-4" />
             </button>
-            <Link to="/dashboard/notifications" aria-label="Notifications" className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
-              <Bell className="h-4 w-4" />
+            <Link 
+              to="/dashboard/notifications" 
+              aria-label="Notifications" 
+              className={cn(
+                "relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 transition-colors xl:inline-flex",
+                isNotifications ? "bg-primary/10 text-primary" : "bg-card/70 text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+              )}
+            >
+              <Bell className="h-4 w-4" fill={isNotifications ? "currentColor" : "none"} />
               {!!unreadCount && unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-card animate-in zoom-in">
                   {unreadCount > 99 ? '99+' : unreadCount}

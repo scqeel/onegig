@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowDownToLine,
@@ -62,6 +62,7 @@ import { CustomerCRM } from "@/components/agent/CustomerCRM";
 import { WalletManager } from "@/components/agent/WalletManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useToast } from "@/hooks/use-toast";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,9 @@ export const ALL_TABS: { label: string; value: AgentTab; icon: React.ReactNode }
 export default function AgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
   const { user, isAdmin, signOut } = useAuth();
+  const nav = useNavigate();
+  const location = useLocation();
+  const isNotifications = location.pathname === "/dashboard/notifications";
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const { data: unreadCount } = useUnreadNotifications();
@@ -156,8 +160,15 @@ export default function AgentDashboard() {
               </Button>
             )}
             
-            <Link to="/dashboard/notifications" aria-label="Notifications" className="relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-secondary/80">
-              <Bell className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+            <Link 
+              to="/dashboard/notifications" 
+              aria-label="Notifications" 
+              className={cn(
+                "relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors",
+                isNotifications ? "bg-primary/10 text-primary" : "hover:bg-secondary/80 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Bell className="h-4 w-4 transition-colors" fill={isNotifications ? "currentColor" : "none"} />
               {!!unreadCount && unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-background animate-in zoom-in">
                   {unreadCount > 99 ? '99+' : unreadCount}

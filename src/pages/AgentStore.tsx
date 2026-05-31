@@ -262,9 +262,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     queryKey: ["agent-crm-customers", agent?.id],
     enabled: !!isOwner && !!agent?.id,
     queryFn: async () => {
-      const { data } = await supabase.functions.invoke("crm-manage", {
-        body: { action: "list" }
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data, error } = await supabase.functions.invoke("crm-manage", {
+        body: { action: "list" },
+        headers: session?.access_token ? {
+          Authorization: `Bearer ${session.access_token}`
+        } : undefined
       });
+      if (error) throw error;
       return data?.customers || [];
     }
   });

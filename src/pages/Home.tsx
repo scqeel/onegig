@@ -39,6 +39,8 @@ import {
 } from "@/components/ui/accordion";
 import { useEffect, useRef, useState } from "react";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ─────────────────────────────────────────────
    Scroll-reveal hook
@@ -172,6 +174,17 @@ export default function HomePage() {
   const [activeNetwork, setActiveNetwork] = useState("mtn");
   const network = NETWORKS.find((n) => n.id === activeNetwork)!;
 
+  const { data: homeBg } = useQuery({
+    queryKey: ["home-bg"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("value").eq("key", "home_page_bg").maybeSingle();
+      return data?.value || "/bg-ancient-1.png";
+    },
+    staleTime: 60_000,
+  });
+
+  const bgStyle = homeBg && homeBg !== "none" ? { backgroundImage: `url(${homeBg})`, backgroundSize: "cover", backgroundPosition: "center" } : {};
+
   const { ref: statsRef,        inView: statsInView }        = useInView(0.15);
   const { ref: featuresRef,     inView: featuresInView }     = useInView(0.08);
   const { ref: stepsRef,        inView: stepsInView }        = useInView(0.08);
@@ -180,7 +193,7 @@ export default function HomePage() {
   const { ref: faqRef,          inView: faqInView }          = useInView(0.08);
 
   return (
-    <main className="min-h-dvh bg-white overflow-x-hidden">
+    <main className="min-h-dvh bg-transparent overflow-x-hidden">
 
       {/* ── Navbar (Modern Floating Pill) ── */}
       <header className="fixed left-0 right-0 top-4 z-50 px-4 md:px-8 pointer-events-none">
@@ -253,13 +266,20 @@ export default function HomePage() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-[#05080f]">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -top-40 left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
-          <div className="absolute top-1/3 right-0 h-[450px] w-[450px] rounded-full bg-fuchsia-600/15 blur-[120px]" />
-          <div className="absolute -bottom-20 left-0 h-[300px] w-[600px] rounded-full bg-indigo-700/10 blur-[130px]" />
-          <div className="absolute inset-0 grid-pattern-dark opacity-60" />
-        </div>
+      <section className="relative overflow-hidden bg-[#05080f]" style={bgStyle}>
+        {(!homeBg || homeBg === "none") && (
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="absolute -top-40 left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
+            <div className="absolute top-1/3 right-0 h-[450px] w-[450px] rounded-full bg-fuchsia-600/15 blur-[120px]" />
+            <div className="absolute -bottom-20 left-0 h-[300px] w-[600px] rounded-full bg-indigo-700/10 blur-[130px]" />
+            <div className="absolute inset-0 grid-pattern-dark opacity-60" />
+          </div>
+        )}
+        
+        {/* Dark overlay to ensure text is readable on patterned backgrounds */}
+        {homeBg && homeBg !== "none" && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+        )}
 
         <div className="relative mx-auto max-w-6xl px-5 pb-28 pt-16 md:px-8 md:pt-24 lg:pb-36 lg:pt-28">
 

@@ -34,8 +34,19 @@ export function AppShell({ children }: { children: ReactNode }) {
     setDismissed(true);
   };
 
+  const homePageBg = settings?.home_page_bg && settings.home_page_bg !== "none" ? settings.home_page_bg : null;
+
   return (
-    <div className="min-h-dvh w-full pb-24">
+    <div className="relative min-h-dvh w-full pb-24">
+      {homePageBg && (
+        <>
+          <div 
+            className="fixed inset-0 pointer-events-none -z-50 bg-cover bg-center bg-no-repeat transition-all duration-700"
+            style={{ backgroundImage: `url(${homePageBg})` }}
+          />
+          <div className="fixed inset-0 pointer-events-none -z-40 bg-background/85 backdrop-blur-[12px] transition-all duration-700" />
+        </>
+      )}
       {inDashboard && popupNotice && !dismissed && (
         <div className="sticky top-0 z-40 w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 px-4 py-2.5 shadow-md">
           <div className="mx-auto flex w-full max-w-[1360px] items-center justify-between gap-3">

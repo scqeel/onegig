@@ -1,8 +1,14 @@
 import { ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
-import { Bell, MessageCircle, Search, Menu, X } from "lucide-react";
+import { Bell, MessageCircle, Search, Menu, X, ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 type SidebarItem = {
   label: string;
@@ -189,39 +195,52 @@ export function DashboardLayout({
         </div>
       )}
 
-      {/* ── Mobile Navigation Overlay ── */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-background/95 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-200 lg:hidden">
-          <div className="flex items-center justify-between p-5 border-b border-border/40 bg-card/30">
+      {/* ── Mobile Navigation Drawer (Modern) ── */}
+      <Drawer open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+        <DrawerContent className="bg-background border-border/40 rounded-t-[32px] max-h-[85vh]">
+          <DrawerHeader className="border-b border-border/40 pb-4 pt-6 px-6">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-primary flex items-center justify-center shadow-soft">
-                <span className="text-sm font-black text-white">OG</span>
+              <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shadow-soft">
+                <span className="text-xs font-black text-white">OG</span>
               </div>
-              <span className="text-xl font-bold tracking-tight">Navigation</span>
+              <DrawerTitle className="text-left text-xl font-black tracking-tight text-foreground">Navigation</DrawerTitle>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-all active:scale-95 hover:text-foreground hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
+          </DrawerHeader>
           
-          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+          <div className="overflow-y-auto p-5 pb-12 space-y-6">
             {sidebarHeader && (
               <div className="rounded-3xl border border-border/50 bg-card/40 p-4 shadow-sm">
                 {sidebarHeader}
               </div>
             )}
             
-            <div className="space-y-2">
-              {sidebarItems?.map((item) => {
+            <div className="overflow-hidden rounded-[20px] border border-border/50 bg-secondary/20 shadow-sm">
+              {sidebarItems?.map((item, idx) => {
+                const isLast = idx === sidebarItems.length - 1;
                 const itemCls = cn(
-                  "flex items-center gap-4 rounded-2xl px-5 py-4 text-base font-bold transition-all w-full text-left",
-                  item.active
-                    ? "gradient-primary text-primary-foreground shadow-soft"
-                    : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  "flex items-center justify-between px-5 py-4 w-full text-left transition-colors active:bg-secondary/40",
+                  !isLast && "border-b border-border/50",
+                  item.active ? "bg-primary/5" : "hover:bg-secondary/30"
+                );
+
+                const content = (
+                  <>
+                    <div className="flex items-center gap-3.5">
+                      <div className={cn(
+                        "flex h-9 w-9 items-center justify-center rounded-xl",
+                        item.active ? "bg-primary text-primary-foreground shadow-soft" : "bg-card border border-border/60 text-muted-foreground"
+                      )}>
+                        {item.icon}
+                      </div>
+                      <span className={cn(
+                        "text-[15px] font-semibold tracking-tight",
+                        item.active ? "text-primary" : "text-foreground"
+                      )}>
+                        {item.label}
+                      </span>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                  </>
                 );
 
                 if (item.to) {
@@ -232,8 +251,7 @@ export function DashboardLayout({
                       className={itemCls}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >
-                      {item.icon}
-                      <span>{item.label}</span>
+                      {content}
                     </Link>
                   );
                 }
@@ -248,15 +266,14 @@ export function DashboardLayout({
                     }} 
                     className={itemCls}
                   >
-                    {item.icon}
-                    <span>{item.label}</span>
+                    {content}
                   </button>
                 );
               })}
             </div>
           </div>
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
     </AppShell>
   );
 }

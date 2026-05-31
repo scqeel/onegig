@@ -18,6 +18,7 @@ export function useSettings() {
         popup_notice: String(map.popup_notice ?? ""),
         platform_name: String(map.platform_name ?? "OneGig"),
         platform_tagline: String(map.platform_tagline ?? "Buy data in seconds ⚡"),
+        home_page_bg: String(map.home_page_bg ?? "none"),
       };
     },
     staleTime: 5 * 60 * 1000,

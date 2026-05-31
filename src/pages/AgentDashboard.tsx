@@ -62,7 +62,7 @@ import { CustomerCRM } from "@/components/agent/CustomerCRM";
 import { WalletManager } from "@/components/agent/WalletManager";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useTheme } from "next-themes";
 import { useToast } from "@/hooks/use-toast";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";

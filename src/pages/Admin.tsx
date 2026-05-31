@@ -701,14 +701,32 @@ function OrdersSection() {
         query = query.gte("created_at", d.toISOString());
       }
 
-      const { data: orders } = await query.limit(3000);
+      const { data: orders, error } = await query.limit(800);
+      
+      if (error) {
+        console.error("Orders query error:", error);
+        throw error;
+      }
 
       const userIds = [...new Set((orders ?? []).map((o: any) => o.customer_user_id).filter(Boolean))] as string[];
       let profiles: Profile[] = [];
+      
       if (userIds.length) {
-        const { data: p } = await supabase.from("profiles").select("id, full_name, username, email, phone").in("id", userIds);
-        profiles = (p ?? []) as Profile[];
+        // Chunk userIds to avoid URI Too Long error
+        const chunkSize = 50;
+        for (let i = 0; i < userIds.length; i += chunkSize) {
+          const chunk = userIds.slice(i, i + chunkSize);
+          const { data: p, error: pError } = await supabase
+            .from("profiles")
+            .select("id, full_name, username, email, phone")
+            .in("id", chunk);
+            
+          if (!pError && p) {
+            profiles = [...profiles, ...(p as Profile[])];
+          }
+        }
       }
+      
       const profileMap = new Map(profiles.map((p) => [p.id, p]));
       return (orders ?? []).map((o: any) => ({
         ...o,

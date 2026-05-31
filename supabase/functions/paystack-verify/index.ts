@@ -734,12 +734,18 @@ async function verifyAndProcess(reference: string) {
       
       const { error: wErr } = await admin.from("wallet_transactions").insert({
         user_id: userId,
-        type: "adjustment",
+        type: "deposit",
         amount: depositAmount,
         status: "completed",
         description: `Wallet Deposit via Paystack (${reference})`,
       });
       if (wErr) throw new Error("Wallet insert failed: " + wErr.message);
+
+      const { error: rpcErr } = await admin.rpc("increment_wallet_balance", {
+        user_id_param: userId,
+        amount_param: depositAmount
+      });
+      if (rpcErr) throw new Error("Balance update failed: " + rpcErr.message);
 
       const { data: uProf } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
       if (uProf?.phone) {
@@ -821,12 +827,18 @@ async function verifyAndProcess(reference: string) {
 
     const { error: wErr } = await admin.from("wallet_transactions").insert({
       user_id: userId,
-      type: "adjustment",
+      type: "deposit",
       amount: depositAmount,
       status: "completed",
       description: `Wallet Deposit via Paystack (${reference})`,
     });
     if (wErr) throw new Error("Wallet insert failed: " + wErr.message);
+
+    const { error: rpcErr } = await admin.rpc("increment_wallet_balance", {
+      user_id_param: userId,
+      amount_param: depositAmount
+    });
+    if (rpcErr) throw new Error("Balance update failed: " + rpcErr.message);
   }
 
   await admin

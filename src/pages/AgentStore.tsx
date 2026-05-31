@@ -11,6 +11,8 @@ import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 import { DraggableWidget } from "@/components/agent/DraggableWidget";
 import { OwnerDashboard } from "@/components/agent/OwnerDashboard";
 import { AgentLogin } from "@/components/agent/AgentLogin";
+import { CustomerLogin } from "@/components/store/CustomerLogin";
+import { CustomerWallet } from "@/components/store/CustomerWallet";
 import { formatGHS } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -177,6 +179,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const nav = useNavigate();
   const { toast } = useToast();
   const { profile } = useAuth();
+  const [walletBalance, setWalletBalance] = useState(0);
 
   // Navigation & Theme tabs
   const [activeTab, setActiveTab] = useState<Tab>("orders");
@@ -184,6 +187,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [currentTime, setCurrentTime] = useState("");
   const [viewMode, setViewMode] = useState<"storefront" | "dashboard">("storefront");
   const [loginOpen, setLoginOpen] = useState(false);
+  const [customerLoginOpen, setCustomerLoginOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -203,6 +207,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [payWithWallet, setPayWithWallet] = useState(false);
 
   // Promo Coupon Code States
   const [couponCodeInput, setCouponCodeInput] = useState("");
@@ -715,7 +720,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       toast({ title: "Enter recipient phone", variant: "destructive" });
       return;
     }
-    if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
+    if (!payWithWallet && (!momoNumber || momoNumber.replace(/\D/g, "").length < 9)) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
       return;
     }
@@ -743,6 +748,27 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       });
 
     try {
+      if (payWithWallet) {
+        const { data, error } = await supabase.functions.invoke("wallet-pay", {
+          body: {
+            bundle_id: selectedBundle.id,
+            recipient_phone: phone.replace(/\D/g, ""),
+            agent_slug: slug ?? null,
+          },
+        });
+
+        if (error || !data?.ok) {
+          const errPayload = data?.error || error?.message || "Wallet payment failed";
+          const errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
+          setErrorMsg(errMsg);
+          setPhase("error");
+          return;
+        }
+
+        setPhase("success");
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("paystack-process", {
         body: {
           purpose: "order",
@@ -1224,6 +1250,23 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 {currentTime || ""}
               </span>
             </div>
+
+            {/* Customer Wallet Topup or Login */}
+            {!isOwner && (
+              <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+                <div className="text-xs text-slate-400 font-medium">Your Store Balance</div>
+                {profile ? (
+                  <CustomerWallet userId={profile.id} agentSlug={agent.store_slug} onBalanceChange={setWalletBalance} />
+                ) : (
+                  <button
+                    onClick={() => setCustomerLoginOpen(true)}
+                    className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-md"
+                  >
+                    <Wallet className="w-3.5 h-3.5 opacity-80" /> Login & View
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -1623,44 +1666,46 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
               </p>
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
-                Payment Mobile Money Number (Who is paying?)
-              </label>
-              <div className="flex gap-2">
-                <select 
-                  className="w-[100px] h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-sm font-semibold focus-visible:ring-rose-500 bg-white dark:bg-slate-900 px-3 border outline-none"
-                  value={momoNetwork}
-                  onChange={(e) => setMomoNetwork(e.target.value)}
-                >
-                  <option value="MTN">MTN</option>
-                  <option value="TELECEL">Telecel</option>
-                  <option value="AIRTELTIGO">AT</option>
-                </select>
-                <Input
-                  inputMode="tel"
-                  value={momoNumber}
-                  onChange={(e) => setMomoNumber(e.target.value)}
-                  placeholder="024 123 4567"
-                  className="flex-1 h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-base font-semibold focus-visible:ring-rose-500"
-                />
+            {!payWithWallet && (
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
+                  Payment Mobile Money Number (Who is paying?)
+                </label>
+                <div className="flex gap-2">
+                  <select 
+                    className="w-[100px] h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-sm font-semibold focus-visible:ring-rose-500 bg-white dark:bg-slate-900 px-3 border outline-none"
+                    value={momoNetwork}
+                    onChange={(e) => setMomoNetwork(e.target.value)}
+                  >
+                    <option value="MTN">MTN</option>
+                    <option value="TELECEL">Telecel</option>
+                    <option value="AIRTELTIGO">AT</option>
+                  </select>
+                  <Input
+                    inputMode="tel"
+                    value={momoNumber}
+                    onChange={(e) => setMomoNumber(e.target.value)}
+                    placeholder="024 123 4567"
+                    className="flex-1 h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-base font-semibold focus-visible:ring-rose-500"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-slate-400 font-medium">
+                  The prompt will be sent to this number.
+                </p>
+                {isVerifying && (
+                  <div className="mt-2 text-xs text-rose-500 flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
+                    Verifying account...
+                  </div>
+                )}
+                {accountName && !isVerifying && (
+                  <div className="mt-2 text-xs font-semibold px-3 py-2 bg-emerald-500/10 text-emerald-600 rounded-lg flex items-center gap-2 border border-emerald-500/20">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {accountName}
+                  </div>
+                )}
               </div>
-              <p className="mt-1 text-[10px] text-slate-400 font-medium">
-                The prompt will be sent to this number.
-              </p>
-              {isVerifying && (
-                <div className="mt-2 text-xs text-rose-500 flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-                  Verifying account...
-                </div>
-              )}
-              {accountName && !isVerifying && (
-                <div className="mt-2 text-xs font-semibold px-3 py-2 bg-emerald-500/10 text-emerald-600 rounded-lg flex items-center gap-2 border border-emerald-500/20">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {accountName}
-                </div>
-              )}
-            </div>
+            )}
 
             {/* Promo / Discount Section */}
             <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
@@ -1746,12 +1791,33 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
               )}
             </div>
 
+            {/* 💰 Pay with Wallet Toggle */}
+            {profile && walletBalance > 0 && walletBalance >= finalPrice && !isOwner && (
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-between">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="wallet-pay-checkbox"
+                    checked={payWithWallet}
+                    onChange={(e) => setPayWithWallet(e.target.checked)}
+                    className="mt-1 h-4.5 w-4.5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="wallet-pay-checkbox" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
+                    Pay with Wallet Balance
+                    <span className="block text-[9px] text-slate-500 font-medium mt-0.5">
+                      You have {formatGHS(walletBalance)} available.
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={initiatePayment}
               disabled={
                 !selectedBundle ||
                 phone.replace(/\D/g, "").length < 9 ||
-                momoNumber.replace(/\D/g, "").length < 9 ||
+                (!payWithWallet && momoNumber.replace(/\D/g, "").length < 9) ||
                 isVerifying
               }
               className="h-12 w-full rounded-2xl text-xs font-black uppercase bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-md shadow-rose-500/10 transition-all duration-300"
@@ -1807,6 +1873,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       {loginOpen && (
         <AgentLogin storeName={agent?.store_name || "Agent Store"} onClose={() => setLoginOpen(false)} />
       )}
+
+      {/* Customer Login Modal */}
+      <CustomerLogin 
+        isOpen={customerLoginOpen} 
+        onClose={() => setCustomerLoginOpen(false)} 
+        storeName={agent?.store_name || "Agent Store"} 
+      />
 
       {/* 🎮 Loyalty Rewards Hub Floating Button & Dialog */}
       {agent?.enable_loyalty_rewards !== false && (

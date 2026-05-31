@@ -130,6 +130,16 @@ Deno.serve(async (req) => {
       payload = { user_id: userId };
     }
 
+    if (body.purpose === "wallet_deposit") {
+      if (!userId) return json({ error: "Unauthorized" }, 401);
+      const depositAmount = Number((body as any).deposit_amount);
+      if (!depositAmount || depositAmount <= 0) return json({ error: "Invalid deposit amount" }, 400);
+
+      // Add 3% processing fee
+      amount = depositAmount * 1.03;
+      payload = { user_id: userId, deposit_amount: depositAmount };
+    }
+
     if (!amount || amount <= 0) return json({ error: "Invalid amount" }, 400);
 
     const email = (body.email ?? userEmail ?? "").trim().toLowerCase();

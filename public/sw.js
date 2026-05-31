@@ -42,9 +42,21 @@ self.addEventListener('notificationclick', (event) => {
           return client.focus();
         }
       }
-      // If not, then open the target URL in a new window/tab.
+      // If not, then open the target URL in a new window/tab, ensuring it's relative or same-origin
       if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
+        let finalUrl = urlToOpen;
+        try {
+          const parsed = new URL(urlToOpen, self.location.origin);
+          if (parsed.origin !== self.location.origin) {
+            console.warn('Blocked opening cross-origin URL from notification:', urlToOpen);
+            finalUrl = '/';
+          } else {
+            finalUrl = parsed.href;
+          }
+        } catch(e) {
+          finalUrl = '/';
+        }
+        return clients.openWindow(finalUrl);
       }
     })
   );

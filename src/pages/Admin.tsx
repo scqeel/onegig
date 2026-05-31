@@ -677,15 +677,31 @@ function OrdersSection() {
   const [retryId, setRetryId]           = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch]             = useState("");
+  const [dateFilter, setDateFilter]     = useState("7d");
 
   const { data, isLoading } = useQuery({
-    queryKey: ["admin-orders"],
+    queryKey: ["admin-orders", dateFilter],
     queryFn: async () => {
-      const { data: orders } = await supabase
+      let query = supabase
         .from("orders")
         .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, bundle:bundles(size_label), network:networks(name, logo_emoji), agent:agent_profiles(store_name)")
-        .order("created_at", { ascending: false })
-        .limit(100);
+        .order("created_at", { ascending: false });
+
+      if (dateFilter === "today") {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        query = query.gte("created_at", d.toISOString());
+      } else if (dateFilter === "7d") {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        query = query.gte("created_at", d.toISOString());
+      } else if (dateFilter === "30d") {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        query = query.gte("created_at", d.toISOString());
+      }
+
+      const { data: orders } = await query.limit(3000);
 
       const userIds = [...new Set((orders ?? []).map((o: any) => o.customer_user_id).filter(Boolean))] as string[];
       let profiles: Profile[] = [];
@@ -793,8 +809,20 @@ function OrdersSection() {
             className="h-10 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-primary/30 transition-all"
           />
         </div>
-        <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
-          {FILTERS.map(({ label, value, count }) => (
+        <div className="flex flex-wrap shrink-0 items-center gap-3">
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="h-10 rounded-xl border border-border/60 bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all cursor-pointer"
+          >
+            <option value="today">Today</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="all">All Time</option>
+          </select>
+          
+          <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
+            {FILTERS.map(({ label, value, count }) => (
             <button
               key={value}
               type="button"

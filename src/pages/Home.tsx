@@ -19,6 +19,8 @@ import {
   Users,
   Wallet,
   Zap,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,7 @@ import { useEffect, useRef, useState } from "react";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "next-themes";
 
 /* ─────────────────────────────────────────────
    Scroll-reveal hook
@@ -173,6 +176,7 @@ const AGENT_CHECKLIST = [
 export default function HomePage() {
   const [activeNetwork, setActiveNetwork] = useState("mtn");
   const network = NETWORKS.find((n) => n.id === activeNetwork)!;
+  const { theme, setTheme } = useTheme();
 
   const { data: homeBg } = useQuery({
     queryKey: ["home-bg"],
@@ -207,6 +211,14 @@ export default function HomePage() {
             <Link to="/auth?tab=signin" className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
               Agent Sign In
             </Link>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-slate-600 hover:bg-slate-100"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
             <Button asChild className="ml-2 h-10 rounded-full px-6 text-sm font-bold gradient-primary shadow-[0_4px_14px_rgba(139,92,246,0.3)] hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)] transition-all hover:-translate-y-0.5">
               <Link to="/buy">Buy Data Now</Link>
             </Button>

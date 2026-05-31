@@ -1811,9 +1811,59 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
             <Input className="h-11 rounded-xl" value={form.custom_domain} onChange={(e) => f("custom_domain", e.target.value)} placeholder="e.g. data.mystore.com" />
             <p className="text-[10px] text-muted-foreground mt-1">Point your domain's CNAME or A-record to our platform, then enter the domain here without https://</p>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Logo URL</label>
-            <Input className="h-11 rounded-xl" value={form.store_logo_url} onChange={(e) => f("store_logo_url", e.target.value)} placeholder="https://example.com/logo.png" />
+          <div className="space-y-3 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Logo URL or Select Profile Avatar</label>
+            <div className="flex gap-2">
+              <Input className="h-11 flex-1 rounded-xl" value={form.store_logo_url.startsWith('data:image/svg+xml') ? 'Emoji Selected' : form.store_logo_url.startsWith('https://api.dicebear.com') ? '3D Avatar Selected' : form.store_logo_url} onChange={(e) => f("store_logo_url", e.target.value)} placeholder="https://example.com/logo.png" readOnly={form.store_logo_url.startsWith('data:image/svg+xml') || form.store_logo_url.startsWith('https://api.dicebear.com')} />
+              {(form.store_logo_url.startsWith('data:image/svg+xml') || form.store_logo_url.startsWith('https://api.dicebear.com')) && (
+                <Button variant="outline" type="button" onClick={() => f("store_logo_url", "")}>Clear</Button>
+              )}
+            </div>
+            
+            {/* 3D Avatars Grid */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">3D Avatars</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  "https://api.dicebear.com/9.x/adventurer/svg?seed=Felix",
+                  "https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka",
+                  "https://api.dicebear.com/9.x/adventurer/svg?seed=Jasper",
+                  "https://api.dicebear.com/9.x/adventurer/svg?seed=Max",
+                  "https://api.dicebear.com/9.x/adventurer/svg?seed=Bella",
+                  "https://api.dicebear.com/9.x/notionists/svg?seed=Leo",
+                  "https://api.dicebear.com/9.x/notionists/svg?seed=Zoe",
+                  "https://api.dicebear.com/9.x/notionists/svg?seed=Jack",
+                  "https://api.dicebear.com/9.x/notionists/svg?seed=Oliver",
+                  "https://api.dicebear.com/9.x/notionists/svg?seed=Mia"
+                ].map(avatar => (
+                  <button
+                    key={avatar}
+                    type="button"
+                    onClick={() => f("store_logo_url", avatar)}
+                    className="h-12 w-12 flex items-center justify-center rounded-xl border border-border/50 bg-secondary/30 hover:bg-secondary transition-colors overflow-hidden shadow-sm"
+                  >
+                    <img src={avatar} alt="Avatar" className="h-full w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Emojis Grid */}
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Emojis</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {["🚀", "💎", "🌟", "🔥", "👑", "⚡", "🎯", "💼", "🛒", "🛍️", "📱", "🛡️", "💰", "💸", "💳", "👨‍💼", "👩‍💼", "🦸‍♂️", "🦹‍♂️", "🦁", "🦅", "⚡", "😎", "👾", "🦊", "🐻"].map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => f("store_logo_url", `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${emoji}</text></svg>`)}`)}
+                    className="h-10 w-10 flex items-center justify-center rounded-xl border border-border/50 bg-secondary/30 hover:bg-secondary transition-colors text-2xl shadow-sm"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">Brand Colour</label>

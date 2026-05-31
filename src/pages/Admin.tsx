@@ -1677,13 +1677,36 @@ function SiteSettingsSection() {
 
             {!["/bg-ancient-1.png", "/bg-ancient-2.png", "/bg-ancient-3.png", "none"].includes(homePageBg) && (
               <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2 bg-primary/5">
-                <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-primary">Paste Image/GIF Link</label>
-                <input 
-                  value={homePageBg} 
-                  onChange={(e) => setHomePageBg(e.target.value)} 
-                  placeholder="https://example.com/my-animated-background.gif"
-                  className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none sm:text-right" 
-                />
+                <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-primary">Upload or Paste GIF Link</label>
+                <div className="flex-1 flex gap-2">
+                  <input 
+                    value={homePageBg.startsWith('data:') ? 'Uploaded File Selected' : homePageBg} 
+                    onChange={(e) => setHomePageBg(e.target.value)} 
+                    placeholder="https://example.com/my-animated-background.gif"
+                    className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none sm:text-right" 
+                    readOnly={homePageBg.startsWith('data:')}
+                  />
+                  <Button variant="outline" size="sm" onClick={() => document.getElementById('bg-upload')?.click()}>
+                    Upload GIF
+                  </Button>
+                  <input 
+                    id="bg-upload" 
+                    type="file" 
+                    accept="image/gif,image/jpeg,image/png,image/webp" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 2 * 1024 * 1024) {
+                        alert("File too large. Please use a GIF under 2MB.");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onload = () => setHomePageBg(reader.result as string);
+                      reader.readAsDataURL(file);
+                    }}
+                  />
+                </div>
               </div>
             )}
             

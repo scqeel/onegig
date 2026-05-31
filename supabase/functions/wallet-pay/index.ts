@@ -207,6 +207,18 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     throw new Error(oErr?.message ?? "Order create failed");
   }
 
+  // Send Processing SMS
+  if (customerPhone) {
+    const isSelf = customerPhone === recipient;
+    const waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
+    const msg = isSelf 
+      ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
+      : `Your OneGig order of ${bundle.size_label} for ${recipient} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
+    
+    // Fire and forget
+    sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+  }
+
   const networkCode = (bundle.networks as any)?.code ?? "MTN";
   const delivery = await deliverData(admin, {
     recipient,

@@ -1,10 +1,12 @@
 import { ReactNode, useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { MessageCircle, Megaphone, X } from "lucide-react";
+import { MessageCircle, Megaphone, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useSettings } from "@/hooks/useSettings";
 import { InstallPromptModal } from "@/components/ui/InstallPromptModal";
 import { InAppNotificationListener } from "@/components/ui/InAppNotificationListener";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
+import { DraggableThemeToggle } from "@/components/ui/DraggableThemeToggle";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
@@ -74,6 +76,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       {inDashboard && supportHref && (
         <DraggableWhatsApp link={supportHref} />
       )}
+
+      {/* Global Floating Theme Switcher */}
+      <DraggableThemeToggle />
 
       <InstallPromptModal />
       <InAppNotificationListener />

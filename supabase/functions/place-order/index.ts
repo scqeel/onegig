@@ -249,6 +249,18 @@ Deno.serve(async (req) => {
 
     if (oErr || !order) return json({ error: oErr?.message ?? "Order setup failed" }, 500);
 
+    // Send Processing SMS
+    if (customerPhone) {
+      const isSelf = customerPhone === body.recipient_phone;
+      const waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
+      const msg = isSelf 
+        ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
+        : `Your OneGig order of ${bundle.size_label} for ${body.recipient_phone} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
+      
+      // Fire and forget
+      sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+    }
+
     // Deliver via stub adapter
     const networkCode = (bundle.networks as any)?.code ?? "MTN";
     
@@ -306,13 +318,6 @@ Deno.serve(async (req) => {
           url: "/agent"
         });
       }
-    }
-
-    if (delivery.ok) {
-      await sendSMS({
-        to: body.recipient_phone,
-        message: `Success! Your OneGig data purchase of ${bundle.size_label} is complete. Ref: ${order.reference}`,
-      });
     }
 
     return json({

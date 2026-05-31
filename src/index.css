@@ -255,4 +255,7 @@ All colors MUST be HSL.
     font-weight: 600;
     font-family: "Sora", "Manrope", sans-serif;
   }
+  option {
+    @apply bg-background text-foreground;
+  }
 }

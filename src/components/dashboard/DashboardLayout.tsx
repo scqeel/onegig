@@ -39,8 +39,6 @@ export function DashboardLayout({
   children: ReactNode;
   mainClassName?: string;
 }) {
-  mainClassName?: string;
-}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadCount } = useUnreadNotifications();
 

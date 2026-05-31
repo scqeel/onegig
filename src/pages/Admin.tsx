@@ -843,6 +843,7 @@ function OrdersSection() {
               )}
             </button>
           ))}
+          </div>
         </div>
       </div>
 

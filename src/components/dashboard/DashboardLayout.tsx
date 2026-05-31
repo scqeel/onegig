@@ -9,6 +9,8 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useUnreadNotifications } from "@/hooks/useNotifications";
 
 type SidebarItem = {
   label: string;
@@ -37,7 +39,10 @@ export function DashboardLayout({
   children: ReactNode;
   mainClassName?: string;
 }) {
+  mainClassName?: string;
+}) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { data: unreadCount } = useUnreadNotifications();
 
   return (
     <AppShell>
@@ -66,9 +71,14 @@ export function DashboardLayout({
             <button type="button" aria-label="Messages" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
               <MessageCircle className="h-4 w-4" />
             </button>
-            <button type="button" aria-label="Notifications" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
+            <Link to="/dashboard/notifications" aria-label="Notifications" className="relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
               <Bell className="h-4 w-4" />
-            </button>
+              {!!unreadCount && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-card animate-in zoom-in">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
             {badge && (
               <span className="rounded-full gradient-primary px-3 py-1 text-xs font-bold text-white shadow-soft">
                 {badge}

@@ -38,6 +38,7 @@ import {
   Gift,
   Paintbrush,
   Menu,
+  Bell,
 } from "lucide-react";
 import {
   Drawer,
@@ -65,8 +66,8 @@ import { useToast } from "@/hooks/use-toast";
 import { formatGHS, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import { useTheme } from "next-themes";
 import { subscribeToPushNotifications } from "@/lib/push";
+import { useUnreadNotifications } from "@/hooks/useNotifications";
 
 export type AgentTab = "buy" | "store" | "marketing" | "leaderboard" | "transactions" | "customers" | "withdrawals" | "sub_agents" | "settings";
 
@@ -85,9 +86,9 @@ export const ALL_TABS: { label: string; value: AgentTab; icon: React.ReactNode }
 export default function AgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
   const { user, isAdmin, signOut } = useAuth();
-  const nav = useNavigate();
   const { theme, setTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { data: unreadCount } = useUnreadNotifications();
 
   const { data: agentProfile, isLoading } = useQuery({
     queryKey: ["my-agent-profile", user?.id],
@@ -154,6 +155,16 @@ export default function AgentDashboard() {
                 <Link to="/admin"><Shield className="mr-1 h-3 w-3" /> Admin</Link>
               </Button>
             )}
+            
+            <Link to="/dashboard/notifications" aria-label="Notifications" className="relative flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-secondary/80">
+              <Bell className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+              {!!unreadCount && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-background animate-in zoom-in">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Link>
+
             <Button
               type="button"
               variant="ghost"

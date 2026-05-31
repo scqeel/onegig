@@ -263,11 +263,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     enabled: !!isOwner && !!agent?.id,
     queryFn: async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) return []; // Session expired, don't throw 401
+      
       const { data, error } = await supabase.functions.invoke("crm-manage", {
         body: { action: "list" },
-        headers: session?.access_token ? {
+        headers: {
           Authorization: `Bearer ${session.access_token}`
-        } : undefined
+        }
       });
       if (error) throw error;
       return data?.customers || [];

@@ -154,11 +154,18 @@ export default function NotificationsPage() {
             ) : (
               <div className="divide-y divide-border/40">
                 {visibleNotifications.map((n: any) => (
-                  <button 
+                  <div 
                     key={n.id} 
-                    type="button"
                     onClick={() => setSelectedNotification(n)}
-                    className="flex w-full text-left gap-4 p-5 hover:bg-secondary/40 transition-colors group"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedNotification(n);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
+                    className="flex w-full text-left gap-4 p-5 hover:bg-secondary/40 focus:bg-secondary/40 transition-colors group cursor-pointer outline-none"
                   >
                     <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getBg(n.type)}`}>
                       {getIcon(n.type)}
@@ -174,7 +181,7 @@ export default function NotificationsPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="h-8 w-8 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
                           deleteMutation.mutate(n);
@@ -187,7 +194,7 @@ export default function NotificationsPage() {
                         )}
                       </Button>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             )}

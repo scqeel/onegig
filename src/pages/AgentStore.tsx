@@ -12,6 +12,7 @@ import { DraggableWidget } from "@/components/agent/DraggableWidget";
 import { OwnerDashboard } from "@/components/agent/OwnerDashboard";
 import { AgentLogin } from "@/components/agent/AgentLogin";
 import { formatGHS } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import {
   Store,
   Phone,
@@ -55,6 +56,30 @@ import {
 type Tab = "orders" | "trans" | "bulk" | "store";
 type ThemeAccent = "rose" | "indigo" | "amber" | "emerald" | "violet";
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
+
+function getNetStyle(code: string) {
+  const c = code.toUpperCase();
+  if (c === "MTN")
+    return {
+      cardIdle: "border-[#f2c000] bg-[#ffcc00] text-black hover:bg-[#e6b800] transition-colors",
+      cardActive: "border-black bg-[#e6b800] text-black shadow-lg ring-2 ring-black",
+    };
+  if (c === "TELECEL")
+    return {
+      cardIdle: "border-[#b30000] bg-[#cc0000] text-white hover:bg-[#b30000] transition-colors",
+      cardActive: "border-black bg-[#b30000] text-white shadow-lg ring-2 ring-black",
+    };
+  if (c === "AIRTELTIGO" || c === "AT")
+    return {
+      cardIdle: "border-[#380b6b] bg-[#4a148c] text-white hover:bg-[#380b6b] transition-colors",
+      cardActive: "border-black bg-[#380b6b] text-white shadow-lg ring-2 ring-black",
+    };
+  
+  return {
+    cardIdle: "border-blue-600 bg-blue-600 text-white hover:bg-blue-700 transition-colors",
+    cardActive: "border-black bg-blue-700 text-white shadow-lg ring-2 ring-black",
+  };
+}
 
 export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?: string }) {
   const { slug: routeSlug } = useParams<{ slug: string }>();
@@ -947,340 +972,312 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   }
 
   return (
-    <div className={getStoreBgClass()}>
+    <div className={`${getStoreBgClass()} relative overflow-hidden`}>
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-100%, 0, 0); }
+        }
+        .og-promo-marquee {
+          display: inline-block;
+          padding-left: 100%;
+          animation: marquee 25s linear infinite;
+        }
+        .og-promo-marquee:hover {
+          animation-play-state: paused;
+        }
+        @keyframes shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+        @keyframes float-gentle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
+        }
+        .animate-shimmer {
+          background-size: 200% 100%;
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        .animate-float-gentle {
+          animation: float-gentle 5s ease-in-out infinite;
+        }
+        .store-hero {
+          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+          position: relative;
+        }
+        .store-hero::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          right: -30%;
+          width: 60%;
+          height: 200%;
+          background: radial-gradient(ellipse, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .store-hero::after {
+          content: '';
+          position: absolute;
+          bottom: -40%;
+          left: -20%;
+          width: 50%;
+          height: 180%;
+          background: radial-gradient(ellipse, rgba(244, 63, 94, 0.1) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .net-pill {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .net-pill:hover {
+          transform: translateY(-2px);
+        }
+        .net-pill.active {
+          transform: scale(1.05);
+          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+      `}</style>
       
-      {agent.store_promo_banner && (
-        <>
-          <style>{`
-            @keyframes marquee {
-              0% { transform: translate3d(0, 0, 0); }
-              100% { transform: translate3d(-100%, 0, 0); }
-            }
-            .og-promo-marquee {
-              display: inline-block;
-              padding-left: 100%;
-              animation: marquee 25s linear infinite;
-            }
-            .og-promo-marquee:hover {
-              animation-play-state: paused;
-            }
-          `}</style>
-          <div className={`w-full py-3 overflow-hidden border-b flex items-center font-extrabold text-xs uppercase tracking-wider relative shadow-sm z-50 ${
+      <div className="relative z-10">
+        {/* ── PROMO BANNER ── */}
+        {agent.store_promo_banner && (
+          <div className={`w-full py-3 overflow-hidden border-b flex items-center font-extrabold text-xs uppercase tracking-wider relative shadow-sm ${
             agent.store_promo_banner_style === 'midnight-gold' 
-              ? 'bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 text-yellow-400 border-yellow-500/25 shadow-yellow-500/5'
+              ? 'bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 text-yellow-400 border-yellow-500/25'
               : agent.store_promo_banner_style === 'fire-ruby'
-              ? 'bg-gradient-to-r from-rose-950 via-red-950 to-rose-950 text-rose-200 border-red-500/25 shadow-red-500/5'
+              ? 'bg-gradient-to-r from-rose-950 via-red-950 to-rose-950 text-rose-200 border-red-500/25'
               : agent.store_promo_banner_style === 'success-emerald'
-              ? 'bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 text-emerald-300 border-emerald-500/25 shadow-emerald-500/5'
-              : 'bg-gradient-to-r from-rose-950 via-indigo-950 to-rose-950 text-amber-300 border-indigo-500/25 shadow-rose-500/5'
+              ? 'bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 text-emerald-300 border-emerald-500/25'
+              : 'bg-gradient-to-r from-rose-950 via-indigo-950 to-rose-950 text-amber-300 border-indigo-500/25'
           }`}>
             <div className="og-promo-marquee whitespace-nowrap">
               {agent.store_promo_banner} &nbsp; &nbsp; • &nbsp; &nbsp; {agent.store_promo_banner} &nbsp; &nbsp; • &nbsp; &nbsp; {agent.store_promo_banner}
             </div>
           </div>
-        </>
-      )}
+        )}
 
-      <div className="mx-auto max-w-md px-4 pt-4 space-y-4">
+      <div className="mx-auto max-w-md px-4 pt-0 space-y-5 pb-24">
         
-        {/* ── CARD HEADER (Premium Dark-Glassmorphism) ── */}
-        <div className="bg-gradient-to-br from-[#0b132b] via-[#1c2541] to-[#0d1b2a] text-white rounded-[32px] p-6 shadow-xl relative overflow-hidden transition-all duration-500">
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ── HERO BANNER — Full-width dark gradient with glow ── */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        <div className="store-hero -mx-4 px-6 pt-10 pb-8 relative overflow-hidden">
+          {/* Decorative ring */}
+          <div className="absolute top-6 right-6 w-24 h-24 rounded-full border border-white/[0.06] pointer-events-none" />
+          <div className="absolute top-10 right-10 w-14 h-14 rounded-full border border-white/[0.04] pointer-events-none" />
           
-          {/* Neon gradient highlights */}
-          <div className="absolute right-0 top-0 w-44 h-44 rounded-full bg-blue-500/10 blur-3xl pointer-events-none" />
-          <div className="absolute left-1/3 bottom-0 w-36 h-36 rounded-full bg-indigo-500/10 blur-2xl pointer-events-none" />
-          <div className="absolute -left-10 -top-10 w-24 h-24 rounded-full bg-pink-500/10 blur-xl pointer-events-none" />
-
-          {/* Profile details */}
-          <div className="flex justify-between items-start">
-            <div className="space-y-1">
-              <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
-                {agent.store_name}
-                <Sparkles className="h-5 w-5 text-yellow-400 fill-yellow-400/20 animate-pulse" />
-              </h1>
-              <p className="text-sm text-slate-300 font-medium">
-                {agent.store_tagline || "Welcome to Mtopup"}
-              </p>
-              <div className="pt-2">
-                <span className="inline-block text-[9px] font-extrabold text-rose-400 bg-rose-500/10 border border-rose-500/20 px-3 py-1 rounded-full uppercase tracking-wider">
-                  GHANA · RESELLER PLATFORM
-                </span>
+          <div className="relative z-10 space-y-5">
+            {/* Logo + Name row */}
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 p-[2px] shadow-xl shadow-indigo-500/20 animate-float-gentle flex-shrink-0">
+                <div className="h-full w-full rounded-[14px] bg-slate-900 flex items-center justify-center">
+                  <Store className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-extrabold text-white tracking-tight truncate">
+                  {agent.store_name}
+                </h1>
+                <p className="text-sm text-slate-400 font-medium truncate">
+                  {agent.store_tagline || "Fast data. Better prices."}
+                </p>
               </div>
             </div>
 
-            {/* Custom Theme Switcher & Owner Dashboard Button */}
-            <div className="flex items-center gap-2">
-              {isOwner && (
-                <Button
-                  onClick={() => setViewMode("dashboard")}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 rounded-lg text-xs bg-white/10 hover:bg-white/20 border-white/10 text-white font-extrabold shadow-sm"
-                >
-                  Workspace
-                </Button>
-              )}
-              <button
-                onClick={rotateAccent}
-                title="Change Accent Color"
-                className="bg-slate-800/60 text-slate-300 p-2.5 rounded-full hover:bg-slate-700/80 transition-all border border-slate-700/50 relative group"
-              >
-                <Paintbrush className="h-4.5 w-4.5 group-hover:rotate-12 transition-transform" />
-                <span className="absolute -bottom-1 -right-1 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+            {/* Stats row */}
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
                 </span>
-              </button>
+                LIVE
+              </span>
+              <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 uppercase tracking-wider">
+                Ghana · Reseller
+              </span>
+              <span className="text-[10px] font-medium text-slate-500 ml-auto">
+                {currentTime || ""}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Header Action Grid (Tabs) - ONLY FOR STORE OWNER */}
-          {isOwner && (
-            <div className="grid grid-cols-5 gap-2 mt-6">
-              {[
-                { id: "orders", label: "Orders", icon: ShoppingBag },
-                { id: "trans", label: "Trans", icon: Receipt },
-                { id: "bulk", label: "Bulk", icon: Layers },
-                { id: "store", label: "Store", icon: Store },
-                { id: "wallet", label: "Wallet", icon: Wallet },
-              ].map((t) => {
-                const Icon = t.icon;
-                const active = activeTab === t.id;
-                return (
-                  <button
-                    key={t.id}
-                    onClick={() => setActiveTab(t.id as Tab | "wallet")}
-                    className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-300 border ${
-                      active
-                        ? "border-rose-500/40 bg-rose-500/15 text-white shadow-lg shadow-rose-500/5"
-                        : "border-white/5 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-slate-200"
-                    }`}
-                  >
-                    <div
-                      className={`h-8 w-8 rounded-xl flex items-center justify-center mb-1 transition-all ${
-                        active ? "bg-rose-500 text-white" : "bg-white/5 text-rose-400"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4" />
-                    </div>
-                    <span className="text-[9px] font-bold tracking-wide uppercase">{t.label}</span>
-                  </button>
-                );
-              })}
+        {/* ══════════════════════════════════════════════════════════ */}
+        {/* ── QUICK ACTIONS BAR ──                                  */}
+        {/* ══════════════════════════════════════════════════════════ */}
+        <div className="flex items-center gap-2 -mt-2">
+          <button
+            onClick={() => agent?.support_whatsapp && window.open(agent.support_whatsapp, '_blank')}
+            className="flex items-center gap-2 flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
+          >
+            <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+              <MessageCircle className="h-4 w-4" />
             </div>
-          )}
+            <div className="text-left">
+              <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Support</p>
+              <p className="text-[9px] text-slate-400">Chat now</p>
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab("trans")}
+            className="flex items-center gap-2 flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
+          >
+            <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div className="text-left">
+              <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Track Order</p>
+              <p className="text-[9px] text-slate-400">Check status</p>
+            </div>
+          </button>
         </div>
 
         {/* ── CONDITIONAL RENDERING OF TABS ── */}
 
         {activeTab === "orders" && (
-          <div className="space-y-4 animate-morph-in">
-            
-            {/* System Status online bar */}
-            <div className={`flex items-center justify-between px-5 py-3.5 rounded-[24px] shadow-sm ${getCardClass()}`}>
-              <div className="flex items-center">
-                <span className="relative flex h-3 w-3 mr-3">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-sm font-extrabold text-slate-800 dark:text-slate-200">System Online</span>
-                    <span className="bg-emerald-500 text-white font-extrabold text-[8px] px-1.5 py-0.5 rounded-md uppercase tracking-wider">
-                      24/7
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-slate-400 font-semibold">{currentTime || "12:26:36 AM"}</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-1.5">
-                {[Zap, Shield, Wifi].map((Icon, idx) => (
-                  <div
-                    key={idx}
-                    className="h-8 w-8 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-800 flex items-center justify-center text-rose-500 shadow-sm"
+          <div className="space-y-6 animate-morph-in">
+
+            {/* ══════════════════════════════════════════════════════ */}
+            {/* ── NETWORK SELECTOR — Pill-style horizontal strip ── */}
+            {/* ══════════════════════════════════════════════════════ */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Choose Network
+                </h2>
+                {selectedNetwork && (
+                  <button 
+                    onClick={() => { setSelectedNetwork(null); setSelectedBundle(null); }}
+                    className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-white uppercase tracking-wider transition-colors"
                   >
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
-                ))}
+                    Reset
+                  </button>
+                )}
               </div>
-            </div>
 
-            {/* Need Help Card */}
-            <div
-              onClick={() => agent?.support_whatsapp && window.open(agent.support_whatsapp, '_blank')}
-              className={`flex items-center justify-between p-4 rounded-[24px] shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300 ${getCardClass()}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-100 dark:border-cyan-900/50 flex items-center justify-center text-cyan-500 shadow-sm">
-                  <Headphones className="h-4.5 w-4.5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-extrabold">Need Help?</h3>
-                  <p className="text-[10px] text-slate-400 font-medium">Chat with our support team</p>
-                </div>
-              </div>
-              <div className="flex text-slate-300 dark:text-slate-700">
-                <ChevronRight className="h-4 w-4" />
-                <ChevronRight className="h-4 w-4 -ml-2" />
-              </div>
-            </div>
-
-            {/* MTN / ATigo / Telecel selector */}
-            <div id="place-new-order" className="space-y-3 pt-2">
-              <h2 className="text-lg font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">
-                Place New Order
-              </h2>
-
-              <div className="grid grid-cols-4 gap-2.5">
+              <div className="flex gap-2.5">
                 {[
-                  {
-                    id: "mtn",
-                    name: "MTN",
-                    logo: (
-                      <div className="h-12 w-12 rounded-full bg-[#ffcc00] flex items-center justify-center border border-yellow-200 shadow-sm relative overflow-hidden scale-95">
-                        <div className="border border-blue-900/60 rounded-full w-9 h-6 flex items-center justify-center bg-transparent">
-                          <span className="text-[9px] font-extrabold text-blue-950 tracking-tighter">MTN</span>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "atigo",
-                    name: "ATigo",
-                    logo: (
-                      <div className="h-12 w-12 rounded-xl bg-[#0f2f5f] flex flex-col justify-between items-center border border-blue-900 shadow-sm overflow-hidden p-1 relative scale-95">
-                        <div className="flex-1 flex items-center justify-center">
-                          <span className="text-xs font-extrabold text-white italic tracking-tighter">at</span>
-                        </div>
-                        <div className="w-full h-2 bg-[#e31a22] rounded-b-lg absolute bottom-0 left-0" />
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "telecel",
-                    name: "Telecel",
-                    logo: (
-                      <div className="h-12 w-12 rounded-full bg-[#e30613] flex items-center justify-center border border-red-500 shadow-sm overflow-hidden scale-95">
-                        <div className="h-6 w-6 rounded-full bg-white flex items-center justify-center">
-                          <span className="text-[10px] font-extrabold text-[#e30613] tracking-tighter">t</span>
-                        </div>
-                      </div>
-                    ),
-                  },
-                  {
-                    id: "check",
-                    name: "Check...",
-                    logo: (
-                      <div className="h-12 w-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 flex items-center justify-center border border-emerald-200 dark:border-emerald-900/50 shadow-sm scale-95">
-                        <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center text-white">
-                          <Check className="h-3 w-3 stroke-[3]" />
-                        </div>
-                      </div>
-                    ),
-                  },
+                  { id: "mtn", name: "MTN", bg: "bg-[#ffcc00]", text: "text-black", border: "border-[#e6b800]", ring: "ring-yellow-400/40" },
+                  { id: "atigo", name: "AT", bg: "bg-[#4a148c]", text: "text-white", border: "border-[#380b6b]", ring: "ring-purple-400/40" },
+                  { id: "telecel", name: "Telecel", bg: "bg-[#cc0000]", text: "text-white", border: "border-[#b30000]", ring: "ring-red-400/40" },
                 ].map((net) => {
-                  const isCheck = net.id === "check";
-                  const active = isCheck 
-                    ? selectedNetwork === null && activeTab === "trans" 
-                    : selectedNetwork?.code.toLowerCase() === net.id || (selectedNetwork?.code.toLowerCase() === "at" && net.id === "atigo");
-
+                  const isActive = selectedNetwork?.code.toLowerCase() === net.id || 
+                    (selectedNetwork?.code.toLowerCase() === "at" && net.id === "atigo") ||
+                    (selectedNetwork?.code.toLowerCase() === "airteltigo" && net.id === "atigo");
+                  
                   return (
                     <button
                       key={net.id}
                       onClick={() => {
-                        if (isCheck) {
-                          setActiveTab("trans");
-                        } else {
-                          const matches = networks.find(
-                            (n) =>
-                              n.code.toLowerCase() === net.id ||
-                              (n.code.toLowerCase() === "at" && net.id === "atigo")
-                          );
-                          if (matches) {
-                            setSelectedNetwork(matches);
-                            setSelectedBundle(null);
-                          } else {
-                            toast({ title: `Network ${net.name} not loaded.`, variant: "destructive" });
-                          }
+                        const matches = networks.find(
+                          (n) => n.code.toLowerCase() === net.id ||
+                            (n.code.toLowerCase() === "at" && net.id === "atigo") ||
+                            (n.code.toLowerCase() === "airteltigo" && net.id === "atigo")
+                        );
+                        if (matches) {
+                          setSelectedNetwork(matches);
+                          setSelectedBundle(null);
                         }
                       }}
-                      className={`flex flex-col items-center p-3 rounded-[24px] bg-white dark:bg-slate-900 border transition-all duration-300 shadow-sm ${
-                        active
-                          ? `border-${accent}-500/60 dark:border-${accent}-500/60 ring-2 ring-${accent}-500/20`
-                          : "border-slate-100 dark:border-slate-800/80 hover:border-slate-200 dark:hover:border-slate-800"
-                      }`}
-                      style={{
-                        borderColor: active ? currentAccent.primary : undefined,
-                        boxShadow: active ? `0 0 12px ${currentAccent.primary}15` : undefined
-                      }}
+                      className={cn(
+                        "net-pill flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-extrabold text-sm",
+                        isActive 
+                          ? cn(net.bg, net.text, net.border, "ring-2", net.ring, "active shadow-lg") 
+                          : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700 shadow-sm"
+                      )}
                     >
-                      {net.logo}
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 mt-2">{net.name}</span>
+                      {net.name}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* BUNDLE LIST FOR SELECTED NETWORK */}
+            {/* ══════════════════════════════════════════════════════ */}
+            {/* ── BUNDLE GRID — Solid colored cards                ── */}
+            {/* ══════════════════════════════════════════════════════ */}
             {selectedNetwork && (
-              <div className={`rounded-[28px] p-5 shadow-sm space-y-4 animate-morph-in ${getCardClass()}`}>
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
-                      Select {selectedNetwork.name} Bundle
-                    </h3>
-                    <p className="text-[10px] text-slate-400 font-medium">Select a bundle to place order</p>
-                  </div>
-                  <button 
-                    onClick={() => setSelectedNetwork(null)}
-                    className="text-[10px] font-extrabold text-rose-500 hover:underline uppercase"
-                  >
-                    Clear
-                  </button>
-                </div>
+              <div className="space-y-3 animate-morph-in">
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+                  Select Bundle
+                </h3>
 
                 {loadingBundles ? (
-                  <div className="flex items-center justify-center py-6">
-                    <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
                   </div>
                 ) : bundles.length === 0 ? (
-                  <p className="text-center text-xs text-slate-400 py-4">No active bundles loaded in databases.</p>
+                  <div className="text-center text-xs text-slate-400 py-10 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                    No active bundles available.
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2.5">
                     {bundles.map((b, idx) => {
                       const active = selectedBundle?.id === b.id;
-                      const isPopular = idx === 1;
+                      const isPopular = idx === 1 || idx === 4;
                       const sellPrice = priceFor(b);
+                      const netStyle = getNetStyle(selectedNetwork.code);
 
                       return (
                         <button
+                          type="button"
                           key={b.id}
                           onClick={() => {
                             setSelectedBundle(b);
                             setCheckoutOpen(true);
                           }}
-                          className={`relative flex flex-col text-left p-3.5 rounded-2xl border transition-all duration-300 ${
-                            active
-                              ? "bg-slate-950 text-white border-rose-500"
-                              : "bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700"
-                          }`}
+                          className={cn(
+                            "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
+                            active ? netStyle.cardActive : netStyle.cardIdle
+                          )}
                         >
-                          {isPopular && (
-                            <span className="absolute -top-2 left-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm">
+                          {isPopular && !active && (
+                            <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm z-10">
                               Popular
                             </span>
                           )}
-                          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
-                            {selectedNetwork.name}
-                          </span>
-                          <span className="text-xl font-black tracking-tight leading-none mb-2">
+
+                          <div className="flex w-full justify-between items-start mb-5">
+                            {selectedNetwork.code.toUpperCase() === 'MTN' ? (
+                              <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
+                                <span className="text-[10px] font-black">MTN</span>
+                              </div>
+                            ) : selectedNetwork.code.toUpperCase() === 'TELECEL' ? (
+                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
+                                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
+                                  <span className="text-[10px] font-bold text-white">t</span>
+                                </div>
+                              </div>
+                            ) : (selectedNetwork.code.toUpperCase() === 'AIRTELTIGO' || selectedNetwork.code.toUpperCase() === 'AT') ? (
+                              <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
+                                <span className="text-[10px] font-black text-white">AT</span>
+                              </div>
+                            ) : (
+                              <div className="flex h-6 items-center justify-center">
+                                <span className="text-[10px] font-black uppercase">{selectedNetwork.name}</span>
+                              </div>
+                            )}
+                            
+                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </div>
+                          </div>
+
+                          <span className="text-3xl font-black leading-none tracking-tight">
                             {b.size_label}
                           </span>
-                          <span className={`text-xs font-black mt-auto ${active ? "text-rose-400" : "text-slate-800 dark:text-white"}`}>
-                            {formatGHS(sellPrice)}
+                          <span className={cn("mt-1 text-xs font-medium opacity-80")}>
+                            {selectedNetwork.name} Bundle
                           </span>
+                          
+                          <div className="mt-6 flex w-full items-end justify-between">
+                            <span className={cn("text-xl font-black tracking-tight")}>
+                              {formatGHS(sellPrice)}
+                            </span>
+                            <span className="text-[10px] font-semibold opacity-75">
+                              1-5 min
+                            </span>
+                          </div>
                         </button>
                       );
                     })}
@@ -1288,7 +1285,6 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 )}
               </div>
             )}
-
 
           </div>
         )}
@@ -1822,6 +1818,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         </DraggableWidget>
       )}
 
+    </div>
     </div>
   );
 }

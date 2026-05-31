@@ -220,7 +220,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     queryFn: async () => {
       const { data } = await supabase
         .from("agent_profiles")
-        .select("*")
+        .select("id, store_name, store_slug, store_logo_url, store_tagline, store_brand_color, store_promo_banner, store_promo_banner_style, support_whatsapp, activation_paid")
         .eq("store_slug", slug!)
         .eq("activation_paid", true)
         .maybeSingle();

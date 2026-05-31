@@ -21,7 +21,7 @@ export function useNetworks() {
   return useQuery({
     queryKey: ["networks"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("networks").select("*").eq("active", true).order("sort_order");
+      const { data, error } = await supabase.from("networks").select("id, name, code, color, logo_emoji").eq("active", true).order("sort_order");
       if (error) throw error;
       return data as NetworkRow[];
     },
@@ -35,7 +35,7 @@ export function useBundles(networkId: string | null) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bundles")
-        .select("*")
+        .select("id, network_id, size_label, size_mb, user_price")
         .eq("active", true)
         .eq("network_id", networkId)
         .order("size_mb", { ascending: true });

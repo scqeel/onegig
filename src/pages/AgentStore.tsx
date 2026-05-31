@@ -41,6 +41,9 @@ import {
   Sparkles,
   RefreshCcw,
   CheckCircle2,
+  Bell,
+  Share,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -81,6 +84,93 @@ function getNetStyle(code: string) {
   };
 }
 
+const FOMO_NAMES = ["Kwame", "Ama", "Kojo", "Adwoa", "Yaw", "Yaa", "Kofi", "Efua", "Kwasi", "Akosua", "Emmanuel", "Grace"];
+const FOMO_BUNDLES = ["10GB MTN", "5GB Telecel", "2GB AT", "15GB MTN", "3GB Telecel", "20GB AT", "1GB MTN", "7GB MTN"];
+
+function StorefrontNotificationsModal({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('og_store_dismissed_notifications');
+      if (stored) setDismissedIds(JSON.parse(stored));
+    } catch(e) {}
+  }, []);
+
+  useEffect(() => {
+    if (open) {
+      fetchNotifications();
+    }
+  }, [open]);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('app_notifications')
+      .select('*')
+      .eq('is_global', true)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    if (!error && data) {
+      setNotifications(data);
+    }
+    setLoading(false);
+  };
+
+  const handleDismiss = (id: string) => {
+    const newDismissed = [...dismissedIds, id];
+    setDismissedIds(newDismissed);
+    localStorage.setItem('og_store_dismissed_notifications', JSON.stringify(newDismissed));
+  };
+
+  const activeNotifications = notifications.filter(n => !dismissedIds.includes(n.id));
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border-none rounded-[32px] p-6 shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
+            <Bell className="h-5 w-5 text-indigo-500" /> Notifications
+          </DialogTitle>
+          <DialogDescription className="text-xs font-medium text-slate-500">
+            Latest announcements and updates.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="mt-4 space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+          {loading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-slate-300" /></div>
+          ) : activeNotifications.length === 0 ? (
+            <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
+              <p className="text-sm font-bold text-slate-400">All caught up!</p>
+              <p className="text-xs text-slate-500 mt-1">No new notifications.</p>
+            </div>
+          ) : (
+            activeNotifications.map(n => (
+              <div key={n.id} className="relative p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 group transition-all">
+                <button 
+                  onClick={() => handleDismiss(n.id)}
+                  className="absolute top-3 right-3 text-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 pr-6">{n.title}</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{n.message}</p>
+                <div className="mt-2 text-[9px] font-black uppercase text-indigo-400/80">
+                  {new Date(n.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?: string }) {
   const { slug: routeSlug } = useParams<{ slug: string }>();
   const slug = customDomainSlug || routeSlug;
@@ -94,6 +184,8 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [currentTime, setCurrentTime] = useState("");
   const [viewMode, setViewMode] = useState<"storefront" | "dashboard">("storefront");
   const [loginOpen, setLoginOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   // Order state
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkRow | null>(null);
@@ -971,8 +1063,26 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     );
   }
 
+  const handleShareStore = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: agent.store_name,
+        text: agent.store_tagline || "Buy cheap data bundles from my store!",
+        url: window.location.href,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast({
+        title: "Link Copied!",
+        description: "Store link copied to clipboard.",
+      });
+    }
+  };
+
   return (
     <div className={`${getStoreBgClass()} relative overflow-hidden`}>
+      <StorefrontNotificationsModal open={notificationsOpen} onOpenChange={setNotificationsOpen} />
+      
       <style>{`
         @keyframes marquee {
           0% { transform: translate3d(0, 0, 0); }
@@ -1065,6 +1175,21 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           <div className="absolute top-6 right-6 w-24 h-24 rounded-full border border-white/[0.06] pointer-events-none" />
           <div className="absolute top-10 right-10 w-14 h-14 rounded-full border border-white/[0.04] pointer-events-none" />
           
+          {/* Notification Bell */}
+          <div className="absolute top-6 right-6 z-20">
+            <button 
+              onClick={() => setNotificationsOpen(true)}
+              className="relative h-10 w-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 h-3.5 w-3.5 bg-rose-500 rounded-full border-2 border-[#1e293b] flex items-center justify-center text-[8px] font-bold text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           <div className="relative z-10 space-y-5">
             {/* Logo + Name row */}
             <div className="flex items-center gap-4">
@@ -1108,26 +1233,40 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <div className="flex items-center gap-2 -mt-2">
           <button
             onClick={() => agent?.support_whatsapp && window.open(agent.support_whatsapp, '_blank')}
-            className="flex items-center gap-2 flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
+            className="flex items-center gap-1.5 flex-1 px-3 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
           >
             <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
               <MessageCircle className="h-4 w-4" />
             </div>
             <div className="text-left">
-              <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Support</p>
-              <p className="text-[9px] text-slate-400">Chat now</p>
+              <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200">Support</p>
+              <p className="text-[8px] text-slate-400">Chat now</p>
             </div>
           </button>
+          
+          <button
+            onClick={handleShareStore}
+            className="flex items-center gap-1.5 flex-1 px-3 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
+          >
+            <div className="h-8 w-8 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform">
+              <Share className="h-4 w-4" />
+            </div>
+            <div className="text-left">
+              <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200">Share</p>
+              <p className="text-[8px] text-slate-400">Store link</p>
+            </div>
+          </button>
+
           <button
             onClick={() => setActiveTab("trans")}
-            className="flex items-center gap-2 flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
+            className="flex items-center gap-1.5 flex-1 px-3 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
           >
             <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
               <Clock className="h-4 w-4" />
             </div>
             <div className="text-left">
-              <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200">Track Order</p>
-              <p className="text-[9px] text-slate-400">Check status</p>
+              <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200">Track</p>
+              <p className="text-[8px] text-slate-400">Status</p>
             </div>
           </button>
         </div>

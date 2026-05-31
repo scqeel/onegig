@@ -42,21 +42,28 @@ Deno.serve(async (req) => {
 
     if (action === "list") {
       return json({ ok: true, customers });
-    } else if (action === "add") {
-      const { name, phone } = body.customer;
+    } else if (action === "add" || action === "update") {
+      const name = body.customer?.name || body.name;
+      const phone = body.customer?.phone || body.phone;
+      const id = body.customer?.id || body.id;
       if (!name || !phone) return json({ error: "Missing name or phone" }, 400);
       const cleanPhone = phone.replace(/\D/g, "");
       
       // Remove existing with same phone to update
-      customers = customers.filter((c) => c.phone !== cleanPhone);
-      customers.push({ id: crypto.randomUUID(), name, phone: cleanPhone, created_at: new Date().toISOString() });
+      customers = customers.filter((c) => c.phone !== cleanPhone && c.id !== id);
+      customers.push({ id: id || crypto.randomUUID(), name, phone: cleanPhone, created_at: new Date().toISOString() });
       
       await admin.from("app_settings").upsert({ key: settingKey, value: customers });
       return json({ ok: true, customers });
     } else if (action === "delete") {
-      const { phone } = body.customer;
-      const cleanPhone = phone.replace(/\D/g, "");
-      customers = customers.filter((c) => c.phone !== cleanPhone);
+      const id = body.customer?.id || body.id;
+      const phone = body.customer?.phone || body.phone;
+      if (id) {
+        customers = customers.filter((c) => c.id !== id);
+      } else if (phone) {
+        const cleanPhone = phone.replace(/\D/g, "");
+        customers = customers.filter((c) => c.phone !== cleanPhone);
+      }
       await admin.from("app_settings").upsert({ key: settingKey, value: customers });
       return json({ ok: true, customers });
     }

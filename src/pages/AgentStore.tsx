@@ -8,6 +8,7 @@ import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetwo
 import { TrackOrder } from "@/components/buy/TrackOrder";
 import { WalletManager } from "@/components/agent/WalletManager";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
+import { DraggableWidget } from "@/components/agent/DraggableWidget";
 import { OwnerDashboard } from "@/components/agent/OwnerDashboard";
 import { AgentLogin } from "@/components/agent/AgentLogin";
 import { formatGHS } from "@/lib/format";
@@ -86,19 +87,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [accountName, setAccountName] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
 
+  // Promo Coupon Code States
+  const [couponCodeInput, setCouponCodeInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
+
   // Dialog / Info popup states
   const [infoPopup, setInfoPopup] = useState<{ open: boolean; title: string; content: string } | null>(null);
-
-  // Widget settings
-  const [widgetEnabled, setWidgetEnabled] = useState(() => {
-    return localStorage.getItem("og_whatsapp_widget") !== "false";
-  });
-
-  const toggleWidget = () => {
-    const newState = !widgetEnabled;
-    setWidgetEnabled(newState);
-    localStorage.setItem("og_whatsapp_widget", String(newState));
-  };
 
   // 1. Fetch Agent Profile
   const { data: agent, isLoading: loadingAgent, isError } = useQuery({
@@ -151,6 +147,136 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     }
   });
 
+  // 1. AI Storefront Assistant States & Handlers
+  const [aiOpen, setAiOpen] = useState(false);
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: "user" | "bot"; text: string }>>([
+    { sender: "bot", text: "Hello! 👋 I'm your virtual storefront assistant. How can I help you choose the best data bundle or complete your payment today?" }
+  ]);
+
+  const handleSendMessage = () => {
+    if (!chatInput.trim()) return;
+    const text = chatInput.trim();
+    setChatMessages(p => [...p, { sender: "user", text }]);
+    setChatInput("");
+
+    setTimeout(() => {
+      let reply = "I'm not completely sure about that, but you can place an order directly by selecting a bundle above and paying with Momo. Your bundle is delivered instantly within 60 seconds!";
+      const q = text.toLowerCase();
+
+      if (q.includes("hi") || q.includes("hello") || q.includes("hey")) {
+        reply = "Hello! 👋 How can I help you today? Ask me about data bundles, checkout help, or delivery times!";
+      } else if (q.includes("mtn")) {
+        reply = "We offer premium MTN data bundles. They are extremely cheap, work instantly, and do not expire! Scroll up to check our active MTN plans.";
+      } else if (q.includes("telecel") || q.includes("vodafone") || q.includes("voda")) {
+        reply = "Yes, Telecel (formerly Vodafone) bundles are fully supported and delivered instantly. Scroll to the Telecel section to choose your size!";
+      } else if (q.includes("airtel") || q.includes("tigo") || q.includes("at")) {
+        reply = "We have cheap AirtelTigo (AT) plans. Select the AirtelTigo network tab above to view custom rates.";
+      } else if (q.includes("delivery") || q.includes("time") || q.includes("speed") || q.includes("how long")) {
+        reply = "All data bundles are sent instantly via automated wholesale gateways. Fulfillments typically complete within 30 to 60 seconds of Momo payment completion.";
+      } else if (q.includes("discount") || q.includes("coupon") || q.includes("promo")) {
+        reply = "You can enter a promo code (like WELCOME5) directly in the checkout dialog to get an instant discount! Ask our storefront agent if they have any custom codes active.";
+      } else if (q.includes("streaming") || q.includes("youtube") || q.includes("netflix") || q.includes("movie")) {
+        reply = "For streaming videos and movies, we highly recommend our gold-tier 10GB or 20GB bundles. They offer the best cedi-to-gigabyte value and last a long time!";
+      } else if (q.includes("work") || q.includes("how to") || q.includes("buy")) {
+        reply = "It's super easy! 1. Choose a network. 2. Select your data bundle. 3. Enter the recipient number and your mobile money number. 4. Complete the checkout payment. Your data arrives in under a minute!";
+      } else if (q.includes("contact") || q.includes("owner") || q.includes("support")) {
+        reply = `You can contact our store support agent directly via the green WhatsApp button floating on your screen or dial our support number listed in the store details!`;
+      }
+
+      setChatMessages(p => [...p, { sender: "bot", text: reply }]);
+    }, 600);
+  };
+
+  // 2. Loyalty Rewards Hub States & Handlers
+  const [loyaltyOpen, setLoyaltyOpen] = useState(false);
+  const [loyaltyPhone, setLoyaltyPhone] = useState("");
+  const [loyaltyPointsBalance, setLoyaltyPointsBalance] = useState<number | null>(null);
+  const [isCheckingLoyalty, setIsCheckingLoyalty] = useState(false);
+  const [pointsRedeemed, setPointsRedeemed] = useState(0); // in GH₵ discount
+
+  const checkLoyaltyPoints = async () => {
+    if (!loyaltyPhone.trim() || !agent?.id) return;
+    setIsCheckingLoyalty(true);
+    try {
+      const clean = loyaltyPhone.replace(/\D/g, "");
+      const { data: profileRow } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("phone", clean)
+        .maybeSingle();
+
+      if (!profileRow) {
+        toast({ title: "No loyalty history", description: "You don't have any purchase history on this store yet.", variant: "destructive" });
+        setIsCheckingLoyalty(false);
+        return;
+      }
+
+      const { data: loyaltyRow } = await supabase
+        .from("loyalty_points")
+        .select("points_balance")
+        .eq("user_id", profileRow.id)
+        .eq("agent_id", agent.id)
+        .maybeSingle();
+
+      setLoyaltyPointsBalance(loyaltyRow?.points_balance ?? 0);
+    } catch (e) {
+      toast({ title: "Failed to check points", variant: "destructive" });
+    } finally {
+      setIsCheckingLoyalty(false);
+    }
+  };
+
+  const redeemLoyaltyPoints = () => {
+    if (loyaltyPointsBalance == null || loyaltyPointsBalance < 10) {
+      toast({ title: "Insufficient points", description: "You need at least 10 points to redeem a discount.", variant: "destructive" });
+      return;
+    }
+    
+    const discount = Math.floor(loyaltyPointsBalance / 10); // GH₵ discount
+    const bundleCost = selectedBundle ? priceFor(selectedBundle) : 0;
+    const finalDiscount = Math.min(bundleCost - 1, discount); // ensure total is at least GHS 1.00
+
+    setPointsRedeemed(finalDiscount);
+    toast({ title: "Points Redeemed!", description: `You unlocked a GH₵ ${finalDiscount.toFixed(2)} discount using your loyalty points!` });
+  };
+
+  // 3. Momo Subscription States
+  const [subscribeChecked, setSubscribeChecked] = useState(false);
+  const [subscriptionFrequency, setSubscriptionFrequency] = useState<"weekly" | "monthly">("monthly");
+
+  // 4. Dynamic Font loader
+  useEffect(() => {
+    if (agent?.store_font_family) {
+      const font = agent.store_font_family;
+      const linkId = "og-store-font";
+      let link = document.getElementById(linkId) as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement("link");
+        link.id = linkId;
+        link.rel = "stylesheet";
+        document.head.appendChild(link);
+      }
+      link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, "+")}:wght@400;600;800;900&display=swap`;
+      document.body.style.fontFamily = `'${font}', sans-serif`;
+    }
+    return () => {
+      document.body.style.fontFamily = "";
+    };
+  }, [agent?.store_font_family]);
+
+  // Widget settings
+  const [widgetEnabled, setWidgetEnabled] = useState(() => {
+    return localStorage.getItem("og_whatsapp_widget") !== "false";
+  });
+
+  const toggleWidget = () => {
+    const newState = !widgetEnabled;
+    setWidgetEnabled(newState);
+    localStorage.setItem("og_whatsapp_widget", String(newState));
+  };
+
+
   // Live ticking clock
   useEffect(() => {
     const updateTime = () => {
@@ -177,6 +303,92 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       if (profile.email && !email) setEmail(profile.email);
     }
   }, [profile]);
+
+  // Log page_view storefront analytics
+  useEffect(() => {
+    if (agent?.id) {
+      let sessionToken = sessionStorage.getItem("storefront_session");
+      if (!sessionToken) {
+        sessionToken = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2);
+        sessionStorage.setItem("storefront_session", sessionToken);
+      }
+      supabase
+        .from("storefront_analytics")
+        .insert({
+          agent_id: agent.id,
+          session_token: sessionToken,
+          event_type: "page_view",
+          metadata: {
+            referrer: document.referrer || null,
+            user_agent: navigator.userAgent || null,
+          },
+        })
+        .then(({ error }) => {
+          if (error) console.warn("Analytics page_view error:", error.message);
+        });
+    }
+  }, [agent?.id]);
+
+  // Reset coupon state when bundle or network changes
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponCodeInput("");
+    setCouponError(null);
+  }, [selectedBundle, selectedNetwork]);
+
+  const applyCouponCode = async () => {
+    if (!couponCodeInput.trim() || !agent?.id) return;
+    setIsCheckingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const cleanCode = couponCodeInput.trim().toUpperCase();
+      const { data: coupon, error } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("code", cleanCode)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (error || !coupon) {
+        setCouponError("Invalid or expired promo code.");
+        setIsCheckingCoupon(false);
+        return;
+      }
+
+      // Check remaining uses
+      if (coupon.current_uses >= coupon.max_uses) {
+        setCouponError("Promo code usage limit reached.");
+        setIsCheckingCoupon(false);
+        return;
+      }
+
+      // Check agent restrictions (must be global admin, or match this agent's storefront id)
+      if (coupon.agent_id && coupon.agent_id !== agent.id) {
+        setCouponError("This promo code is not valid for this storefront.");
+        setIsCheckingCoupon(false);
+        return;
+      }
+
+      // Verify discount is reasonable (does not exceed selected bundle cost)
+      const bundleCost = selectedBundle ? priceFor(selectedBundle) : 0;
+      if (Number(coupon.discount_amount) >= bundleCost) {
+        setCouponError("Discount exceeds bundle price.");
+        setIsCheckingCoupon(false);
+        return;
+      }
+
+      setAppliedCoupon(coupon);
+      toast({
+        title: "Promo Code Applied!",
+        description: `You saved GH₵ ${Number(coupon.discount_amount).toFixed(2)} off your purchase.`,
+      });
+    } catch (e: any) {
+      setCouponError("Failed to validate promo code.");
+    } finally {
+      setIsCheckingCoupon(false);
+    }
+  };
 
   // Set default momo network when selectedNetwork changes
   useEffect(() => {
@@ -247,6 +459,27 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
       if (data?.ok) {
         clearInterval(interval);
+        
+        // Log storefront payment_success analytics
+        const sessionToken = sessionStorage.getItem("storefront_session") || "anonymous";
+        supabase
+          .from("storefront_analytics")
+          .insert({
+            agent_id: agent.id,
+            session_token: sessionToken,
+            event_type: "payment_success",
+            metadata: {
+              bundle_id: selectedBundle!.id,
+              size_label: selectedBundle!.size_label,
+              network: selectedNetwork?.name || null,
+              amount: finalPrice,
+              reference: orderRef,
+            },
+          })
+          .then(({ error }) => {
+            if (error) console.warn("Analytics payment_success error:", error.message);
+          });
+
         setPhase("success");
       } else if (data?.error) {
         clearInterval(interval);
@@ -314,13 +547,46 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
   const currentAccent = accentClasses[accent];
 
+  const theme = agent?.store_template_theme || "minimalist";
+  const isDarkStore = agent?.store_dark_mode || false;
+  
+  const getStoreBgClass = () => {
+    if (theme === "cyberpunk") {
+      return "min-h-dvh pb-24 bg-black text-cyan-400 font-mono";
+    }
+    if (theme === "luxury") {
+      return "min-h-dvh pb-24 bg-stone-950 text-stone-100";
+    }
+    return `min-h-dvh pb-24 transition-colors duration-300 ${
+      isDarkStore ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-900"
+    }`;
+  };
+
+  const getCardClass = () => {
+    switch (theme) {
+      case "glassmorphism":
+        return "bg-white/40 dark:bg-slate-900/30 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg text-slate-800 dark:text-slate-200";
+      case "cyberpunk":
+        return "bg-zinc-950 border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)] text-cyan-400 font-mono";
+      case "luxury":
+        return "bg-gradient-to-br from-stone-900 to-stone-950 border border-amber-500/25 shadow-xl text-stone-100";
+      case "minimalist":
+      default:
+        return "bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 shadow-sm text-slate-800 dark:text-slate-100";
+    }
+  };
+
   // Helper to get sell price
   const priceFor = (b: BundleRow) =>
     priceOverrides && priceOverrides[b.id] != null
       ? priceOverrides[b.id]
       : Number(b.user_price ?? b.base_price);
 
-  const finalPrice = selectedBundle ? priceFor(selectedBundle) : 0;
+  const baseFinalPrice = selectedBundle ? priceFor(selectedBundle) : 0;
+  const priceAfterCoupon = appliedCoupon
+    ? Math.max(0, baseFinalPrice - Number(appliedCoupon.discount_amount))
+    : baseFinalPrice;
+  const finalPrice = Math.max(1, priceAfterCoupon - pointsRedeemed);
 
   if (isOwner && viewMode === "dashboard") {
     return <OwnerDashboard agent={agent} slug={slug || ""} onPreviewStore={() => setViewMode("storefront")} />;
@@ -339,6 +605,26 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
     setCheckoutOpen(false);
     setPhase("processing");
+    
+    // Log storefront checkout_initiated analytics
+    const sessionToken = sessionStorage.getItem("storefront_session") || "anonymous";
+    supabase
+      .from("storefront_analytics")
+      .insert({
+        agent_id: agent.id,
+        session_token: sessionToken,
+        event_type: "checkout_initiated",
+        metadata: {
+          bundle_id: selectedBundle.id,
+          size_label: selectedBundle.size_label,
+          network: selectedNetwork?.name || null,
+          amount: finalPrice,
+        },
+      })
+      .then(({ error }) => {
+        if (error) console.warn("Analytics checkout_initiated error:", error.message);
+      });
+
     try {
       const { data, error } = await supabase.functions.invoke("paystack-process", {
         body: {
@@ -349,6 +635,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           momo_number: momoNumber,
           momo_network: momoNetwork,
           email: email || "guest@mtopup.shop",
+          coupon_code: appliedCoupon?.code || null,
+          subscribe: subscribeChecked,
+          frequency: subscriptionFrequency,
+          points_redeemed: pointsRedeemed,
         },
       });
 
@@ -657,7 +947,40 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   }
 
   return (
-    <div className="min-h-dvh bg-[#f8fafc] dark:bg-slate-950 pb-24 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+    <div className={getStoreBgClass()}>
+      
+      {agent.store_promo_banner && (
+        <>
+          <style>{`
+            @keyframes marquee {
+              0% { transform: translate3d(0, 0, 0); }
+              100% { transform: translate3d(-100%, 0, 0); }
+            }
+            .og-promo-marquee {
+              display: inline-block;
+              padding-left: 100%;
+              animation: marquee 25s linear infinite;
+            }
+            .og-promo-marquee:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          <div className={`w-full py-3 overflow-hidden border-b flex items-center font-extrabold text-xs uppercase tracking-wider relative shadow-sm z-50 ${
+            agent.store_promo_banner_style === 'midnight-gold' 
+              ? 'bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 text-yellow-400 border-yellow-500/25 shadow-yellow-500/5'
+              : agent.store_promo_banner_style === 'fire-ruby'
+              ? 'bg-gradient-to-r from-rose-950 via-red-950 to-rose-950 text-rose-200 border-red-500/25 shadow-red-500/5'
+              : agent.store_promo_banner_style === 'success-emerald'
+              ? 'bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 text-emerald-300 border-emerald-500/25 shadow-emerald-500/5'
+              : 'bg-gradient-to-r from-rose-950 via-indigo-950 to-rose-950 text-amber-300 border-indigo-500/25 shadow-rose-500/5'
+          }`}>
+            <div className="og-promo-marquee whitespace-nowrap">
+              {agent.store_promo_banner} &nbsp; &nbsp; • &nbsp; &nbsp; {agent.store_promo_banner} &nbsp; &nbsp; • &nbsp; &nbsp; {agent.store_promo_banner}
+            </div>
+          </div>
+        </>
+      )}
+
       <div className="mx-auto max-w-md px-4 pt-4 space-y-4">
         
         {/* ── CARD HEADER (Premium Dark-Glassmorphism) ── */}
@@ -754,7 +1077,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           <div className="space-y-4 animate-morph-in">
             
             {/* System Status online bar */}
-            <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 px-5 py-3.5 rounded-[24px] shadow-sm">
+            <div className={`flex items-center justify-between px-5 py-3.5 rounded-[24px] shadow-sm ${getCardClass()}`}>
               <div className="flex items-center">
                 <span className="relative flex h-3 w-3 mr-3">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -786,14 +1109,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             {/* Need Help Card */}
             <div
               onClick={() => agent?.support_whatsapp && window.open(agent.support_whatsapp, '_blank')}
-              className="flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 p-4 rounded-[24px] shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300"
+              className={`flex items-center justify-between p-4 rounded-[24px] shadow-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-all duration-300 ${getCardClass()}`}
             >
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-100 dark:border-cyan-900/50 flex items-center justify-center text-cyan-500 shadow-sm">
                   <Headphones className="h-4.5 w-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-200">Need Help?</h3>
+                  <h3 className="text-sm font-extrabold">Need Help?</h3>
                   <p className="text-[10px] text-slate-400 font-medium">Chat with our support team</p>
                 </div>
               </div>
@@ -902,7 +1225,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
             {/* BUNDLE LIST FOR SELECTED NETWORK */}
             {selectedNetwork && (
-              <div className="rounded-[28px] border border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm space-y-4 animate-morph-in">
+              <div className={`rounded-[28px] p-5 shadow-sm space-y-4 animate-morph-in ${getCardClass()}`}>
                 <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
                   <div>
                     <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-200">
@@ -972,7 +1295,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
         {activeTab === "trans" && (
           <div className="space-y-4 animate-morph-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 p-5 rounded-[28px] shadow-sm space-y-2">
+            <div className={`p-5 rounded-[28px] shadow-sm space-y-2 ${getCardClass()}`}>
               <h2 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">
                 Track Order Status
               </h2>
@@ -988,7 +1311,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
         {activeTab === "bulk" && (
           <div className="space-y-4 animate-morph-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 p-5 rounded-[28px] shadow-sm space-y-4">
+            <div className={`p-5 rounded-[28px] shadow-sm space-y-4 ${getCardClass()}`}>
               <div>
                 <h2 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">
                   Bulk Data Orders
@@ -1027,7 +1350,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
         {activeTab === "store" && (
           <div className="space-y-4 animate-morph-in">
-            <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 p-6 rounded-[28px] shadow-sm space-y-4">
+            <div className={`p-6 rounded-[28px] shadow-sm space-y-4 ${getCardClass()}`}>
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
                   <Store className="h-6 w-6" />
@@ -1204,6 +1527,90 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
               )}
             </div>
 
+            {/* Promo / Discount Section */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+              <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
+                Promo Code or Gift Voucher
+              </label>
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between px-3 py-2 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20 text-xs font-bold">
+                  <div className="flex items-center gap-1.5">
+                    <Gift className="h-4 w-4 text-rose-500" />
+                    <span>Applied: <span className="font-mono text-slate-800 dark:text-white uppercase">{appliedCoupon.code}</span> (-GH₵ {Number(appliedCoupon.discount_amount).toFixed(2)})</span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAppliedCoupon(null);
+                      setCouponCodeInput("");
+                    }}
+                    className="h-6 px-1.5 text-[10px] text-rose-500 hover:text-rose-600 font-extrabold"
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g. WELCOME5"
+                    value={couponCodeInput}
+                    onChange={(e) => setCouponCodeInput(e.target.value)}
+                    className="flex-1 h-11 rounded-2xl border-slate-100 dark:border-slate-800 text-sm font-semibold uppercase focus-visible:ring-rose-500"
+                  />
+                  <Button
+                    onClick={applyCouponCode}
+                    disabled={isCheckingCoupon || !couponCodeInput.trim()}
+                    className="h-11 rounded-2xl px-4 text-xs font-bold bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-700"
+                  >
+                    {isCheckingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                  </Button>
+                </div>
+              )}
+              {couponError && (
+                <p className="mt-1 text-[10px] text-red-500 font-bold">{couponError}</p>
+              )}
+            </div>
+
+            {/* 🔄 Momo Subscription (Recurring Delivery) */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="auto-bill-checkbox"
+                    checked={subscribeChecked}
+                    onChange={(e) => setSubscribeChecked(e.target.checked)}
+                    className="mt-1 h-4.5 w-4.5 rounded border-slate-300 dark:border-slate-700 text-rose-500 focus:ring-rose-500"
+                  />
+                  <label htmlFor="auto-bill-checkbox" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
+                    Auto-Pilot recurring topup 🔄
+                    <span className="block text-[9px] text-slate-400 font-medium mt-0.5">
+                      Automatically auto-deliver this bundle and bill my mobile money wallet. Cancel anytime.
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              {subscribeChecked && (
+                <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 animate-in fade-in duration-300">
+                  {(["weekly", "monthly"] as const).map((freq) => (
+                    <button
+                      key={freq}
+                      type="button"
+                      onClick={() => setSubscriptionFrequency(freq)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
+                        subscriptionFrequency === freq
+                          ? "bg-rose-500 text-white shadow-sm"
+                          : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      Every {freq === "weekly" ? "Week" : "Month"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <Button
               onClick={initiatePayment}
               disabled={
@@ -1256,12 +1663,163 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
       {/* Floating Widget */}
       {widgetEnabled && agent?.support_whatsapp && (
-        <DraggableWhatsApp link={agent.support_whatsapp} />
+        <DraggableWidget initialPosition={{ x: window.innerWidth - 80, y: window.innerHeight - 300 }}>
+          <DraggableWhatsApp link={agent.support_whatsapp} />
+        </DraggableWidget>
       )}
 
       {/* Agent Login Modal */}
       {loginOpen && (
         <AgentLogin storeName={agent?.store_name || "Agent Store"} onClose={() => setLoginOpen(false)} />
+      )}
+
+      {/* 🎮 Loyalty Rewards Hub Floating Button & Dialog */}
+      {agent?.enable_loyalty_rewards !== false && (
+        <DraggableWidget initialPosition={{ x: 24, y: window.innerHeight - 150 }}>
+          <button
+            onClick={() => setLoyaltyOpen(true)}
+            className="h-14 w-14 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 border border-amber-400/20"
+          >
+            <Trophy className="h-6 w-6 animate-bounce" />
+          </button>
+        </DraggableWidget>
+      )}
+
+      <Dialog open={loyaltyOpen} onOpenChange={setLoyaltyOpen}>
+        <DialogContent className="w-[94vw] max-w-sm rounded-[32px] border-slate-100 dark:border-slate-800 p-6 bg-white dark:bg-slate-900 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
+              <Trophy className="h-6 w-6" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-left text-lg font-black text-slate-800 dark:text-white">
+                Loyalty Rewards Hub
+              </DialogTitle>
+              <DialogDescription className="text-left text-xs text-slate-400">
+                Earn GigPoints on every purchase and redeem checkout discounts!
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
+                Enter your phone number to check balance:
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  inputMode="tel"
+                  placeholder="024 123 4567"
+                  value={loyaltyPhone}
+                  onChange={(e) => setLoyaltyPhone(e.target.value)}
+                  className="flex-1 h-11 rounded-xl border-slate-100 dark:border-slate-800 text-sm font-semibold"
+                />
+                <Button
+                  onClick={checkLoyaltyPoints}
+                  disabled={isCheckingLoyalty || !loyaltyPhone.trim()}
+                  className="h-11 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
+                >
+                  {isCheckingLoyalty ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
+                </Button>
+              </div>
+            </div>
+
+            {loyaltyPointsBalance !== null && (
+              <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 text-center space-y-2 animate-in fade-in duration-300">
+                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Your Balance</p>
+                <p className="text-3xl font-black text-amber-500">{loyaltyPointsBalance} <span className="text-xs font-bold text-slate-400">GigPoints</span></p>
+                
+                {loyaltyPointsBalance >= 10 ? (
+                  <div className="pt-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
+                      Redeem 10 points for GH₵ 1.00 off! (Max discount: bundle price minus GH₵ 1.00)
+                    </p>
+                    <Button
+                      onClick={redeemLoyaltyPoints}
+                      className="w-full h-10 rounded-xl bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-extrabold"
+                    >
+                      Redeem Discount Now
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 font-medium pt-1">
+                    You need at least 10 points to redeem a discount.
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 🤖 AI Storefront Assistant Widget */}
+      {agent?.enable_ai_assistant !== false && (
+        <DraggableWidget initialPosition={{ x: window.innerWidth - 340, y: window.innerHeight - 150 }}>
+          <div className="flex flex-col items-end">
+            {aiOpen && (
+              <div className="mb-4 w-80 h-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-4 flex items-center justify-between shadow-md">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center animate-pulse">
+                      <Sparkles className="h-4 w-4 text-yellow-300 fill-yellow-300" />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm leading-tight">Storefront AI</h3>
+                      <p className="text-[10px] text-indigo-200">Online & Ready</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setAiOpen(false)}
+                    className="h-7 w-7 p-0 rounded-full hover:bg-white/10 text-white hover:text-white"
+                  >
+                    ✕
+                  </Button>
+                </div>
+                {/* Messages */}
+                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
+                  {chatMessages.map((m, idx) => (
+                    <div key={idx} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
+                      <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-xs font-semibold leading-relaxed shadow-sm ${
+                        m.sender === "user" 
+                          ? "bg-indigo-600 text-white rounded-tr-none" 
+                          : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none"
+                      }`}>
+                        {m.text}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Input */}
+                <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2 bg-white dark:bg-slate-900">
+                  <Input
+                    placeholder="Ask me anything..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                    className="h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-indigo-500"
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    className="h-10 rounded-xl px-4 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            {/* Toggle Button */}
+            <button
+              onClick={() => setAiOpen(!aiOpen)}
+              className="h-14 w-14 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 border border-violet-500/20"
+            >
+              <MessageCircle className="h-6 w-6 animate-pulse" />
+            </button>
+          </div>
+        </DraggableWidget>
       )}
 
     </div>

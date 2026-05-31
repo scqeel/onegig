@@ -128,18 +128,27 @@ export function DashboardLayout({
         </div>
       </div>
 
-      {/* ── Mobile Bottom Navigation ── */}
+      {/* ── Mobile Bottom Navigation (Modern Floating Pill) ── */}
       {sidebarItems.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/40 bg-background/85 backdrop-blur-2xl pt-2 pb-4 shadow-[0_-10px_40px_-10px_rgba(0,0,0,0.1)] lg:hidden">
-          <div className="flex items-center justify-around px-2">
+        <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
+          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-white/10 bg-[#0b0f19]/90 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-xl pointer-events-auto">
             {sidebarItems.slice(0, 4).map((item) => {
               const isActive = item.active;
               const content = (
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className={cn("p-2 rounded-[14px] transition-all duration-300", isActive ? "bg-primary text-primary-foreground shadow-float scale-110" : "text-muted-foreground")}>
+                <div className={cn(
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300 w-full h-full",
+                  isActive ? "text-white" : "text-white/40 hover:text-white/80"
+                )}>
+                  {isActive && (
+                    <span className="absolute -top-[18px] h-1 w-8 rounded-full bg-primary shadow-[0_0_12px_rgba(139,92,246,0.9)] animate-in fade-in zoom-in" />
+                  )}
+                  <span className={cn("transition-transform duration-300", isActive && "-translate-y-1 text-primary drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]")}>
                     {item.icon}
-                  </div>
-                  <span className={cn("text-[10px] font-bold tracking-tight transition-colors", isActive ? "text-primary" : "text-muted-foreground/80")}>
+                  </span>
+                  <span className={cn(
+                    "text-[10px] font-bold tracking-tight transition-all duration-300",
+                    isActive ? "opacity-100 translate-y-0" : "opacity-0 absolute translate-y-4"
+                  )}>
                     {item.label}
                   </span>
                 </div>
@@ -147,13 +156,13 @@ export function DashboardLayout({
 
               if (item.to) {
                 return (
-                  <Link key={item.label} to={item.to} className="flex-1 flex justify-center py-1 active:scale-95 transition-transform touch-manipulation">
+                  <Link key={item.label} to={item.to} className="flex-1 flex justify-center h-full items-center active:scale-95 transition-transform touch-manipulation">
                     {content}
                   </Link>
                 );
               }
               return (
-                <button key={item.label} type="button" onClick={item.onClick} className="flex-1 flex justify-center py-1 active:scale-95 transition-transform touch-manipulation">
+                <button key={item.label} type="button" onClick={item.onClick} className="flex-1 flex justify-center h-full items-center active:scale-95 transition-transform touch-manipulation">
                   {content}
                 </button>
               );
@@ -164,13 +173,13 @@ export function DashboardLayout({
               <button 
                 type="button" 
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="flex-1 flex justify-center py-1 active:scale-95 transition-transform touch-manipulation"
+                className="flex-1 flex justify-center h-full items-center active:scale-95 transition-transform touch-manipulation"
               >
-                <div className="flex flex-col items-center gap-1.5">
-                  <div className="p-2 rounded-[14px] transition-all duration-300 text-muted-foreground">
+                <div className="relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300 text-white/40 hover:text-white/80">
+                  <span className="transition-transform duration-300">
                     <Menu className="h-5 w-5" />
-                  </div>
-                  <span className="text-[10px] font-bold tracking-tight text-muted-foreground/80">
+                  </span>
+                  <span className="text-[10px] font-bold tracking-tight opacity-0 absolute translate-y-4 transition-all duration-300">
                     More
                   </span>
                 </div>

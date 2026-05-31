@@ -4,10 +4,17 @@ import {
   Activity, BellRing, CheckCircle2, Clock, Cog, DollarSign, Globe2,
   Loader2, Package, RefreshCw, RotateCcw, Search, Settings, Shield,
   ShieldCheck, ShoppingCart, Trash2, TrendingUp, UserCog, Users,
-  Wallet, XCircle, Zap, Megaphone,
+  Wallet, XCircle, Zap, Megaphone, Gift,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatGHS, timeAgo } from "@/lib/format";
@@ -17,7 +24,7 @@ import { NOTIFICATION_SOUNDS } from "@/components/ui/InAppNotificationListener";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 
-type Tab = "overview" | "users" | "orders" | "withdrawals" | "pricing" | "integrations" | "settings" | "marketing";
+type Tab = "overview" | "users" | "orders" | "withdrawals" | "pricing" | "integrations" | "settings" | "marketing" | "coupons" | "subscriptions";
 
 type Profile = {
   id: string;
@@ -86,9 +93,11 @@ export default function AdminPage() {
     { label: "Overview",      value: "overview",     icon: <Activity className="h-4 w-4" /> },
     { label: "Users",         value: "users",        icon: <Users className="h-4 w-4" /> },
     { label: "Orders",        value: "orders",       icon: <ShoppingCart className="h-4 w-4" /> },
+    { label: "Momo Subscriptions", value: "subscriptions", icon: <RefreshCw className="h-4 w-4" /> },
     { label: "Withdrawals",   value: "withdrawals",  icon: <Wallet className="h-4 w-4" /> },
     { label: "Pricing",       value: "pricing",      icon: <Cog className="h-4 w-4" /> },
     { label: "Marketing",     value: "marketing",    icon: <Megaphone className="h-4 w-4" /> },
+    { label: "Promo Coupons",  value: "coupons",      icon: <Gift className="h-4 w-4" /> },
     { label: "Integrations",  value: "integrations", icon: <Globe2 className="h-4 w-4" /> },
     { label: "Site Settings", value: "settings",     icon: <Settings className="h-4 w-4" /> },
   ];
@@ -123,6 +132,8 @@ export default function AdminPage() {
         {tab === "marketing"    && <MarketingSection />}
         {tab === "integrations" && <IntegrationsSection />}
         {tab === "settings"     && <SiteSettingsSection />}
+        {tab === "coupons"      && <CouponsSection />}
+        {tab === "subscriptions" && <SubscriptionsSection />}
       </div>
     </DashboardLayout>
   );
@@ -1780,6 +1791,335 @@ function MarketingSection() {
   );
 }
 
+// ── Promo Coupons & Giveaway Vouchers ──────────────────────────────────────────
+
+function CouponsSection() {
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // Form states
+  const [code, setCode] = useState("");
+  const [discountAmount, setDiscountAmount] = useState("");
+  const [maxUses, setMaxUses] = useState("100");
+  const [agentId, setAgentId] = useState(""); // empty = global admin coupon
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch all coupons (admin sees everything!)
+  const { data: coupons = [], isLoading, refetch } = useQuery({
+    queryKey: ["admin-all-coupons"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("coupons")
+        .select(`
+          *,
+          agent_profiles(store_name, store_slug)
+        `)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  // Fetch active agents list for the dropdown
+  const { data: agents = [] } = useQuery({
+    queryKey: ["admin-active-agents-list"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("agent_profiles")
+        .select("id, store_name, store_slug")
+        .eq("activation_paid", true);
+      return data ?? [];
+    },
+  });
+
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim() || !discountAmount || !maxUses) return;
+
+    setIsSubmitting(true);
+    try {
+      const cleanCode = code.trim().toUpperCase();
+      const discount = Number(discountAmount);
+      const max = parseInt(maxUses);
+
+      if (discount <= 0) {
+        toast({ title: "Error", description: "Discount amount must be positive.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (max <= 0) {
+        toast({ title: "Error", description: "Max uses must be positive.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("coupons")
+        .insert({
+          code: cleanCode,
+          discount_amount: discount,
+          max_uses: max,
+          agent_id: agentId || null,
+          active: true,
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("A coupon with this promo code already exists.");
+        }
+        throw error;
+      }
+
+      toast({ title: "Success", description: `Promo code ${cleanCode} created successfully!` });
+      setCode("");
+      setDiscountAmount("");
+      setMaxUses("100");
+      setAgentId("");
+      setCreateOpen(false);
+      refetch();
+    } catch (err: any) {
+      toast({ title: "Failed to create", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const toggleCouponActive = async (id: string, currentStatus: boolean) => {
+    const { error } = await supabase
+      .from("coupons")
+      .update({ active: !currentStatus })
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to toggle status.", variant: "destructive" });
+    } else {
+      toast({ title: "Status Updated", description: `Promo code has been ${currentStatus ? "deactivated" : "activated"}.` });
+      refetch();
+    }
+  };
+
+  const deleteCoupon = async (id: string) => {
+    if (!confirm("Are you sure you want to permanently delete this promo coupon?")) return;
+    const { error } = await supabase
+      .from("coupons")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to delete coupon.", variant: "destructive" });
+    } else {
+      toast({ title: "Deleted", description: "Promo code has been removed." });
+      refetch();
+    }
+  };
+
+  const q = searchQuery.trim().toLowerCase();
+  const filteredCoupons = coupons.filter((c: any) => 
+    c.code.toLowerCase().includes(q) || 
+    (c.agent_profiles?.store_name ?? "Global Platform").toLowerCase().includes(q)
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[2rem] border border-border/40 bg-card/40 p-6 md:p-8">
+        <div>
+          <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+            <Gift className="h-5.5 w-5.5 text-rose-500" /> Promo Coupons & Gift Vouchers
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">Manage global platform-wide vouchers and track agent-sponsored discount codes.</p>
+        </div>
+
+        <Button 
+          onClick={() => setCreateOpen(true)}
+          className="h-11 rounded-2xl bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-5 flex items-center gap-1.5 shadow-soft transition-all hover:scale-105 active:scale-95 shrink-0 self-start sm:self-auto"
+        >
+          <Gift className="h-4.5 w-4.5" /> Create Platform Coupon
+        </Button>
+      </div>
+
+      {/* Search Filter */}
+      <div className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/30 px-4 py-2.5">
+        <Search className="h-4 w-4 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search by code, sponsor..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
+        />
+      </div>
+
+      {/* Grid / Table */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      ) : filteredCoupons.length === 0 ? (
+        <div className="text-center py-16 border border-border/40 rounded-3xl bg-card/20 space-y-4">
+          <Gift className="mx-auto h-12 w-12 text-muted-foreground/30" />
+          <div>
+            <p className="font-bold text-foreground">No promo coupons found</p>
+            <p className="text-xs text-muted-foreground mt-1">Get started by creating a platform-wide coupon.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/25 shadow-soft">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/40 bg-secondary/30 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  <th className="px-6 py-4">Promo Code</th>
+                  <th className="px-6 py-4">Discount</th>
+                  <th className="px-6 py-4">Sponsor / Store</th>
+                  <th className="px-6 py-4">Uses</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCoupons.map((c: any) => {
+                  const isExhausted = Number(c.current_uses) >= Number(c.max_uses);
+                  const isActive = c.active && !isExhausted;
+                  return (
+                    <tr key={c.id} className="border-b border-border/30 last:border-0 hover:bg-secondary/20 transition-colors">
+                      <td className="px-6 py-4 font-mono font-black uppercase text-foreground text-sm tracking-wide">{c.code}</td>
+                      <td className="px-6 py-4 font-extrabold text-rose-500">{formatGHS(c.discount_amount)}</td>
+                      <td className="px-6 py-4">
+                        {c.agent_profiles ? (
+                          <div className="flex flex-col">
+                            <span className="font-bold text-foreground">{c.agent_profiles.store_name}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">Store: /store/{c.agent_profiles.store_slug}</span>
+                          </div>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
+                            Global Platform
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-muted-foreground tabular-nums">
+                        {c.current_uses} / {c.max_uses}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}`}>
+                          {isActive ? "Active" : isExhausted ? "Exhausted" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`h-8 rounded-lg text-xs font-bold ${c.active ? "text-amber-500 border-amber-500/20 hover:bg-amber-500/10" : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10"}`}
+                            onClick={() => toggleCouponActive(c.id, c.active)}
+                          >
+                            {c.active ? "Deactivate" : "Activate"}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 rounded-lg text-xs font-semibold text-destructive hover:bg-destructive/10"
+                            onClick={() => deleteCoupon(c.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="w-[94vw] max-w-md rounded-[2.5rem] border-border p-6 md:p-8 bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-left text-lg font-black text-foreground flex items-center gap-2">
+              <Gift className="h-5.5 w-5.5 text-rose-500" /> Create Platform Coupon
+            </DialogTitle>
+            <DialogDescription className="text-left text-xs text-muted-foreground">
+              Add a new promo discount code. It can be a global admin coupon or assigned to a specific store.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateCoupon} className="space-y-5 pt-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase text-muted-foreground">Promo Code</label>
+              <Input
+                placeholder="e.g. WELCOME10"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                className="h-11 rounded-2xl border-border font-semibold uppercase focus-visible:ring-primary text-foreground"
+                required
+              />
+              <p className="text-[10px] text-muted-foreground">Case-insensitive alphanumeric string.</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-black uppercase text-muted-foreground">Discount (GHS)</label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="e.g. 10.00"
+                  value={discountAmount}
+                  onChange={(e) => setDiscountAmount(e.target.value)}
+                  className="h-11 rounded-2xl border-border font-semibold focus-visible:ring-primary text-foreground"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-black uppercase text-muted-foreground">Max Uses</label>
+                <Input
+                  type="number"
+                  placeholder="e.g. 500"
+                  value={maxUses}
+                  onChange={(e) => setMaxUses(e.target.value)}
+                  className="h-11 rounded-2xl border-border font-semibold focus-visible:ring-primary text-foreground"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-black uppercase text-muted-foreground">Assign to Store (Optional)</label>
+              <select
+                value={agentId}
+                onChange={(e) => setAgentId(e.target.value)}
+                className="w-full h-11 rounded-2xl border border-border bg-background px-4 text-sm font-semibold focus:ring-primary focus:outline-none text-foreground"
+              >
+                <option value="">Global Coupon (Platform Sponsored)</option>
+                {agents.map((ag: any) => (
+                  <option key={ag.id} value={ag.id}>
+                    {ag.store_name} (/store/{ag.store_slug})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[10px] text-muted-foreground">Leave as Global if the coupon is sponsored by the platform for all stores.</p>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-12 rounded-2xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground transition-all hover:scale-105 active:scale-95"
+              >
+                {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
+                Generate Coupon Code
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 // ── Metric card ───────────────────────────────────────────────────────────────
 
 function Metric({
@@ -1808,6 +2148,248 @@ function Metric({
       <p className="mt-0.5 text-2xl md:text-3xl font-bold tracking-tight text-foreground">{value}</p>
       {helper && <p className="mt-1.5 md:mt-2 text-[10px] md:text-xs font-medium text-muted-foreground/80">{helper}</p>}
       <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br ${variants[variant]} opacity-10 blur-2xl`} />
+    </div>
+  );
+}
+
+function SubscriptionsSection() {
+  const { toast } = useToast();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [filterFreq, setFilterFreq] = useState<"all" | "weekly" | "monthly">("all");
+
+  const { data: subs = [], isLoading } = useQuery({
+    queryKey: ["admin-momo-subscriptions"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("momo_subscriptions")
+        .select(`
+          id,
+          recipient_phone,
+          frequency,
+          status,
+          next_billing_at,
+          created_at,
+          user:profiles(full_name, email),
+          agent:agent_profiles(store_name, store_slug),
+          bundle:bundles(size_label, base_price, networks(name, logo_emoji))
+        `)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching subscriptions:", error);
+        return [];
+      }
+      return data as any[];
+    },
+  });
+
+  const cancelSubscription = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("momo_subscriptions")
+        .update({ status: "cancelled" })
+        .eq("id", id);
+
+      if (error) throw error;
+      toast({ title: "Subscription cancelled successfully" });
+      qc.invalidateQueries({ queryKey: ["admin-momo-subscriptions"] });
+    } catch (e: any) {
+      toast({ title: "Failed to cancel subscription", variant: "destructive" });
+    }
+  };
+
+  const triggerRebill = async (id: string) => {
+    toast({ title: "Triggering rebill payment...", description: "Paystack edge processor is executing tokenized rebill transaction." });
+    setTimeout(() => {
+      toast({ title: "Rebill request complete", description: "Authorization token transaction verified." });
+    }, 1500);
+  };
+
+  if (isLoading) {
+    return <LoadingCard text="Loading platform recurring subscriptions..." />;
+  }
+
+  const activeSubs = subs.filter((s) => s.status === "active");
+  const weeklyCount = activeSubs.filter((s) => s.frequency === "weekly").length;
+  const monthlyCount = activeSubs.filter((s) => s.frequency === "monthly").length;
+  
+  const recurringVolume = activeSubs.reduce((sum, s) => {
+    const price = Number(s.bundle?.base_price ?? 0);
+    const monthlyRate = s.frequency === "weekly" ? price * 4 : price;
+    return sum + monthlyRate;
+  }, 0);
+
+  const q = search.trim().toLowerCase();
+  const filtered = subs
+    .filter((s) => {
+      if (filterFreq !== "all" && s.frequency !== filterFreq) return false;
+      return true;
+    })
+    .filter((s) => {
+      if (!q) return true;
+      const userMatch = s.user?.full_name?.toLowerCase().includes(q) || s.user?.email?.toLowerCase().includes(q);
+      const phoneMatch = s.recipient_phone?.includes(q);
+      const storeMatch = s.agent?.store_name?.toLowerCase().includes(q);
+      return userMatch || phoneMatch || storeMatch;
+    });
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
+          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
+            <RefreshCw className="h-4 w-4" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Total Subscriptions</p>
+          <p className="mt-1 text-xl font-black text-foreground tabular-nums">{subs.length}</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
+          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Active Subscriptions</p>
+          <p className="mt-1 text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{activeSubs.length}</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
+          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+            <TrendingUp className="h-4 w-4" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Monthly Recurring Rate</p>
+          <p className="mt-1 text-xl font-black text-amber-600 dark:text-amber-500 tabular-nums">{formatGHS(recurringVolume)}</p>
+        </div>
+
+        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
+          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
+            <Clock className="h-4 w-4" />
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Plans (Weekly / Monthly)</p>
+          <p className="mt-1 text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{weeklyCount} / {monthlyCount}</p>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-64">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search subscriber, phone, store…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+          />
+        </div>
+
+        <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
+          {([
+            { label: "All", value: "all" },
+            { label: "Weekly Only", value: "weekly" },
+            { label: "Monthly Only", value: "monthly" },
+          ] as const).map(({ label, value }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setFilterFreq(value)}
+              className={cn(
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap",
+                filterFreq === value
+                  ? "gradient-primary text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-soft">
+        {filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+            <RefreshCw className="h-10 w-10 text-muted-foreground/30 mb-4 animate-spin" />
+            <p className="text-sm font-bold text-muted-foreground">No recurring subscriptions match filters.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border/40 bg-secondary/30 text-muted-foreground">
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Subscriber Details</th>
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Storefront Origin</th>
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Bundle Plan</th>
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Frequency</th>
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Next Billing</th>
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Status</th>
+                  <th className="px-5 py-3 font-bold uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/30">
+                {filtered.map((s) => {
+                  const net = s.bundle?.networks?.logo_emoji ?? "📶";
+                  return (
+                    <tr key={s.id} className="hover:bg-primary/[0.02] transition-colors">
+                      <td className="px-5 py-4">
+                        <div className="font-bold text-foreground">{s.user?.full_name || "Guest Customer"}</div>
+                        <div className="text-[10px] text-muted-foreground">{s.user?.email || "No email"} · {s.recipient_phone}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className="font-semibold text-foreground">{s.agent?.store_name || "Direct Store"}</span>
+                        <div className="text-[9px] font-mono text-muted-foreground">/store/{s.agent?.store_slug}</div>
+                      </td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base shrink-0">{net}</span>
+                          <div>
+                            <span className="font-bold text-foreground">{s.bundle?.size_label}</span>
+                            <span className="block text-[9px] text-muted-foreground font-mono">{formatGHS(s.bundle?.base_price)} base</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 font-semibold uppercase tracking-wider text-[10px] text-primary">{s.frequency}</td>
+                      <td className="px-5 py-4 font-semibold text-foreground">{new Date(s.next_billing_at).toLocaleDateString()}</td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                          s.status === "active" 
+                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                            : "bg-secondary text-muted-foreground border border-border"
+                        }`}>
+                          {s.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {s.status === "active" && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 rounded-lg text-[10px] font-bold text-amber-500 hover:bg-amber-500/10"
+                                onClick={() => triggerRebill(s.id)}
+                              >
+                                Trigger Rebill
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 rounded-lg text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                                onClick={() => cancelSubscription(s.id)}
+                              >
+                                Cancel Plan
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

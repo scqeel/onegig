@@ -44,6 +44,8 @@ export function OwnerDashboard({ agent, onPreviewStore, slug }: Props) {
   const [widgetEnabled, setWidgetEnabled] = useState(() => {
     return localStorage.getItem("og_whatsapp_widget") !== "false";
   });
+  const [aiEnabled, setAiEnabled] = useState(agent?.enable_ai_assistant !== false);
+  const [loyaltyEnabled, setLoyaltyEnabled] = useState(agent?.enable_loyalty_rewards !== false);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Fetch quick stats
@@ -85,11 +87,18 @@ export function OwnerDashboard({ agent, onPreviewStore, slug }: Props) {
         .update({
           store_name: storeName,
           store_tagline: tagline,
-          support_whatsapp: whatsapp
+          support_whatsapp: whatsapp,
+          enable_ai_assistant: aiEnabled,
+          enable_loyalty_rewards: loyaltyEnabled
         })
         .eq("id", agent.id);
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes("enable_ai_assistant")) {
+          throw new Error("Database columns missing. Please run the migration: npx supabase db push");
+        }
+        throw error;
+      }
       toast({ title: "Settings Saved Successfully!" });
     } catch (e: any) {
       toast({ title: "Failed to save settings", description: e.message, variant: "destructive" });
@@ -333,6 +342,32 @@ export function OwnerDashboard({ agent, onPreviewStore, slug }: Props) {
                         className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${widgetEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
                       >
                         <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${widgetEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white">AI Assistant Widget</h4>
+                        <p className="text-sm text-slate-500 mt-0.5">Enable the draggable AI chatbot for your customers.</p>
+                      </div>
+                      <button
+                        onClick={() => setAiEnabled(!aiEnabled)}
+                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${aiEnabled ? 'bg-indigo-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                      >
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${aiEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl">
+                      <div>
+                        <h4 className="font-bold text-slate-900 dark:text-white">Loyalty Rewards Hub</h4>
+                        <p className="text-sm text-slate-500 mt-0.5">Show the draggable trophy button for points and rewards.</p>
+                      </div>
+                      <button
+                        onClick={() => setLoyaltyEnabled(!loyaltyEnabled)}
+                        className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 ${loyaltyEnabled ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                      >
+                        <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${loyaltyEnabled ? 'translate-x-8' : 'translate-x-1'}`} />
                       </button>
                     </div>
                   </div>

@@ -311,10 +311,10 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* ── White right panel ── */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-white px-6 py-12 lg:px-14">
+      {/* ── Right panel ── */}
+      <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-background px-6 py-12 lg:px-14">
         {/* Mobile top glow */}
-        <div className="pointer-events-none absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/6 blur-3xl lg:hidden" />
+        <div className="pointer-events-none absolute -top-32 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl lg:hidden" />
 
         <div className="relative w-full max-w-[460px]">
           {/* Top bar */}

@@ -24,6 +24,10 @@ interface ProcessBody {
   momo_number: string;
   momo_network: string; // MTN, VDF, ATL, TGO
   amount?: number;
+  coupon_code?: string | null;
+  subscribe?: boolean;
+  frequency?: "weekly" | "monthly";
+  points_redeemed?: number;
 }
 
 const getPaystackSecret = () =>
@@ -151,7 +155,72 @@ Deno.serve(async (req) => {
         }
       }
 
-      const baseAmount = amount;
+      // Secure Server-side Coupon Validation
+      let discountAmount = 0;
+      if (body.coupon_code) {
+        const cleanCouponCode = String(body.coupon_code).trim().toUpperCase();
+        const { data: coupon } = await admin
+          .from("coupons")
+          .select("*")
+          .eq("code", cleanCouponCode)
+          .eq("active", true)
+          .maybeSingle();
+
+        if (coupon) {
+          if (Number(coupon.current_uses) < Number(coupon.max_uses)) {
+            let isValidForStore = true;
+            if (coupon.agent_id) {
+              if (body.agent_slug) {
+                const { data: agentProfile } = await admin
+                  .from("agent_profiles")
+                  .select("id")
+                  .eq("store_slug", body.agent_slug)
+                  .maybeSingle();
+                
+                if (!agentProfile || agentProfile.id !== coupon.agent_id) {
+                  isValidForStore = false;
+                }
+              } else {
+                isValidForStore = false;
+              }
+            }
+
+            if (isValidForStore) {
+              // Ensure discount does not exceed the storefront base price (prevent negative/free order checkouts)
+              discountAmount = Math.min(amount, Number(coupon.discount_amount));
+            }
+          }
+        }
+      }
+
+      let loyaltyDiscount = 0;
+      if (body.points_redeemed && body.points_redeemed > 0 && userId && body.agent_slug) {
+        const { data: agentProfile } = await admin
+          .from("agent_profiles")
+          .select("id")
+          .eq("store_slug", body.agent_slug)
+          .maybeSingle();
+
+        if (agentProfile) {
+          const { data: loyaltyRow } = await admin
+            .from("loyalty_points")
+            .select("points_balance")
+            .eq("user_id", userId)
+            .eq("agent_id", agentProfile.id)
+            .maybeSingle();
+
+          const pointsAvailable = loyaltyRow?.points_balance ?? 0;
+          const maxPointsToDeduct = Math.floor(pointsAvailable / 10); // max discount in GHS
+          
+          if (maxPointsToDeduct > 0) {
+            loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
+            // Cap discount so that the customer pays at least GHS 1.00 before transaction fee
+            loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
+          }
+        }
+      }
+
+      const baseAmount = Math.max(1, amount - discountAmount - loyaltyDiscount);
       const fee = baseAmount * 0.03;
       amount = baseAmount + fee; // Add 3% payment fee
 
@@ -161,7 +230,12 @@ Deno.serve(async (req) => {
         agent_slug: body.agent_slug ?? null,
         source,
         base_amount: baseAmount,
-        fee
+        fee,
+        coupon_code: body.coupon_code || null,
+        coupon_discount: discountAmount,
+        subscribe: body.subscribe || false,
+        frequency: body.frequency || null,
+        points_redeemed: loyaltyDiscount > 0 ? loyaltyDiscount : null,
       };
     }
 

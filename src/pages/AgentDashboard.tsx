@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,9 +31,31 @@ import {
   Trophy,
   Award,
   Zap,
+  Activity,
+  Eye,
+  ShoppingCart,
+  Megaphone,
+  Gift,
+  Paintbrush,
+  Menu,
 } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerClose
+} from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { BuyDataFlow } from "@/components/buy/BuyDataFlow";
 import { CustomerCRM } from "@/components/agent/CustomerCRM";
 import { WalletManager } from "@/components/agent/WalletManager";
@@ -46,11 +68,12 @@ import { Logo } from "@/components/Logo";
 import { useTheme } from "next-themes";
 import { subscribeToPushNotifications } from "@/lib/push";
 
-export type AgentTab = "buy" | "store" | "leaderboard" | "transactions" | "customers" | "withdrawals" | "sub_agents" | "settings";
+export type AgentTab = "buy" | "store" | "marketing" | "leaderboard" | "transactions" | "customers" | "withdrawals" | "sub_agents" | "settings";
 
 export const ALL_TABS: { label: string; value: AgentTab; icon: React.ReactNode }[] = [
   { label: "Buy Data",     value: "buy",          icon: <Signal className="h-4 w-4" /> },
   { label: "My Store",     value: "store",         icon: <Store className="h-4 w-4" /> },
+  { label: "Marketing Kit",value: "marketing",     icon: <Megaphone className="h-4 w-4" /> },
   { label: "Leaderboard",  value: "leaderboard",   icon: <Trophy className="h-4 w-4" /> },
   { label: "Transactions", value: "transactions",  icon: <ReceiptText className="h-4 w-4" /> },
   { label: "Address Book", value: "customers",     icon: <Users className="h-4 w-4" /> },
@@ -64,6 +87,7 @@ export default function AgentDashboard() {
   const { user, isAdmin, signOut } = useAuth();
   const nav = useNavigate();
   const { theme, setTheme } = useTheme();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const { data: agentProfile, isLoading } = useQuery({
     queryKey: ["my-agent-profile", user?.id],
@@ -241,6 +265,7 @@ export default function AgentDashboard() {
           <main>
             {tab === "buy"          && <BuySection />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
+            {tab === "marketing"    && <MarketingKitSection agentProfile={agentProfile} />}
             {tab === "leaderboard"  && <LeaderboardSection agentProfile={agentProfile} />}
             {tab === "transactions" && <TransactionsSection agentId={agentProfile.id} />}
             {tab === "customers"    && <CustomerCRM />}
@@ -251,31 +276,81 @@ export default function AgentDashboard() {
         </div>
       </div>
 
-      {/* ── Mobile bottom bar ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/60 bg-white/95 backdrop-blur-sm dark:bg-card/95 lg:hidden">
-        <div className="flex">
-          {TABS.map((t) => {
+      {/* ── Mobile bottom bar (Modern Floating Pill) ── */}
+      <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
+        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-white/20 bg-black/80 px-4 shadow-2xl backdrop-blur-xl pointer-events-auto">
+          {[
+            { value: "buy", label: "Buy Data", icon: <Signal className="h-5 w-5" /> },
+            { value: "store", label: "My Store", icon: <Store className="h-5 w-5" /> },
+            { value: "withdrawals", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
+          ].map((t) => {
             const active = tab === t.value;
             return (
               <button
                 type="button"
                 key={t.value}
-                onClick={() => setTab(t.value)}
+                onClick={() => setTab(t.value as AgentTab)}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
+                  "relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300",
+                  active ? "text-white" : "text-white/50 hover:text-white/80"
                 )}
               >
-                <span className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-lg transition-all [&_svg]:h-4 [&_svg]:w-4",
-                  active ? "bg-primary/10" : ""
-                )}>
-                  {t.icon}
-                </span>
-                {t.label}
+                {active && (
+                  <span className="absolute -top-3 h-1 w-8 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                )}
+                <span className={cn("transition-transform", active && "-translate-y-1")}>{t.icon}</span>
+                <span className={cn("text-[10px] font-medium transition-all", active ? "opacity-100" : "opacity-0 absolute translate-y-4")}>{t.label}</span>
               </button>
             );
           })}
+
+          <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+            <DrawerTrigger asChild>
+              <button
+                type="button"
+                className="relative flex flex-1 flex-col items-center justify-center gap-1 text-white/50 hover:text-white/80 transition-all duration-300"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="text-[10px] font-medium opacity-0 absolute translate-y-4">Menu</span>
+              </button>
+            </DrawerTrigger>
+            <DrawerContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-t-[32px]">
+              <DrawerHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
+                <DrawerTitle className="text-left text-lg font-black tracking-tight">All Tools</DrawerTitle>
+              </DrawerHeader>
+              <div className="p-4 grid grid-cols-3 gap-4 pb-12">
+                {TABS.map((t) => {
+                  const active = tab === t.value;
+                  return (
+                    <button
+                      type="button"
+                      key={t.value}
+                      onClick={() => {
+                        setTab(t.value);
+                        setMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-2 rounded-2xl p-4 transition-all duration-300",
+                        active 
+                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25" 
+                          : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      )}
+                    >
+                      <span className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                        active ? "bg-white/20" : "bg-white dark:bg-slate-950"
+                      )}>
+                        {t.icon}
+                      </span>
+                      <span className="text-[10px] font-bold tracking-tight text-center leading-tight">
+                        {t.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
       </nav>
     </div>
@@ -323,6 +398,39 @@ export function StoreSection({ agentProfile, userId }: { agentProfile: any; user
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Real-time Traffic Analytics query
+  const { data: analytics, isLoading: loadingAnalytics } = useQuery({
+    queryKey: ["agent-store-analytics", agentProfile.id],
+    queryFn: async () => {
+      const { data: events, error } = await supabase
+        .from("storefront_analytics")
+        .select("*")
+        .eq("agent_id", agentProfile.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching analytics:", error);
+        return { events: [], pageViews: 0, checkouts: 0, successes: 0, uniqueVisitors: 0 };
+      }
+
+      const pageViews = (events ?? []).filter(e => e.event_type === "page_view").length;
+      const checkouts = (events ?? []).filter(e => e.event_type === "checkout_initiated").length;
+      const successes = (events ?? []).filter(e => e.event_type === "payment_success").length;
+
+      const uniqueTokens = new Set((events ?? []).map(e => e.session_token));
+      const uniqueVisitors = uniqueTokens.size;
+
+      return {
+        events: events ?? [],
+        pageViews,
+        checkouts,
+        successes,
+        uniqueVisitors
+      };
+    },
+    refetchInterval: 5000, // Live real-time updates!
+  });
+
   const { data: payload, isLoading } = useQuery({
     queryKey: ["agent-store-bundles", agentProfile.id],
     queryFn: async () => {
@@ -339,6 +447,121 @@ export function StoreSection({ agentProfile, userId }: { agentProfile: any; user
 
   const [prices, setPrices] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [targetProfit, setTargetProfit] = useState(500);
+
+  // Promo Coupon Code States & Actions
+  const { data: coupons = [], isLoading: loadingCoupons, refetch: refetchCoupons } = useQuery({
+    queryKey: ["agent-coupons", agentProfile.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("coupons")
+        .select("*")
+        .eq("agent_id", agentProfile.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newCode, setNewCode] = useState("");
+  const [newDiscount, setNewDiscount] = useState("");
+  const [newMaxUses, setNewMaxUses] = useState("100");
+  const [isCreatingCoupon, setIsCreatingCoupon] = useState(false);
+
+  const toggleCouponActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("coupons")
+        .update({ active: !currentStatus })
+        .eq("id", id);
+      if (error) throw error;
+      toast({ title: `Coupon ${currentStatus ? "deactivated" : "activated"} successfully!` });
+      refetchCoupons();
+    } catch (e: any) {
+      toast({ title: "Failed to update coupon status", variant: "destructive" });
+    }
+  };
+
+  const deleteCoupon = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("coupons")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
+      toast({ title: "Coupon deleted successfully!" });
+      refetchCoupons();
+    } catch (e: any) {
+      toast({ title: "Failed to delete coupon", variant: "destructive" });
+    }
+  };
+
+  const handleCreateCoupon = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCode.trim() || !newDiscount || !newMaxUses) return;
+
+    setIsCreatingCoupon(true);
+    try {
+      const cleanCode = newCode.trim().toUpperCase();
+      const discount = Number(newDiscount);
+      const maxUses = parseInt(newMaxUses);
+
+      if (discount <= 0) {
+        toast({ title: "Discount must be greater than 0", variant: "destructive" });
+        setIsCreatingCoupon(false);
+        return;
+      }
+
+      if (maxUses <= 0) {
+        toast({ title: "Max uses must be greater than 0", variant: "destructive" });
+        setIsCreatingCoupon(false);
+        return;
+      }
+
+      const minBundlePrice = (payload?.bundles ?? []).reduce((min: number, b: any) => {
+        const sell = Number(prices[b.id] ?? b.base_price);
+        return sell < min ? sell : min;
+      }, 999999);
+
+      if (discount >= minBundlePrice && minBundlePrice !== 999999) {
+        toast({
+          title: "Coupon discount too high",
+          description: `To protect your margins, the discount cannot exceed your cheapest data bundle price (${formatGHS(minBundlePrice)}).`,
+          variant: "destructive",
+        });
+        setIsCreatingCoupon(false);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("coupons")
+        .insert({
+          code: cleanCode,
+          discount_amount: discount,
+          max_uses: maxUses,
+          agent_id: agentProfile.id,
+          active: true
+        });
+
+      if (error) {
+        if (error.code === "23505") {
+          throw new Error("A coupon with this promo code already exists.");
+        }
+        throw error;
+      }
+
+      toast({ title: "Coupon created successfully!" });
+      setNewCode("");
+      setNewDiscount("");
+      setNewMaxUses("100");
+      setCreateOpen(false);
+      refetchCoupons();
+    } catch (e: any) {
+      toast({ title: e.message || "Failed to create coupon", variant: "destructive" });
+    } finally {
+      setIsCreatingCoupon(false);
+    }
+  };
 
   useEffect(() => {
     if (payload?.priceMap) {
@@ -361,8 +584,156 @@ export function StoreSection({ agentProfile, userId }: { agentProfile: any; user
     qc.invalidateQueries({ queryKey: ["agent-store-bundles"] });
   };
 
+  // Funnel calculations
+  const totalViews = analytics?.pageViews || 0;
+  const totalCheckouts = analytics?.checkouts || 0;
+  const totalSuccesses = analytics?.successes || 0;
+  const totalVisitors = analytics?.uniqueVisitors || 0;
+  
+  const checkoutConversion = totalVisitors > 0 
+    ? Math.round((totalSuccesses / totalVisitors) * 100) 
+    : 0;
+
   return (
     <div className="space-y-4">
+      {/* ── STORE TRAFFIC ANALYTICS HUB ── */}
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-300">
+        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-white flex items-center gap-2">
+              <Activity className="h-4.5 w-4.5 text-rose-500 animate-pulse" /> Live Storefront Traffic Analytics
+            </h2>
+            <p className="mt-0.5 text-xs text-white/50">Monitor storefront traffic, conversion funnel, and live visitor activity.</p>
+          </div>
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-500 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Realtime
+          </span>
+        </div>
+
+        <div className="p-5 md:p-6 space-y-6">
+          {/* Quick Metrics Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                <Users className="h-3.5 w-3.5 text-primary" /> Unique Visitors
+              </div>
+              <p className="mt-2 text-2xl font-black text-foreground tabular-nums">{loadingAnalytics ? "..." : totalVisitors}</p>
+            </div>
+            
+            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                <Eye className="h-3.5 w-3.5 text-blue-500" /> Total Page Views
+              </div>
+              <p className="mt-2 text-2xl font-black text-foreground tabular-nums">{loadingAnalytics ? "..." : totalViews}</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                <ShoppingCart className="h-3.5 w-3.5 text-amber-500" /> Checkout Started
+              </div>
+              <p className="mt-2 text-2xl font-black text-foreground tabular-nums">{loadingAnalytics ? "..." : totalCheckouts}</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
+              <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-500" /> Conversion Rate
+              </div>
+              <p className="mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{loadingAnalytics ? "..." : `${checkoutConversion}%`}</p>
+            </div>
+          </div>
+
+          {/* Funnel Progress Bars */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Storefront Conversion Funnel</h3>
+            <div className="space-y-2.5">
+              {/* pageview */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-muted-foreground flex items-center gap-1"><Eye className="h-3 w-3" /> Page Views</span>
+                  <span className="font-bold tabular-nums">{totalViews}</span>
+                </div>
+                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden p-px">
+                  <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: totalViews > 0 ? "100%" : "0%" }} />
+                </div>
+              </div>
+
+              {/* checkouts */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-muted-foreground flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> Initiated Checkouts</span>
+                  <span className="font-bold tabular-nums">
+                    {totalCheckouts} {totalViews > 0 ? `(${Math.round((totalCheckouts / totalViews) * 100)}%)` : ""}
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden p-px">
+                  <div className="h-full rounded-full bg-amber-500 transition-all duration-500" style={{ width: totalViews > 0 ? `${(totalCheckouts / totalViews) * 100}%` : "0%" }} />
+                </div>
+              </div>
+
+              {/* successes */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs font-medium">
+                  <span className="text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Completed Orders</span>
+                  <span className="font-bold tabular-nums">
+                    {totalSuccesses} {totalCheckouts > 0 ? `(${Math.round((totalSuccesses / totalCheckouts) * 100)}%)` : ""}
+                  </span>
+                </div>
+                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden p-px">
+                  <div className="h-full rounded-full bg-emerald-505 bg-emerald-500 transition-all duration-500" style={{ width: totalCheckouts > 0 ? `${(totalSuccesses / totalCheckouts) * 100}%` : "0%" }} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LIVE ACTIVITY TICKER */}
+          <div className="border-t border-border/60 pt-4 space-y-2">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" /> Live Storefront Activity Feed
+            </h3>
+            
+            {loadingAnalytics ? (
+              <div className="py-4 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+            ) : !analytics?.events || analytics.events.length === 0 ? (
+              <p className="text-xs text-muted-foreground text-center py-4">No recent visitor activity logged yet.</p>
+            ) : (
+              <div className="h-40 overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-secondary scrollbar-track-transparent">
+                {analytics.events.map((e: any, idx: number) => {
+                  let text = "Someone visited your store";
+                  let bg = "bg-secondary/40";
+                  let border = "border-border/30";
+                  
+                  if (e.event_type === "checkout_initiated") {
+                    const metadata = e.metadata || {};
+                    text = `Checkout started for ${metadata.network || "Bundle"} ${metadata.size_label || ""}`;
+                    bg = "bg-amber-500/5";
+                    border = "border-amber-500/20";
+                  } else if (e.event_type === "payment_success") {
+                    const metadata = e.metadata || {};
+                    text = `🎉 SUCCESSFUL ORDER! Purchased ${metadata.network || "Bundle"} ${metadata.size_label || ""} for GH₵${metadata.amount || ""}`;
+                    bg = "bg-emerald-500/10";
+                    border = "border-emerald-500/30";
+                  }
+                  
+                  return (
+                    <div 
+                      key={e.id || idx} 
+                      className={`p-3 rounded-xl border flex items-center justify-between text-xs transition-all hover:scale-[1.01] ${bg} ${border}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-foreground">{text}</span>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground flex items-center gap-1 shrink-0 ml-4">
+                        <Clock className="h-3 w-3" /> {timeAgo(e.created_at)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* Store link */}
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
         <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
@@ -408,6 +779,67 @@ export function StoreSection({ agentProfile, userId }: { agentProfile: any; user
           </div>
         ) : (
           <div className="space-y-4 p-5 md:p-6">
+            {/* Profit Calculator & Dynamic Presets */}
+            <div className="p-4 rounded-2xl bg-secondary/15 border border-border/40 space-y-4 mb-4">
+              <h4 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-1.5">
+                <TrendingUp className="h-4 w-4 text-primary" /> Smart Reseller Profit Planner & Markups
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                Automate your storefront markup rates instantly or simulate targets to align your reseller margins with top-performing stores.
+              </p>
+
+              {/* Presets Grid */}
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { label: "⚡ Competitive", desc: "+GH₵0.50 Markup", value: 0.5 },
+                  { label: "✨ Balanced", desc: "+GH₵1.00 Markup", value: 1.0 },
+                  { label: "👑 Max Profit", desc: "+GH₵2.00 Markup", value: 2.0 },
+                ].map((preset, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      const newPrices: Record<string, string> = {};
+                      (payload?.bundles ?? []).forEach((b: any) => {
+                        newPrices[b.id] = (Number(b.base_price) + preset.value).toFixed(2);
+                      });
+                      setPrices(newPrices);
+                      toast({
+                        title: `${preset.label} Preset Applied!`,
+                        description: `All bundle price inputs set to base price + GH₵ ${preset.value.toFixed(2)}. Make sure to click "Save Prices" to save changes!`,
+                      });
+                    }}
+                    className="flex flex-col items-center justify-center p-3 rounded-xl border border-border bg-card hover:bg-secondary/40 text-center transition-all hover:scale-[1.02]"
+                  >
+                    <span className="text-xs font-bold text-foreground">{preset.label}</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5">{preset.desc}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Slider simulation */}
+              <div className="space-y-2 pt-2 border-t border-border/30">
+                <div className="flex justify-between text-xs">
+                  <span className="font-semibold text-muted-foreground">Target Monthly Profit:</span>
+                  <span className="font-black text-primary">GH₵ {targetProfit}</span>
+                </div>
+                <input
+                  type="range"
+                  min="100"
+                  max="2000"
+                  step="50"
+                  value={targetProfit}
+                  onChange={(e) => setTargetProfit(Number(e.target.value))}
+                  className="w-full h-1.5 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+                
+                {/* Simulation Output */}
+                <div className="p-3 rounded-xl bg-background/50 border border-border/20 text-xs flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Est. Sales Required (at standard markup):</span>
+                  <span className="font-extrabold text-foreground tabular-nums">{Math.ceil(targetProfit / 1.0)} sales / month</span>
+                </div>
+              </div>
+            </div>
             {(payload?.networks ?? []).map((n: any) => {
               const networkBundles = (payload?.bundles ?? []).filter((b: any) => b.network_id === n.id);
               if (!networkBundles.length) return null;
@@ -460,6 +892,162 @@ export function StoreSection({ agentProfile, userId }: { agentProfile: any; user
           </div>
         )}
       </div>
+
+      {/* ── PROMO COUPONS & GIVEAWAY VOUCHERS ── */}
+      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <Gift className="h-4.5 w-4.5 text-rose-500" /> Promo Coupons & Giveaway Vouchers
+            </h3>
+            <p className="mt-0.5 text-xs text-white/50">Issue store-specific vouchers sponsored out of your own sales margin.</p>
+          </div>
+          <Button 
+            type="button" 
+            className="h-9 rounded-xl gradient-primary text-sm font-bold flex items-center gap-1.5"
+            onClick={() => setCreateOpen(true)}
+          >
+            <Gift className="h-4 w-4" /> Create Coupon
+          </Button>
+        </div>
+
+        <div className="p-5 md:p-6">
+          {loadingCoupons ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : coupons.length === 0 ? (
+            <div className="text-center py-10 space-y-3">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary/50">
+                <Gift className="h-6 w-6 text-muted-foreground/50" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-foreground">No storefront coupons yet</p>
+                <p className="text-xs text-muted-foreground">Distribute discount codes to customers to drive massive conversion rates!</p>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-2xl border border-border/50 bg-secondary/10">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/50 bg-secondary/30 text-left text-xs font-semibold text-muted-foreground">
+                    <th className="px-4 py-3 font-semibold">Promo Code</th>
+                    <th className="px-4 py-3 font-semibold">Discount</th>
+                    <th className="px-4 py-3 font-semibold">Usage Limit</th>
+                    <th className="px-4 py-3 font-semibold">Status</th>
+                    <th className="px-4 py-3 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {coupons.map((c: any) => {
+                    const isExhausted = Number(c.current_uses) >= Number(c.max_uses);
+                    const isActive = c.active && !isExhausted;
+                    return (
+                      <tr key={c.id} className="border-b border-border/40 last:border-0 hover:bg-secondary/30 transition-colors">
+                        <td className="px-4 py-3 font-mono font-bold uppercase text-foreground">{c.code}</td>
+                        <td className="px-4 py-3 font-bold text-rose-500">{formatGHS(c.discount_amount)}</td>
+                        <td className="px-4 py-3 text-muted-foreground font-medium tabular-nums">
+                          {c.current_uses} / {c.max_uses} used
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}`}>
+                            {isActive ? "Active" : isExhausted ? "Fully Used" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={`h-7 rounded-lg text-xs ${c.active ? "text-amber-500 hover:text-amber-600 hover:bg-amber-500/10" : "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"}`}
+                              onClick={() => toggleCouponActive(c.id, c.active)}
+                            >
+                              {c.active ? "Deactivate" : "Activate"}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 rounded-lg text-xs text-destructive hover:bg-destructive/10"
+                              onClick={() => deleteCoupon(c.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* CREATE COUPON DIALOG */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent className="w-[94vw] max-w-sm rounded-[32px] border-border p-6 bg-card">
+          <DialogHeader>
+            <DialogTitle className="text-left text-lg font-black text-foreground flex items-center gap-1.5">
+              <Gift className="h-5 w-5 text-rose-500" /> Create Reseller Coupon
+            </DialogTitle>
+            <DialogDescription className="text-left text-xs text-muted-foreground">
+              Vouchers will be deducted from your storefront profit margin per purchase.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCreateCoupon} className="space-y-4 pt-3">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-muted-foreground uppercase">Promo Code</label>
+              <Input
+                placeholder="e.g. VIP5"
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value)}
+                className="h-11 rounded-2xl border-border text-sm font-semibold uppercase focus-visible:ring-primary"
+                required
+              />
+              <p className="text-[10px] text-muted-foreground">Codes are alphanumeric and case-insensitive.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-muted-foreground uppercase">Discount (GHS)</label>
+              <Input
+                type="number"
+                step="0.1"
+                placeholder="e.g. 5.00"
+                value={newDiscount}
+                onChange={(e) => setNewDiscount(e.target.value)}
+                className="h-11 rounded-2xl border-border text-sm font-semibold focus-visible:ring-primary"
+                required
+              />
+              <p className="text-[10px] text-muted-foreground">This cedi value is deducted from your commission/profit.</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-muted-foreground uppercase">Max Total Uses</label>
+              <Input
+                type="number"
+                placeholder="e.g. 100"
+                value={newMaxUses}
+                onChange={(e) => setNewMaxUses(e.target.value)}
+                className="h-11 rounded-2xl border-border text-sm font-semibold focus-visible:ring-primary"
+                required
+              />
+              <p className="text-[10px] text-muted-foreground">The coupon automatically deactivates after reaching this count.</p>
+            </div>
+
+            <div className="pt-2">
+              <Button
+                type="submit"
+                disabled={isCreatingCoupon}
+                className="w-full h-11 rounded-2xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground transition-all flex items-center justify-center gap-1.5"
+              >
+                {isCreatingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Store Coupon"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -850,7 +1438,12 @@ export function WithdrawalsSection({ userId }: { userId: string }) {
 export function SubAgentsSection({ agentProfile }: { agentProfile: any }) {
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
+  const [selectedSubAgent, setSelectedSubAgent] = useState<any | null>(null);
+  const [overrideForm, setOverrideForm] = useState<Record<string, string>>({});
+  const [savingOverrides, setSavingOverrides] = useState(false);
+
   const inviteUrl = `${window.location.origin}/join/${agentProfile.store_slug}`;
+
   const { data: subAgents, isLoading } = useQuery({
     queryKey: ["agent-sub-agents", agentProfile.id],
     queryFn: async () => {
@@ -889,6 +1482,106 @@ export function SubAgentsSection({ agentProfile }: { agentProfile: any }) {
     toast({ title: "Invite link copied!" });
   };
 
+  // Override rates query
+  const { data: overridePayload, isLoading: loadingOverrides } = useQuery({
+    queryKey: ["sub-agent-overrides", selectedSubAgent?.id],
+    enabled: !!selectedSubAgent?.id,
+    queryFn: async () => {
+      const [{ data: bundles }, { data: networks }, { data: existing }, { data: myPrices }] = await Promise.all([
+        supabase.from("bundles").select("id, network_id, size_label, base_price").eq("active", true).order("size_mb"),
+        supabase.from("networks").select("id, name, code, logo_emoji").eq("active", true),
+        supabase.from("sub_agent_wholesale_overrides").select("bundle_id, wholesale_price").eq("sub_agent_id", selectedSubAgent!.id).eq("parent_agent_id", agentProfile.id),
+        supabase.from("agent_bundle_prices").select("bundle_id, sell_price").eq("agent_id", agentProfile.id).eq("active", true),
+      ]);
+
+      const overrideMap: Record<string, number> = {};
+      (existing ?? []).forEach((r: any) => {
+        overrideMap[r.bundle_id] = Number(r.wholesale_price);
+      });
+
+      const parentPriceMap: Record<string, number> = {};
+      (myPrices ?? []).forEach((r: any) => {
+        parentPriceMap[r.bundle_id] = Number(r.sell_price);
+      });
+
+      return {
+        bundles: (bundles ?? []).map(b => ({
+          ...b,
+          network: (networks ?? []).find(n => n.id === b.network_id),
+          overridePrice: overrideMap[b.id] || null,
+          parentPrice: parentPriceMap[b.id] != null ? parentPriceMap[b.id] : Number(b.base_price),
+        }))
+      };
+    }
+  });
+
+  useEffect(() => {
+    if (overridePayload?.bundles) {
+      const s: Record<string, string> = {};
+      overridePayload.bundles.forEach(b => {
+        s[b.id] = b.overridePrice != null ? String(b.overridePrice) : "";
+      });
+      setOverrideForm(s);
+    }
+  }, [overridePayload?.bundles]);
+
+  const saveOverrides = async () => {
+    if (!selectedSubAgent) return;
+    setSavingOverrides(true);
+    
+    try {
+      const rows = [];
+      const deletes = [];
+      
+      for (const b of overridePayload?.bundles || []) {
+        const val = overrideForm[b.id]?.trim();
+        if (val && Number(val) > 0) {
+          if (Number(val) < Number(b.base_price)) {
+            toast({ 
+              title: "Invalid Price", 
+              description: `Wholesale price for ${b.size_label} cannot be lower than admin base price of GH₵ ${b.base_price}.`,
+              variant: "destructive"
+            });
+            setSavingOverrides(false);
+            return;
+          }
+          rows.push({
+            parent_agent_id: agentProfile.id,
+            sub_agent_id: selectedSubAgent.id,
+            bundle_id: b.id,
+            wholesale_price: Number(val),
+          });
+        } else {
+          deletes.push(b.id);
+        }
+      }
+
+      if (rows.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from("sub_agent_wholesale_overrides")
+          .upsert(rows, { onConflict: "sub_agent_id,bundle_id" });
+        if (upsertErr) throw upsertErr;
+      }
+
+      if (deletes.length > 0) {
+        const { error: deleteErr } = await supabase
+          .from("sub_agent_wholesale_overrides")
+          .delete()
+          .eq("sub_agent_id", selectedSubAgent.id)
+          .eq("parent_agent_id", agentProfile.id)
+          .in("bundle_id", deletes);
+        if (deleteErr) throw deleteErr;
+      }
+
+      toast({ title: "Wholesale rates saved successfully!" });
+      setSelectedSubAgent(null);
+    } catch (e: any) {
+      toast({ title: "Failed to save rates", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingOverrides(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
@@ -925,7 +1618,7 @@ export function SubAgentsSection({ agentProfile }: { agentProfile: any }) {
             ) : (
               <div className="space-y-3">
                 {subAgents?.map((sa: any) => (
-                  <div key={sa.id} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-secondary/20">
+                  <div key={sa.id} className="flex items-center justify-between p-3 rounded-xl border border-border/60 bg-secondary/20 hover:border-primary/20 transition-all duration-300">
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-bold text-sm text-foreground">{sa.store_name}</p>
@@ -937,9 +1630,21 @@ export function SubAgentsSection({ agentProfile }: { agentProfile: any }) {
                         {sa.profiles?.full_name || 'No Name'} · {sa.profiles?.phone || 'No Phone'}
                       </p>
                     </div>
-                    {/* In future, link to a dashboard to impersonate/manage this sub-agent's prices */}
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Joined {timeAgo(sa.created_at)}</p>
+                    
+                    <div className="flex items-center gap-3">
+                      {sa.activation_paid && (
+                        <Button 
+                          onClick={() => setSelectedSubAgent(sa)}
+                          variant="outline" 
+                          size="sm" 
+                          className="h-9 px-3 rounded-lg text-xs font-bold bg-white/5 border-border hover:bg-secondary/40 text-foreground"
+                        >
+                          Wholesale Rates
+                        </Button>
+                      )}
+                      <div className="text-right">
+                        <p className="text-xs text-muted-foreground">Joined {timeAgo(sa.created_at)}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -948,6 +1653,77 @@ export function SubAgentsSection({ agentProfile }: { agentProfile: any }) {
           </div>
         </div>
       </div>
+
+      {/* advanced wholesale rates modal */}
+      <Dialog open={!!selectedSubAgent} onOpenChange={(open) => { if (!open) setSelectedSubAgent(null); }}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-black text-foreground">Configure Wholesale Overrides</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Set custom bundle wholesale costs for <span className="font-extrabold text-foreground">{selectedSubAgent?.store_name}</span>.
+              Leaving an override empty restores standard pricing (sub-agent pays standard admin base rates).
+            </DialogDescription>
+          </DialogHeader>
+
+          {loadingOverrides ? (
+            <div className="py-12 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          ) : (
+            <div className="space-y-4 pt-4">
+              <div className="overflow-hidden rounded-xl border border-border/60 bg-secondary/15">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="bg-secondary/40 border-b border-border/50 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      <th className="px-4 py-3">Bundle</th>
+                      <th className="px-4 py-3">Base Cost</th>
+                      <th className="px-4 py-3">Your Sell Price</th>
+                      <th className="px-4 py-3">Sub Wholesale Price</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {overridePayload?.bundles.map((b: any) => (
+                      <tr key={b.id} className="hover:bg-secondary/10 transition-colors">
+                        <td className="px-4 py-3.5 font-bold flex items-center gap-1.5">
+                          <span className="text-sm shrink-0">{b.network?.logo_emoji}</span>
+                          <span>{b.size_label}</span>
+                        </td>
+                        <td className="px-4 py-3.5 text-muted-foreground font-mono">{formatGHS(b.base_price)}</td>
+                        <td className="px-4 py-3.5 text-muted-foreground font-mono">{formatGHS(b.parentPrice)}</td>
+                        <td className="px-4 py-3.5">
+                          <div className="relative w-28">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">GH₵</span>
+                            <Input
+                              type="number"
+                              step="0.1"
+                              min={b.base_price}
+                              placeholder={b.base_price.toFixed(2)}
+                              value={overrideForm[b.id] ?? ""}
+                              onChange={e => setOverrideForm(p => ({ ...p, [b.id]: e.target.value }))}
+                              className="h-8 pl-10 text-xs rounded-lg font-mono w-full"
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="ghost" className="h-10 rounded-xl" onClick={() => setSelectedSubAgent(null)}>
+                  Cancel
+                </Button>
+                <Button 
+                  disabled={savingOverrides} 
+                  onClick={saveOverrides}
+                  className="h-10 px-6 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold"
+                >
+                  {savingOverrides ? "Saving..." : "Save Wholesale Rates"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -965,6 +1741,11 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
     support_whatsapp: agentProfile.support_whatsapp ?? "",
     support_phone: agentProfile.support_phone ?? "",
     custom_domain: agentProfile.custom_domain ?? "",
+    store_promo_banner: agentProfile.store_promo_banner ?? "",
+    store_promo_banner_style: agentProfile.store_promo_banner_style ?? "neon-flash",
+    store_template_theme: agentProfile.store_template_theme ?? "minimalist",
+    store_font_family: agentProfile.store_font_family ?? "Inter",
+    store_dark_mode: agentProfile.store_dark_mode ?? false,
   });
   const [widgetEnabled, setWidgetEnabled] = useState(() => {
     return localStorage.getItem("og_whatsapp_widget") !== "false";
@@ -972,7 +1753,7 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
   const [pushEnabled, setPushEnabled] = useState(Notification.permission === "granted");
   const [saving, setSaving] = useState(false);
 
-  const f = (key: keyof typeof form, val: string) => setForm((p) => ({ ...p, [key]: val }));
+  const f = (key: keyof typeof form, val: any) => setForm((p) => ({ ...p, [key]: val }));
 
   const save = async () => {
     setSaving(true);
@@ -996,6 +1777,11 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
       support_whatsapp: form.support_whatsapp || null,
       support_phone: form.support_phone || null,
       custom_domain: form.custom_domain || null,
+      store_promo_banner: form.store_promo_banner || null,
+      store_promo_banner_style: form.store_promo_banner_style || "neon-flash",
+      store_template_theme: form.store_template_theme,
+      store_font_family: form.store_font_family,
+      store_dark_mode: form.store_dark_mode,
     } as any).eq("id", agentProfile.id);
     setSaving(false);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
@@ -1050,6 +1836,85 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">Support Phone</label>
             <Input className="h-11 rounded-xl" value={form.support_phone} onChange={(e) => f("support_phone", e.target.value)} placeholder="e.g. 024 000 0000" />
+          </div>
+          
+          <div className="space-y-1.5 md:col-span-2 pt-2 border-t border-border/40">
+            <h4 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Megaphone className="h-4 w-4 text-rose-500 animate-pulse" /> Top 50 Promo Banner Alert
+            </h4>
+            <p className="text-[11px] text-muted-foreground">Broadcast high-converting promo alerts at the very top of your storefront page.</p>
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Promo Announcement Alert Text</label>
+            <Input className="h-11 rounded-xl" value={form.store_promo_banner} onChange={(e) => f("store_promo_banner", e.target.value)} placeholder="e.g. ✨ MTN WEEKEND RUSH! MTN 10GB now at GH₵ 11.50 only! Ends Sunday midnight! ⚡" />
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Promo Ticker Design Theme</label>
+            <select
+              aria-label="Promo Ticker Design Theme"
+              value={form.store_promo_banner_style}
+              onChange={(e) => f("store_promo_banner_style", e.target.value)}
+              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="neon-flash">⚡ Neon Flashing Amber & Rose</option>
+              <option value="midnight-gold">👑 Midnight Obsidian & Luxury Gold</option>
+              <option value="fire-ruby">🔥 Pulsing Fire Ruby Red</option>
+              <option value="success-emerald">✨ Success Emerald Green Pulse</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5 md:col-span-2 pt-4 border-t border-border/40">
+            <h4 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-1.5">
+              <Paintbrush className="h-4 w-4 text-violet-500" /> Premium Theme & Aesthetics Builder
+            </h4>
+            <p className="text-[11px] text-muted-foreground">Select layouts, custom typographies, and dark modes to command premium reseller rates.</p>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Store Theme Aesthetic</label>
+            <select
+              aria-label="Store Theme Aesthetic"
+              value={form.store_template_theme}
+              onChange={(e) => f("store_template_theme", e.target.value)}
+              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="minimalist">Minimalist Classic</option>
+              <option value="glassmorphism">Glassmorphism Translucency</option>
+              <option value="cyberpunk">Cyberpunk Neon Grid</option>
+              <option value="luxury">Luxury Gold & Stone</option>
+            </select>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">Google Font Typography</label>
+            <select
+              aria-label="Google Font Typography"
+              value={form.store_font_family}
+              onChange={(e) => f("store_font_family", e.target.value)}
+              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="Inter">Inter (Classic Clean)</option>
+              <option value="Outfit">Outfit (Geometric Modern)</option>
+              <option value="Space Grotesk">Space Grotesk (Tech Accent)</option>
+              <option value="Playfair Display">Playfair Display (Serif Elegance)</option>
+              <option value="Roboto">Roboto (Standard Friendly)</option>
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-secondary/30 border border-border/60 rounded-xl md:col-span-2">
+            <div>
+              <h4 className="font-bold text-foreground text-sm">Force Dark Mode Style</h4>
+              <p className="text-xs text-muted-foreground mt-0.5">Toggle storefront default dark mode (overrides client settings).</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => f("store_dark_mode", !form.store_dark_mode)}
+              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${form.store_dark_mode ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+            >
+              <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${form.store_dark_mode ? 'translate-x-8' : 'translate-x-1'}`} />
+            </button>
           </div>
           
           <div className="md:col-span-2 pt-2 space-y-3">
@@ -1341,13 +2206,519 @@ export function LeaderboardSection({ agentProfile }: { agentProfile: any }) {
             <p className="text-xs text-muted-foreground leading-relaxed">
               The agent who achieves the highest reseller volume (GHS) at the end of the month will be crowned the **Volume Champion** and receive a <span className="font-bold text-green-500">GH₵500 mega cash prize!</span>
             </p>
-            <div className="mt-4 flex items-center justify-between text-[10px] font-semibold text-muted-foreground border-t border-border/40 pt-3">
-              <span>Ending: 2026-06-30</span>
-              <span className="text-green-500 font-bold uppercase tracking-wider">GH₵500 Reward</span>
-            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// ── Marketing Kit Section ──────────────────────────────────────────────────
+export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
+  const { toast } = useToast();
+  const [template, setTemplate] = useState<"obsidian" | "neon" | "gold" | "light">("obsidian");
+  const [tagline, setTagline] = useState(agentProfile.store_tagline || "Fast & Affordable Data Bundles");
+  const [selectedBundles, setSelectedBundles] = useState<string[]>([]);
+  const [qrImage, setQrImage] = useState<HTMLImageElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const storeUrl = `${window.location.origin}/store/${agentProfile.store_slug}`;
+
+  // Bulk Broadcaster States & Actions
+  const [broadcastTitle, setBroadcastTitle] = useState("");
+  const [broadcastMessage, setBroadcastMessage] = useState("");
+  const [broadcastType, setBroadcastType] = useState("info");
+  const [broadcastSound, setBroadcastSound] = useState("default");
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!broadcastTitle.trim() || !broadcastMessage.trim()) return;
+
+    setIsBroadcasting(true);
+    try {
+      // 1. Get unique registered customer IDs who placed orders on this store
+      const { data: customerOrders, error: orderErr } = await supabase
+        .from("orders")
+        .select("customer_user_id")
+        .eq("agent_id", agentProfile.id)
+        .not("customer_user_id", "is", null);
+
+      if (orderErr) throw orderErr;
+
+      const targetUserIds = Array.from(new Set((customerOrders ?? []).map(o => o.customer_user_id)));
+
+      if (targetUserIds.length === 0) {
+        toast({
+          title: "No registered customers found",
+          description: "You don't have any registered storefront buyers with active order histories yet.",
+          variant: "destructive"
+        });
+        setIsBroadcasting(false);
+        return;
+      }
+
+      // 2. Insert notifications in parallel bulk query
+      const notificationRows = targetUserIds.map(userId => ({
+        title: broadcastTitle,
+        message: broadcastMessage,
+        type: broadcastType,
+        sound_name: broadcastSound,
+        target_user_id: userId,
+        is_global: false
+      }));
+
+      const { error: insertErr } = await supabase
+        .from("app_notifications")
+        .insert(notificationRows);
+
+      if (insertErr) throw insertErr;
+
+      toast({
+        title: "Broadcast Successful! 📢",
+        description: `Your alert has been sent in real-time to all ${targetUserIds.length} registered customers.`,
+      });
+      setBroadcastTitle("");
+      setBroadcastMessage("");
+    } catch (err: any) {
+      toast({
+        title: "Failed to broadcast alert",
+        description: err.message || "An unexpected error occurred.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
+  // Fetch bundles & active pricing
+  const { data: payload, isLoading } = useQuery({
+    queryKey: ["marketing-kit-bundles", agentProfile.id],
+    queryFn: async () => {
+      const [{ data: networks }, { data: bundles }, { data: myPrices }] = await Promise.all([
+        supabase.from("networks").select("id, name, code, logo_emoji").eq("active", true),
+        supabase.from("bundles").select("id, network_id, size_label, base_price").eq("active", true).order("size_mb"),
+        supabase.from("agent_bundle_prices").select("bundle_id, sell_price, active").eq("agent_id", agentProfile.id),
+      ]);
+      
+      const priceMap: Record<string, number> = {};
+      (myPrices ?? []).forEach((r: any) => { if (r.active) priceMap[r.bundle_id] = Number(r.sell_price); });
+      
+      return {
+        networks: networks ?? [],
+        bundles: (bundles ?? []).map(b => ({
+          ...b,
+          sellPrice: priceMap[b.id] != null ? priceMap[b.id] : Number(b.base_price),
+          network: (networks ?? []).find(n => n.id === b.network_id),
+        }))
+      };
+    }
+  });
+
+  // Load QR image with CORS support
+  useEffect(() => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(storeUrl)}`;
+    img.onload = () => {
+      setQrImage(img);
+    };
+  }, [storeUrl]);
+
+  // Collect the selected bundles details
+  const featuredBundles = (payload?.bundles ?? []).filter(b => selectedBundles.includes(b.id)).slice(0, 4);
+
+  // Trigger draw whenever options modify
+  useEffect(() => {
+    if (payload?.bundles && selectedBundles.length === 0) {
+      // Preselect first 4 bundles
+      setSelectedBundles(payload.bundles.slice(0, 4).map(b => b.id));
+    }
+  }, [payload?.bundles]);
+
+  useEffect(() => {
+    drawPoster();
+  }, [template, tagline, selectedBundles, qrImage, payload]);
+
+  const drawPoster = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Draw background gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, 1920);
+    if (template === "obsidian") {
+      grad.addColorStop(0, "#0b1329");
+      grad.addColorStop(0.5, "#1c2541");
+      grad.addColorStop(1, "#0d1b2a");
+    } else if (template === "neon") {
+      grad.addColorStop(0, "#022c22");
+      grad.addColorStop(0.5, "#064e3b");
+      grad.addColorStop(1, "#022c22");
+    } else if (template === "gold") {
+      grad.addColorStop(0, "#1c1917");
+      grad.addColorStop(0.5, "#0c0a09");
+      grad.addColorStop(1, "#1c1917");
+    } else if (template === "light") {
+      grad.addColorStop(0, "#f8fafc");
+      grad.addColorStop(0.5, "#f1f5f9");
+      grad.addColorStop(1, "#e2e8f0");
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1080, 1920);
+
+    // Subtle decorative concentric circles
+    ctx.strokeStyle = template === "light" ? "rgba(79, 70, 229, 0.04)" : "rgba(255, 255, 255, 0.03)";
+    ctx.lineWidth = 6;
+    for (let i = 0; i < 8; i++) {
+      ctx.beginPath();
+      ctx.arc(540, 960, 300 + i * 150, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    // Theme style configurations
+    const textColor = template === "light" ? "#0f172a" : "#ffffff";
+    const subColor = template === "light" ? "#475569" : "#94a3b8";
+    const accentColor = template === "obsidian" ? "#f43f5e" : template === "neon" ? "#10b981" : template === "gold" ? "#eab308" : "#4f46e5";
+    const glassBg = template === "light" ? "rgba(255, 255, 255, 0.9)" : "rgba(15, 23, 42, 0.65)";
+    const glassBorder = template === "light" ? "rgba(148, 163, 184, 0.2)" : "rgba(255, 255, 255, 0.1)";
+
+    // Draw header titles
+    ctx.textAlign = "center";
+    ctx.fillStyle = accentColor;
+    ctx.font = "bold 44px sans-serif";
+    ctx.fillText("OFFICIAL DATA RESELLER", 540, 180);
+
+    ctx.fillStyle = textColor;
+    ctx.font = "extrabold 90px sans-serif";
+    ctx.fillText((agentProfile.store_name || "MY DATA STORE").toUpperCase(), 540, 290);
+
+    ctx.fillStyle = subColor;
+    ctx.font = "italic 40px sans-serif";
+    ctx.fillText(tagline || "Fast & Affordable Data Bundles", 540, 360);
+
+    // Draw price board glassmorphism card
+    const cardX = 100;
+    const cardY = 460;
+    const cardW = 880;
+    const cardH = 920;
+    const radius = 50;
+
+    ctx.fillStyle = glassBg;
+    ctx.strokeStyle = glassBorder;
+    ctx.lineWidth = 3;
+
+    ctx.beginPath();
+    ctx.moveTo(cardX + radius, cardY);
+    ctx.lineTo(cardX + cardW - radius, cardY);
+    ctx.quadraticCurveTo(cardX + cardW, cardY, cardX + cardW, cardY + radius);
+    ctx.lineTo(cardX + cardW, cardY + cardH - radius);
+    ctx.quadraticCurveTo(cardX + cardW, cardY + cardH, cardX + cardW - radius, cardY + cardH);
+    ctx.lineTo(cardX + radius, cardY + cardH);
+    ctx.quadraticCurveTo(cardX, cardY + cardH, cardX, cardY + cardH - radius);
+    ctx.lineTo(cardX, cardY + radius);
+    ctx.quadraticCurveTo(cardX, cardY, cardX + radius, cardY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Hot pricing card header
+    ctx.fillStyle = accentColor;
+    ctx.font = "extrabold 50px sans-serif";
+    ctx.fillText("TODAY'S SPECIAL RATES", 540, 550);
+    
+    ctx.strokeStyle = accentColor;
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(340, 580);
+    ctx.lineTo(740, 580);
+    ctx.stroke();
+
+    // Draw featured list
+    const startY = 680;
+    const rowGap = 160;
+
+    featuredBundles.forEach((b: any, index: number) => {
+      if (index >= 4) return;
+      const y = startY + index * rowGap;
+
+      // Draw Row highlight card background
+      ctx.fillStyle = template === "light" ? "rgba(0, 0, 0, 0.02)" : "rgba(255, 255, 255, 0.02)";
+      ctx.beginPath();
+      ctx.roundRect(cardX + 40, y - 60, cardW - 80, 115, 20);
+      ctx.fill();
+
+      // Network Badge text
+      const logo = b.network?.logo_emoji || "📶";
+      ctx.textAlign = "left";
+      ctx.fillStyle = textColor;
+      ctx.font = "bold 44px sans-serif";
+      ctx.fillText(`${logo} ${b.network?.name || "Network"}`, cardX + 70, y + 15);
+
+      // Bundle Size Label
+      ctx.fillStyle = subColor;
+      ctx.font = "500 40px sans-serif";
+      ctx.fillText(b.size_label, cardX + 420, y + 15);
+
+      // Sell Price
+      ctx.textAlign = "right";
+      ctx.fillStyle = accentColor;
+      ctx.font = "extrabold 52px sans-serif";
+      ctx.fillText(`GH₵ ${b.sellPrice.toFixed(2)}`, cardX + cardW - 70, y + 15);
+    });
+
+    // Draw QR code and "Scan to Buy" footer
+    ctx.fillStyle = glassBg;
+    ctx.strokeStyle = glassBorder;
+    ctx.beginPath();
+    ctx.moveTo(cardX + radius, 1440);
+    ctx.lineTo(cardX + cardW - radius, 1440);
+    ctx.quadraticCurveTo(cardX + cardW, 1440, cardX + cardW, 1440 + radius);
+    ctx.lineTo(cardX + cardW, 1820 - radius);
+    ctx.quadraticCurveTo(cardX + cardW, 1820, cardX + cardW - radius, 1820);
+    ctx.lineTo(cardX + radius, 1820);
+    ctx.quadraticCurveTo(cardX, 1820, cardX, 1820 - radius);
+    ctx.lineTo(cardX, 1440 + radius);
+    ctx.quadraticCurveTo(cardX, 1440, cardX + radius, 1440);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Footer Text
+    ctx.textAlign = "left";
+    ctx.fillStyle = textColor;
+    ctx.font = "extrabold 48px sans-serif";
+    ctx.fillText("SCAN TO ORDER INSTANTLY", cardX + 60, 1540);
+
+    ctx.fillStyle = subColor;
+    ctx.font = "500 36px sans-serif";
+    ctx.fillText("Instant Delivery • No Signup Required", cardX + 60, 1610);
+
+    ctx.fillStyle = accentColor;
+    ctx.font = "bold 38px monospace";
+    ctx.fillText(storeUrl.replace(/^https?:\/\//, ""), cardX + 60, 1720);
+
+    // Draw QR Code
+    if (qrImage) {
+      ctx.drawImage(qrImage, cardX + cardW - 320, 1485, 260, 260);
+    } else {
+      ctx.fillStyle = "rgba(0,0,0,0.1)";
+      ctx.fillRect(cardX + cardW - 320, 1485, 260, 260);
+      ctx.fillStyle = textColor;
+      ctx.textAlign = "center";
+      ctx.font = "bold 24px sans-serif";
+      ctx.fillText("Loading QR...", cardX + cardW - 190, 1620);
+    }
+  };
+
+  const handleDownload = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    try {
+      const url = canvas.toDataURL("image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${agentProfile.store_slug}_promo_poster.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast({ title: "Social Flyer downloaded successfully!" });
+    } catch (e: any) {
+      console.error(e);
+      toast({ title: "Export failed", description: "Your browser security settings prevented canvas export.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <>
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px] animate-in fade-in zoom-in-95 duration-300">
+      
+      {/* Visual Canvas Customizer */}
+      <div className="space-y-4">
+        <div className="overflow-hidden rounded-3xl border border-border/60 bg-card p-5 md:p-6 shadow-soft">
+          <h2 className="text-base font-bold text-foreground">Marketing Kit Customizer</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Design beautiful WhatsApp status posters and promotional flyers showcasing your cheap data rates.</p>
+
+          <div className="mt-6 space-y-5">
+            {/* 1. Theme template selector */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground uppercase tracking-widest">1. Select Poster Aesthetic</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: "obsidian", label: "Obsidian Midnight", color: "bg-slate-900 border-slate-700" },
+                  { id: "neon", label: "Glassmorphism Neon", color: "bg-emerald-950 border-emerald-500/30" },
+                  { id: "gold", label: "Gold Champion", color: "bg-stone-900 border-yellow-500/30" },
+                  { id: "light", label: "Minimalist Light", color: "bg-slate-50 border-slate-200" },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setTemplate(t.id as any)}
+                    className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all ${
+                      template === t.id ? "ring-2 ring-primary border-primary scale-[1.02]" : "hover:bg-secondary/40"
+                    }`}
+                  >
+                    <span className={`w-8 h-8 rounded-full mb-1.5 border ${t.color}`} />
+                    <span className="text-[10px] font-bold">{t.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Custom tagline */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground uppercase tracking-widest">2. Tagline Message</label>
+              <Input
+                value={tagline}
+                onChange={e => setTagline(e.target.value)}
+                placeholder="Fast & Affordable Data Bundles"
+                className="h-11 rounded-xl"
+              />
+            </div>
+
+            {/* 3. Featured bundles selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center justify-between">
+                <span>3. Featured Bundles (Choose Up To 4)</span>
+                <span className="text-[10px] text-muted-foreground normal-case font-medium">Selected: {selectedBundles.length} / 4</span>
+              </label>
+
+              {isLoading ? (
+                <div className="py-8 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : (
+                <div className="max-h-60 overflow-y-auto border border-border/60 rounded-xl divide-y divide-border/40 p-1 bg-secondary/15">
+                  {(payload?.bundles ?? []).map((b: any) => {
+                    const selected = selectedBundles.includes(b.id);
+                    return (
+                      <button
+                        key={b.id}
+                        onClick={() => {
+                          if (selected) {
+                            setSelectedBundles(p => p.filter(id => id !== b.id));
+                          } else {
+                            if (selectedBundles.length >= 4) {
+                              toast({ title: "Limit reached", description: "You can feature a maximum of 4 bundles.", variant: "destructive" });
+                              return;
+                            }
+                            setSelectedBundles(p => [...p, b.id]);
+                          }
+                        }}
+                        className={`w-full flex items-center justify-between p-3 rounded-lg text-left text-xs transition-all ${
+                          selected ? "bg-primary/10 text-primary font-bold" : "hover:bg-secondary/40 text-muted-foreground"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm shrink-0">{b.network?.logo_emoji}</span>
+                          <span>{b.network?.name} {b.size_label}</span>
+                        </div>
+                        <span className="font-extrabold text-foreground">GH₵{b.sellPrice.toFixed(2)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Action Trigger */}
+            <Button
+              onClick={handleDownload}
+              className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-extrabold shadow-lg"
+            >
+              Download Poster (PNG)
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Hidden high-res canvas + live display container */}
+      <div className="flex flex-col items-center justify-center p-4 bg-secondary/10 border border-border/60 rounded-3xl min-h-[500px]">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3">Live Status Preview</p>
+        <div className="relative w-[270px] h-[480px] rounded-2xl overflow-hidden shadow-2xl border border-border/80">
+          <canvas
+            ref={canvasRef}
+            width={1080}
+            height={1920}
+            className="w-full h-full bg-slate-950"
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* ── BROADCASTER COMMAND CENTER ── */}
+    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft mt-6">
+      <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <Megaphone className="h-4.5 w-4.5 text-rose-500 animate-pulse" /> Live Storefront Broadcaster
+        </h2>
+        <p className="mt-0.5 text-xs text-white/50">Send real-time alerts and promotional push notifications instantly to all registered storefront buyers.</p>
+      </div>
+
+      <div className="p-5 md:p-6 bg-card text-foreground">
+        <form onSubmit={handleBroadcast} className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Broadcast Title</label>
+              <Input
+                placeholder="e.g. ✨ Weekend Data Rush!"
+                value={broadcastTitle}
+                onChange={(e) => setBroadcastTitle(e.target.value)}
+                className="h-11 rounded-xl focus:ring-primary text-foreground"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5 md:col-span-2">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Notification Message</label>
+              <textarea
+                placeholder="Write your announcement or discount notification here..."
+                value={broadcastMessage}
+                onChange={(e) => setBroadcastMessage(e.target.value)}
+                className="w-full min-h-[100px] rounded-2xl border border-border bg-transparent px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-foreground"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Notification Type</label>
+              <select
+                value={broadcastType}
+                onChange={(e) => setBroadcastType(e.target.value)}
+                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="info">Info Announcement (Blue)</option>
+                <option value="success">Success Chime (Green)</option>
+                <option value="warning">Attention Alert (Amber)</option>
+                <option value="error">Critical Notification (Red)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Audio Notification Chime</label>
+              <select
+                value={broadcastSound}
+                onChange={(e) => setBroadcastSound(e.target.value)}
+                className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="default">Pop (Default)</option>
+                <option value="success">Chime (Success)</option>
+                <option value="paystack">Coin Drop (Earning)</option>
+                <option value="alert">Siren (Alert)</option>
+              </select>
+            </div>
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isBroadcasting || !broadcastTitle.trim() || !broadcastMessage.trim()}
+            className="mt-2 h-11 px-8 rounded-xl font-bold gradient-primary shadow-float flex items-center justify-center gap-2"
+          >
+            {isBroadcasting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
+            {isBroadcasting ? "Broadcasting Alert..." : "Send Bulk Broadcast Announcement"}
+          </Button>
+        </form>
+      </div>
+    </div>
+    </>
+  );
+}
+

@@ -312,10 +312,38 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
 
   let agentId: string | null = null;
   let parentAgentId: string | null = null;
+  let grandparentAgentId: string | null = null;
   let sellPrice = Number(payload.base_amount ?? payment.amount ?? bundle.user_price ?? bundle.base_price);
   let agentProfit = 0;
   let parentAgentProfit = 0;
+  let grandparentAgentProfit = 0;
   let source: "direct" | "agent_store" = "direct";
+
+  // Coupon settlement resolution
+  const couponCode = payload.coupon_code || null;
+  const couponDiscount = Number(payload.coupon_discount || 0);
+  let isGlobalCoupon = true;
+
+  if (couponCode) {
+    // 1. Fetch coupon details to verify store-specific vs global
+    const { data: couponToIncrement } = await admin
+      .from("coupons")
+      .select("id, current_uses, agent_id")
+      .eq("code", couponCode)
+      .maybeSingle();
+
+    if (couponToIncrement) {
+      // 2. Increment coupon uses in database
+      await admin
+        .from("coupons")
+        .update({ current_uses: (couponToIncrement.current_uses || 0) + 1 })
+        .eq("id", couponToIncrement.id);
+      
+      if (couponToIncrement.agent_id) {
+        isGlobalCoupon = false;
+      }
+    }
+  }
 
   if (agentSlug) {
     const { data: agent } = await admin
@@ -339,21 +367,65 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
         
         let parentSellPrice = Number(bundle.base_price);
         if (parentAgentId) {
-          const { data: parentAp } = await admin
-            .from("agent_bundle_prices")
-            .select("sell_price")
-            .eq("agent_id", parentAgentId)
+          // Check for custom wholesale override first
+          const { data: override } = await admin
+            .from("sub_agent_wholesale_overrides")
+            .select("wholesale_price")
+            .eq("sub_agent_id", agent.id)
             .eq("bundle_id", bundle.id)
             .maybeSingle();
-          if (parentAp) {
-            parentSellPrice = Number(parentAp.sell_price);
+
+          if (override?.wholesale_price) {
+            parentSellPrice = Number(override.wholesale_price);
+          } else {
+            const { data: parentAp } = await admin
+              .from("agent_bundle_prices")
+              .select("sell_price")
+              .eq("agent_id", parentAgentId)
+              .eq("bundle_id", bundle.id)
+              .maybeSingle();
+            if (parentAp) {
+              parentSellPrice = Number(parentAp.sell_price);
+            }
           }
           agentProfit = Math.max(0, sellPrice - parentSellPrice);
           parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
         } else {
           agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
         }
+
+        if (parentAgentId) {
+          const { data: parentAgent } = await admin
+            .from("agent_profiles")
+            .select("id, parent_agent_id")
+            .eq("id", parentAgentId)
+            .maybeSingle();
+          if (parentAgent?.parent_agent_id) {
+            grandparentAgentId = parentAgent.parent_agent_id;
+          }
+        }
+
+        if (grandparentAgentId) {
+          const totalProfitPool = Math.max(0, sellPrice - Number(bundle.base_price));
+          agentProfit = Number((totalProfitPool * 0.65).toFixed(2));
+          parentAgentProfit = Number((totalProfitPool * 0.25).toFixed(2));
+          grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
+        }
+
+        // Apply Coupon discounts to agent profits and sell prices
+        if (couponDiscount > 0) {
+          if (!isGlobalCoupon) {
+            // Sponsored by the store agent - deduct from their margin
+            agentProfit = Math.max(0, agentProfit - couponDiscount);
+          }
+          sellPrice = Math.max(0, sellPrice - couponDiscount);
+        }
       }
+    }
+  } else {
+    // Direct purchase discount adjustment
+    if (couponDiscount > 0) {
+      sellPrice = Math.max(0, sellPrice - couponDiscount);
     }
   }
 
@@ -470,6 +542,83 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       }
     }
 
+    if (grandparentAgentId && grandparentAgentProfit > 0) {
+      const { data: grandparentAgentRow } = await admin.from("agent_profiles").select("user_id").eq("id", grandparentAgentId).maybeSingle();
+      if (grandparentAgentRow?.user_id) {
+        await admin.from("wallet_transactions").insert({
+          user_id: grandparentAgentRow.user_id,
+          type: "earning",
+          amount: grandparentAgentProfit,
+          status: "completed",
+          related_order_id: order.id,
+          description: `Grandparent Recruiter profit from downline order ${order.reference}`,
+        });
+        
+        await admin.from("app_notifications").insert({
+          title: "Downline Recruiter Earning!",
+          message: `You earned GHS ${grandparentAgentProfit.toFixed(2)} grandparent recruiter profit from a downline purchase.`,
+          type: "success",
+          sound_name: "paystack",
+          target_user_id: grandparentAgentRow.user_id,
+          is_global: false
+        });
+        
+        await sendWebPushNotification(admin, grandparentAgentRow.user_id, {
+          title: "Downline Recruiter Earning!",
+          message: `You earned GHS ${grandparentAgentProfit.toFixed(2)} grandparent recruiter profit from a downline purchase.`,
+          url: "/agent"
+        });
+      }
+    }
+
+    // 🎮 Loyalty Rewards Points settle
+    if (customerUserId && agentId) {
+      const pointsToCredit = Math.floor(sellPrice * 10); // 10 points per GHS 1.00 spent
+      const pointsToDeduct = payload.points_redeemed ? Math.round(Number(payload.points_redeemed) * 10) : 0;
+      const netPointsChange = pointsToCredit - pointsToDeduct;
+
+      const { data: loyaltyRow } = await admin
+        .from("loyalty_points")
+        .select("points_balance")
+        .eq("user_id", customerUserId)
+        .eq("agent_id", agentId)
+        .maybeSingle();
+
+      const currentPoints = loyaltyRow?.points_balance ?? 0;
+      const newPoints = Math.max(0, currentPoints + netPointsChange);
+
+      await admin
+        .from("loyalty_points")
+        .upsert({
+          user_id: customerUserId,
+          agent_id: agentId,
+          points_balance: newPoints
+        }, { onConflict: "user_id,agent_id" });
+
+      console.log(`Processed loyalty points: credited ${pointsToCredit}, deducted ${pointsToDeduct}. New balance: ${newPoints}`);
+    }
+
+    // 🔄 Momo Subscription (Recurring Delivery) insertion
+    if (payload.subscribe && customerUserId && agentId) {
+      const freq = payload.frequency === "weekly" ? "weekly" : "monthly";
+      const days = freq === "weekly" ? 7 : 30;
+      const nextBillingDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+      await admin
+        .from("momo_subscriptions")
+        .insert({
+          user_id: customerUserId,
+          agent_id: agentId,
+          bundle_id: bundle.id,
+          recipient_phone: recipient,
+          frequency: freq,
+          status: "active",
+          next_billing_at: nextBillingDate
+        });
+
+      console.log(`Created new active recurring Momo subscription for user ${customerUserId}`);
+    }
+
     if (customerUserId) {
       await admin.from("app_notifications").insert({
         title: "Purchase Successful",
@@ -524,6 +673,8 @@ async function verifyAndProcess(reference: string) {
         recipient_phone: metadata?.recipient_phone || null,
         agent_slug: metadata?.agent_slug || null,
         source: metadata?.source || "direct",
+        coupon_code: metadata?.coupon_code || null,
+        coupon_discount: metadata?.coupon_discount || null,
       }
     : { user_id: metadata?.user_id || null };
 

@@ -29,7 +29,6 @@ interface Props {
   onSuccess?: () => void;
 }
 
-// Per-network brand styling
 function getNetStyle(code: string) {
   const c = code.toUpperCase();
   if (c === "MTN")
@@ -38,8 +37,8 @@ function getNetStyle(code: string) {
       active: "border-yellow-400 bg-yellow-400/90 text-yellow-950 shadow-float",
       activeRing: "ring-2 ring-yellow-400/40",
       badge: "bg-yellow-500 text-yellow-950",
-      cardIdle: "border-yellow-200/70 bg-yellow-50/50 hover:border-yellow-300 hover:bg-yellow-50",
-      cardActive: "border-yellow-400 bg-yellow-400/80 text-yellow-950 shadow-float",
+      cardIdle: "border-[#f2c000] bg-[#ffcc00] text-black hover:bg-[#e6b800] transition-colors",
+      cardActive: "border-black bg-[#e6b800] text-black shadow-float ring-2 ring-black",
       dot: "bg-yellow-400",
       tagBg: "bg-yellow-100 text-yellow-800 border border-yellow-200",
     };
@@ -49,18 +48,30 @@ function getNetStyle(code: string) {
       active: "border-red-500 bg-red-500/90 text-white shadow-float",
       activeRing: "ring-2 ring-red-400/40",
       badge: "bg-red-600 text-white",
-      cardIdle: "border-red-200/70 bg-red-50/50 hover:border-red-300 hover:bg-red-50",
-      cardActive: "border-red-500 bg-red-500/85 text-white shadow-float",
+      cardIdle: "border-[#b30000] bg-[#cc0000] text-white hover:bg-[#b30000] transition-colors",
+      cardActive: "border-black bg-[#b30000] text-white shadow-float ring-2 ring-black",
       dot: "bg-red-500",
       tagBg: "bg-red-100 text-red-800 border border-red-200",
     };
+  if (c === "AIRTELTIGO" || c === "AT")
+    return {
+      idle: "border-purple-200 bg-purple-50 hover:border-purple-400 hover:bg-purple-100/80",
+      active: "border-purple-500 bg-purple-500/90 text-white shadow-float",
+      activeRing: "ring-2 ring-purple-400/40",
+      badge: "bg-purple-600 text-white",
+      cardIdle: "border-[#380b6b] bg-[#4a148c] text-white hover:bg-[#380b6b] transition-colors",
+      cardActive: "border-black bg-[#380b6b] text-white shadow-float ring-2 ring-black",
+      dot: "bg-purple-500",
+      tagBg: "bg-purple-100 text-purple-800 border border-purple-200",
+    };
+  
   return {
     idle: "border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100/80",
     active: "border-blue-500 bg-blue-500/90 text-white shadow-float",
     activeRing: "ring-2 ring-blue-400/40",
     badge: "bg-blue-600 text-white",
-    cardIdle: "border-blue-200/70 bg-blue-50/50 hover:border-blue-300 hover:bg-blue-50",
-    cardActive: "border-blue-500 bg-blue-500/85 text-white shadow-float",
+    cardIdle: "border-blue-600 bg-blue-600 text-white hover:bg-blue-700 transition-colors",
+    cardActive: "border-black bg-blue-700 text-white shadow-float ring-2 ring-black",
     dot: "bg-blue-500",
     tagBg: "bg-blue-100 text-blue-800 border border-blue-200",
   };
@@ -588,25 +599,57 @@ export function BuyDataFlow({
                 >
                   {/* Badges */}
                   {isPopular && !active && (
-                    <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-soft">
+                    <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-soft z-10">
                       Popular
                     </span>
                   )}
                   {isBestValue && !active && (
-                    <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-success-foreground shadow-soft">
+                    <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-success-foreground shadow-soft z-10">
                       Best Value
                     </span>
                   )}
 
-                  <span className={cn("mb-1 text-[10px] font-semibold uppercase tracking-wide opacity-60")}>
-                    {network?.name}
-                  </span>
-                  <span className="text-2xl font-extrabold leading-none">
+                  <div className="flex w-full justify-between items-start mb-5">
+                    {network?.code.toUpperCase() === 'MTN' ? (
+                      <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
+                        <span className="text-[10px] font-black">MTN</span>
+                      </div>
+                    ) : network?.code.toUpperCase() === 'TELECEL' ? (
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
+                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
+                          <span className="text-[10px] font-bold text-white">t</span>
+                        </div>
+                      </div>
+                    ) : (network?.code.toUpperCase() === 'AIRTELTIGO' || network?.code.toUpperCase() === 'AT') ? (
+                      <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
+                        <span className="text-[10px] font-black text-white">AT</span>
+                      </div>
+                    ) : (
+                      <div className="flex h-6 items-center justify-center">
+                        <span className="text-[10px] font-black uppercase">{network?.name}</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                    </div>
+                  </div>
+
+                  <span className="text-3xl font-black leading-none tracking-tight">
                     {b.size_label}
                   </span>
-                  <span className={cn("mt-2.5 text-sm font-bold", active ? "opacity-90" : "")}>
-                    {formatGHS(priceFor(b))}
+                  <span className={cn("mt-1 text-xs font-medium opacity-80")}>
+                    {network?.name} Bundle
                   </span>
+                  
+                  <div className="mt-6 flex w-full items-end justify-between">
+                    <span className={cn("text-xl font-black tracking-tight")}>
+                      {formatGHS(priceFor(b))}
+                    </span>
+                    <span className="text-[10px] font-semibold opacity-75">
+                      1-5 min
+                    </span>
+                  </div>
                 </button>
               );
             })}

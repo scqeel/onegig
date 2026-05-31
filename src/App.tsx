@@ -21,6 +21,7 @@ import PaymentCallbackPage from "./pages/PaymentCallback.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import InvitePage from "./pages/Invite.tsx";
 import SubAgentDashboardPage from "./pages/SubAgentDashboard.tsx";
+import ReferralsPage from "./pages/Referrals.tsx";
 import { PWAInstallBanner } from "./components/PWAInstallBanner.tsx";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -56,6 +57,7 @@ const App = () => (
                 <Route path="/dashboard/track" element={<RequireAuth><Navigate to="/track" replace /></RequireAuth>} />
                 <Route path="/dashboard/agent" element={<RequireAuth><DashboardAgentPage /></RequireAuth>} />
                 <Route path="/dashboard/profile" element={<RequireAuth><DashboardProfilePage /></RequireAuth>} />
+                <Route path="/dashboard/referrals" element={<RequireAuth><ReferralsPage /></RequireAuth>} />
                 <Route path="/admin" element={<RequireAuth role="admin"><AdminPage /></RequireAuth>} />
                 <Route path="/agent" element={<RequireAuth role="agent"><AgentDashboardPage /></RequireAuth>} />
                 <Route path="/sub-agent" element={<RequireAuth role="agent"><SubAgentDashboardPage /></RequireAuth>} />

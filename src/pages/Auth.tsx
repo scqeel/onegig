@@ -69,6 +69,7 @@ export default function AuthPage() {
   const [suPhone, setSuPhone] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suConfirmPassword, setSuConfirmPassword] = useState("");
+  const [suReferralCode, setSuReferralCode] = useState(searchParams.get("invite") || "");
   const [showPassword, setShowPassword] = useState(false);
 
   const [siTimer, setSiTimer] = useState(0);
@@ -164,7 +165,13 @@ export default function AuthPage() {
     try {
       const normalizedEmail = suEmail.trim().toLowerCase();
       const formattedPhone = formatPhone(suPhone);
-      const options = { data: { full_name: suFullName.trim(), username: suUsername.toLowerCase().trim() } };
+      const options = { 
+        data: { 
+          full_name: suFullName.trim(), 
+          username: suUsername.toLowerCase().trim(),
+          referred_by_code: suReferralCode.trim() || null
+        } 
+      };
       
       // If the user already has a session but their phone isn't verified, 
       // skip signUp and jump straight to phone registration
@@ -589,10 +596,21 @@ export default function AuthPage() {
                         <Input
                           type={showPassword ? "text" : "password"} placeholder="Confirm your password"
                           value={suConfirmPassword} onChange={(e) => setSuConfirmPassword(e.target.value)}
-                          onKeyDown={(e) => e.key === "Enter" && doSignUp()}
                           className={`${inputCls} pr-10`}
                         />
                       </div>
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-foreground">Referral Code (Optional)</label>
+                      </div>
+                      <Input
+                        placeholder="e.g. OG-ABCD12"
+                        value={suReferralCode} onChange={(e) => setSuReferralCode(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && doSignUp()}
+                        className={inputCls}
+                      />
                     </div>
 
                     {/* Perks reminder */}

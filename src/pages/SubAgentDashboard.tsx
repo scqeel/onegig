@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, Loader2, LogOut, Moon, Sun, User, Store } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, LogOut, Moon, Sun, User, Store, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -184,6 +184,12 @@ export default function SubAgentDashboard() {
 
             {/* Footer */}
             <div className="border-t border-border/60 p-2 space-y-0.5">
+              <Link
+                to="/dashboard/referrals"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"
+              >
+                <Gift className="h-3.5 w-3.5" /> Refer & Earn
+              </Link>
               <Link
                 to="/dashboard/profile"
                 className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"

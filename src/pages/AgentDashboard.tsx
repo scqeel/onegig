@@ -240,6 +240,12 @@ export default function AgentDashboard() {
             {/* Footer */}
             <div className="border-t border-border/60 p-2 space-y-0.5">
               <Link
+                to="/dashboard/referrals"
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"
+              >
+                <Gift className="h-3.5 w-3.5" /> Refer & Earn
+              </Link>
+              <Link
                 to="/dashboard/profile"
                 className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition-colors"
               >

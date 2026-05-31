@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { formatGHS } from "@/lib/format";
-import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History, BriefcaseBusiness, ArrowRight, Copy, Check, User } from "lucide-react";
+import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History, BriefcaseBusiness, ArrowRight, Copy, Check, User, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function DashboardCustomerPage() {
@@ -49,6 +49,7 @@ Status: ${o.status.toUpperCase()}`;
   const sidebarItems = [
     { label: "My Orders", icon: <History className="h-5 w-5" />, active: true, to: "/dashboard/customer" },
     { label: "Become an Agent", icon: <BriefcaseBusiness className="h-5 w-5" />, to: "/dashboard/agent" },
+    { label: "Refer & Earn", icon: <Gift className="h-5 w-5" />, to: "/dashboard/referrals" },
     { label: "My Profile", icon: <User className="h-5 w-5" />, to: "/dashboard/profile" },
     { label: "Sign Out", icon: <LogOut className="h-5 w-5" />, onClick: handleSignOut },
   ];

@@ -43,7 +43,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {homePageBg && (
         <>
           <div 
-            className="fixed inset-0 pointer-events-none -z-50 bg-cover bg-center bg-no-repeat transition-all duration-700"
+            className="fixed inset-0 pointer-events-none -z-50 bg-cover bg-center bg-no-repeat transition-all duration-700 animate-bg-zoom"
             style={{ backgroundImage: `url(${homePageBg})` }}
           />
           <div className="fixed inset-0 pointer-events-none -z-40 bg-background/85 backdrop-blur-[12px] transition-all duration-700" />

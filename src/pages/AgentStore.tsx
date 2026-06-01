@@ -1259,21 +1259,19 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             </div>
 
             {/* Customer Wallet Topup or Login */}
-            {!isOwner && (
-              <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-                <div className="text-xs text-slate-400 font-medium">Your Store Balance</div>
-                {profile ? (
-                  <CustomerWallet userId={profile.id} agentSlug={agent.store_slug} onBalanceChange={setWalletBalance} />
-                ) : (
-                  <button
-                    onClick={() => setCustomerLoginOpen(true)}
-                    className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-md"
-                  >
-                    <Wallet className="w-3.5 h-3.5 opacity-80" /> Login & View
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="pt-2 border-t border-white/5 flex items-center justify-between">
+              <div className="text-xs text-slate-400 font-medium">{isOwner ? "Agent Wallet Balance" : "Your Store Balance"}</div>
+              {profile ? (
+                <CustomerWallet userId={profile.id} agentSlug={agent.store_slug} onBalanceChange={setWalletBalance} />
+              ) : (
+                <button
+                  onClick={() => setCustomerLoginOpen(true)}
+                  className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-md"
+                >
+                  <Wallet className="w-3.5 h-3.5 opacity-80" /> Login & View
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

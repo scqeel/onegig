@@ -367,3 +367,5 @@ Deno.serve(async (req) => {
   }
 });
 
+// Trigger redeployment
+

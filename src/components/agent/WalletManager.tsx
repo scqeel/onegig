@@ -191,27 +191,29 @@ export const WalletManager = () => {
                 No transactions yet.
               </div>
             ) : (
-              transactions.map((tx) => (
+              transactions.map((tx) => {
+                const isAddition = ['deposit', 'earning', 'refund', 'adjustment'].includes(tx.type);
+                return (
                 <div key={tx.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/30">
                   <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${tx.amount > 0 ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"}`}>
-                      {tx.amount > 0 ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center ${isAddition ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400" : "bg-rose-100 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400"}`}>
+                      {isAddition ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{tx.type.replace('_', ' ')}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white capitalize">{tx.type.replace('_', ' ')}</p>
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <Clock className="h-3 w-3" /> {new Date(tx.created_at).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`text-sm font-bold ${tx.amount > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
-                      {tx.amount > 0 ? "+" : ""}{formatGHS(tx.amount)}
+                    <p className={`text-sm font-bold ${isAddition ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
+                      {isAddition ? "+" : "-"}{formatGHS(tx.amount)}
                     </p>
                     <p className="text-[10px] font-medium text-slate-400 uppercase">{tx.status}</p>
                   </div>
                 </div>
-              ))
+              )})
             )}
           </div>
         ) : (

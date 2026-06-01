@@ -40,7 +40,7 @@ function toPaystackProvider(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
   if (["MTN", "M"].includes(normalized)) return "mtn";
   if (["TELECEL", "VODAFONE", "VODA", "VOD", "T", "TCL"].includes(normalized)) return "vod";
-  if (["AIRTELTIGO", "AT", "AIRTEL", "TIGO", "A"].includes(normalized)) return "atl";
+  if (["AIRTELTIGO", "AT", "AIRTEL", "TIGO", "A"].includes(normalized)) return "tgo";
   return "mtn";
 }
 

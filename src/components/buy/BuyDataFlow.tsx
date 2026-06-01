@@ -139,7 +139,7 @@ export function BuyDataFlow({
   const [network, setNetwork] = useState<NetworkRow | null>(null);
   const { data: bundles = [] } = useBundles(network?.id ?? null);
   const [bundle, setBundle] = useState<BundleRow | null>(null);
-  const [phone, setPhone] = useState(defaultPhone || profile?.phone || "");
+  const [phone, setPhone] = useState(defaultPhone || "");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
   const [phase, setPhase] = useState<Phase>("select");
@@ -832,7 +832,7 @@ export function BuyDataFlow({
                 )}
                 
                 {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
-                  <div className="mt-2 text-[11px] font-bold px-3 py-2 bg-success/10 text-success-foreground rounded-lg flex items-center gap-1.5 border border-success/20">
+                  <div className="mt-2 text-[11px] font-bold px-3 py-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-center gap-1.5 border border-emerald-500/20">
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     {recipientAccountName}
                   </div>
@@ -872,7 +872,7 @@ export function BuyDataFlow({
                   </div>
                   
                   {accountName && !isVerifying && (
-                    <div className="mt-2 text-[11px] font-bold px-3 py-2 bg-success/10 text-success-foreground rounded-lg flex items-center gap-1.5 border border-success/20">
+                    <div className="mt-2 text-[11px] font-bold px-3 py-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded-lg flex items-center gap-1.5 border border-emerald-500/20">
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       {accountName}
                     </div>

@@ -150,6 +150,16 @@ export function BuyDataFlow({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [payWithWallet, setPayWithWallet] = useState(false);
+
+  useEffect(() => {
+    if (checkoutOpen && profile?.id) {
+      supabase.rpc("get_wallet_balance", { _user_id: profile.id }).then(({ data }) => {
+        setWalletBalance(Number(data || 0));
+      });
+    }
+  }, [checkoutOpen, profile?.id]);
 
   useEffect(() => {
     if (!network && networks.length) setNetwork(networks[0]);
@@ -208,13 +218,37 @@ export function BuyDataFlow({
       toast({ title: "Enter recipient phone", variant: "destructive" });
       return;
     }
-    if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
+    if (!payWithWallet && (!momoNumber || momoNumber.replace(/\D/g, "").length < 9)) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
       return;
     }
 
     setCheckoutOpen(false);
     setPhase("processing");
+
+    if (payWithWallet) {
+      const { data, error } = await supabase.functions.invoke("wallet-pay", {
+        body: {
+          bundle_id: bundle.id,
+          recipient_phone: phone.replace(/\D/g, ""),
+          agent_slug: agentSlug ?? null,
+        },
+      });
+
+      if (error || !data?.ok) {
+        const errPayload = data?.error || error?.message || "Wallet payment failed";
+        const errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
+        setErrorMsg(errMsg);
+        setPhase("error");
+        return;
+      }
+
+      setOrderRef(data.reference || null);
+      setPhase("delivering");
+      setTimeout(() => setPhase("success"), 3000);
+      return;
+    }
+
     const { data, error } = await supabase.functions.invoke("paystack-process", {
       body: {
         purpose: "order",
@@ -716,52 +750,80 @@ export function BuyDataFlow({
               </p>
             </div>
 
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold text-foreground">
-                Payment Mobile Money Number (Who is paying?)
-              </label>
-              <div className="flex gap-2">
-                <select 
-                  className="w-[100px] h-12 rounded-xl border border-border/70 text-sm bg-background px-3 outline-none focus:ring-2 focus:ring-primary/20"
-                  value={momoNetwork}
-                  onChange={(e) => setMomoNetwork(e.target.value)}
-                >
-                  <option value="MTN">MTN</option>
-                  <option value="TELECEL">Telecel</option>
-                  <option value="AIRTELTIGO">AT</option>
-                </select>
-                <Input
-                  inputMode="tel"
-                  value={momoNumber}
-                  onChange={(e) => setMomoNumber(e.target.value)}
-                  placeholder="024 123 4567"
-                  className="flex-1 h-12 rounded-xl border-border/70 text-base"
-                />
+            {/* Momo inputs are hidden if paying with wallet */}
+            {!payWithWallet && (
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold text-foreground">
+                  Payment Mobile Money Number (Who is paying?)
+                </label>
+                <div className="flex gap-2">
+                  <select 
+                    className="w-[100px] h-12 rounded-xl border border-border/70 text-sm bg-background px-3 outline-none focus:ring-2 focus:ring-primary/20"
+                    value={momoNetwork}
+                    onChange={(e) => setMomoNetwork(e.target.value)}
+                  >
+                    <option value="MTN">MTN</option>
+                    <option value="TELECEL">Telecel</option>
+                    <option value="AIRTELTIGO">AT</option>
+                  </select>
+                  <Input
+                    inputMode="tel"
+                    value={momoNumber}
+                    onChange={(e) => setMomoNumber(e.target.value)}
+                    placeholder="024 123 4567"
+                    className="flex-1 h-12 rounded-xl border-border/70 text-base"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  The prompt will be sent to this number.
+                </p>
+                {isVerifying && (
+                  <div className="mt-2 text-xs text-primary flex items-center gap-2">
+                    <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    Verifying account...
+                  </div>
+                )}
+                {accountName && !isVerifying && (
+                  <div className="mt-2 text-xs font-semibold px-3 py-2 bg-success/10 text-success rounded-lg flex items-center gap-2 border border-success/20">
+                    <CheckCircle2 className="h-4 w-4" />
+                    {accountName}
+                  </div>
+                )}
               </div>
-              <p className="mt-1 text-[10px] text-muted-foreground">
-                The prompt will be sent to this number.
-              </p>
-              {isVerifying && (
-                <div className="mt-2 text-xs text-primary flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-                  Verifying account...
+            )}
+
+            {profile && walletBalance > 0 && bundle && walletBalance >= (agentSlug ? bundle.base_price : finalPrice) && (
+              <div className="border-t border-border/10 pt-3 flex items-center justify-between">
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="wallet-pay-checkbox"
+                    checked={payWithWallet}
+                    onChange={(e) => setPayWithWallet(e.target.checked)}
+                    className="mt-1 h-4.5 w-4.5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <label htmlFor="wallet-pay-checkbox" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
+                    Pay with Wallet Balance
+                    {agentSlug ? (
+                      <span className="block text-[9px] text-emerald-500 font-bold mt-0.5">
+                        Agent Wholesale Deduction: {formatGHS(bundle.base_price)} (Available: {formatGHS(walletBalance)})
+                      </span>
+                    ) : (
+                      <span className="block text-[9px] text-slate-500 font-medium mt-0.5">
+                        You have {formatGHS(walletBalance)} available.
+                      </span>
+                    )}
+                  </label>
                 </div>
-              )}
-              {accountName && !isVerifying && (
-                <div className="mt-2 text-xs font-semibold px-3 py-2 bg-success/10 text-success rounded-lg flex items-center gap-2 border border-success/20">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {accountName}
-                </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <Button
               onClick={buy}
               disabled={
                 !bundle ||
                 phone.replace(/\D/g, "").length < 9 ||
-                momoNumber.replace(/\D/g, "").length < 9 ||
-                isVerifying
+                (!payWithWallet && (momoNumber.replace(/\D/g, "").length < 9 || isVerifying))
               }
               className="h-12 w-full rounded-xl text-sm font-semibold gradient-primary shadow-float"
             >

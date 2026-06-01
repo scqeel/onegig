@@ -139,19 +139,24 @@ Deno.serve(async (req) => {
       if (body.agent_slug) {
         const { data: agent } = await admin
           .from("agent_profiles")
-          .select("id, activation_paid")
+          .select("id, activation_paid, user_id")
           .eq("store_slug", body.agent_slug)
           .maybeSingle();
 
         if (agent?.activation_paid) {
           source = "agent_store";
-          const { data: ap } = await admin
-            .from("agent_bundle_prices")
-            .select("sell_price")
-            .eq("agent_id", agent.id)
-            .eq("bundle_id", bundle.id)
-            .maybeSingle();
-          if (ap?.sell_price != null) amount = Number(ap.sell_price);
+          // If the purchaser is the agent themselves, explicitly charge wholesale price
+          if (agent.user_id === userId) {
+            amount = Number(bundle.base_price);
+          } else {
+            const { data: ap } = await admin
+              .from("agent_bundle_prices")
+              .select("sell_price")
+              .eq("agent_id", agent.id)
+              .eq("bundle_id", bundle.id)
+              .maybeSingle();
+            if (ap?.sell_price != null) amount = Number(ap.sell_price);
+          }
         }
       }
 

@@ -301,9 +301,9 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     // 1. Check wallet balance
-    const { data: profileData, error: balanceErr } = await admin.from("profiles").select("wallet_balance").eq("id", userId).maybeSingle();
+    const { data: balanceData, error: balanceErr } = await admin.rpc("get_wallet_balance", { _user_id: userId });
     if (balanceErr) throw new Error("Could not read wallet balance");
-    const balance = Number(profileData?.wallet_balance || 0);
+    const balance = Number(balanceData || 0);
 
     // 2. Fetch bundle price
     const { data: bundle } = await admin.from("bundles").select("base_price, user_price").eq("id", bundle_id).maybeSingle();
@@ -334,12 +334,6 @@ Deno.serve(async (req) => {
     }).select("id").single();
     
     if (txErr || !tx) throw new Error("Failed to deduct wallet balance");
-
-    // Deduct from profile wallet_balance
-    await admin.rpc("increment_wallet_balance", {
-      user_id_param: userId,
-      amount_param: -sellPrice
-    });
 
     // 4. Create dummy payment record for fulfillOrder
     const { data: payment } = await admin.from("payments").insert({

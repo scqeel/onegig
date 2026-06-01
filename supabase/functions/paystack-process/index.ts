@@ -335,7 +335,7 @@ Deno.serve(async (req) => {
         });
       }
       // Insert a failed payment record so we can track it
-      await admin.from("payments").insert({
+      const { error: failedPaymentErr } = await admin.from("payments").insert({
         reference,
         user_id: userId,
         purpose: body.purpose,
@@ -346,11 +346,14 @@ Deno.serve(async (req) => {
           ...payload,
           error_message: processData?.message ?? "Unable to initialize payment"
         },
-      }).catch(err => console.error("Failed to insert failed payment:", err));
+      });
+      if (failedPaymentErr) {
+        console.error("Failed to insert failed payment:", failedPaymentErr.message);
+      }
       
       let errorMsg = processData?.message ?? "Unable to initialize payment";
       if (errorMsg === "Charge attempted") {
-        errorMsg = `A payment prompt is already active on your phone. Please check your phone to enter your PIN. Do not double-click. (DEBUG: HTTP ${processRes.status}, data.status: ${processData?.status})`;
+        errorMsg = "A payment prompt is already active on your phone. Please check your phone and enter your PIN — do not tap Pay again.";
       }
       
       return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 200);
@@ -379,7 +382,10 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("paystack-process error", e);
-    return json({ error: e?.message ?? "Internal error" }, 500);
+    return json({
+      error: e?.message ?? "Internal error",
+      details: e?.stack ?? String(e)
+    }, 500);
   }
 });
 

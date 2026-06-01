@@ -337,7 +337,12 @@ Deno.serve(async (req) => {
         },
       }).catch(err => console.error("Failed to insert failed payment:", err));
       
-      return json({ error: processData?.message ?? "Unable to initialize payment" }, 200);
+      let errorMsg = processData?.message ?? "Unable to initialize payment";
+      if (errorMsg === "Charge attempted") {
+        errorMsg = "A payment prompt is already active on your phone. Please check your phone to enter your PIN, or wait 3 minutes before trying again. Do not double-click.";
+      }
+      
+      return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 400);
     }
 
     // Insert payment record

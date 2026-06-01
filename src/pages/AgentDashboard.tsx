@@ -69,6 +69,7 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
 import { subscribeToPushNotifications } from "@/lib/push";
 import { useUnreadNotifications } from "@/hooks/useNotifications";
+import { useAgentBundles } from "@/hooks/useNetworksAndBundles";
 
 export type AgentTab = "buy" | "store" | "marketing" | "leaderboard" | "transactions" | "customers" | "withdrawals" | "sub_agents" | "settings";
 
@@ -388,6 +389,8 @@ export default function AgentDashboard() {
 // ── Buy ──────────────────────────────────────────────────────────────────────
 
 export function BuySection({ agentProfile }: { agentProfile: any }) {
+  const { data: myPrices } = useAgentBundles(agentProfile.id);
+
   return (
     <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
       <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
@@ -395,7 +398,7 @@ export function BuySection({ agentProfile }: { agentProfile: any }) {
         <p className="mt-0.5 text-xs text-white/50">Purchases here apply your retail pricing and generate store analytics.</p>
       </div>
       <div className="p-5 md:p-6">
-        <BuyDataFlow agentSlug={agentProfile.store_slug} />
+        <BuyDataFlow agentSlug={agentProfile.store_slug} priceOverrides={myPrices || undefined} />
       </div>
     </div>
   );

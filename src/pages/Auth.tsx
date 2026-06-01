@@ -472,7 +472,7 @@ export default function AuthPage() {
                   onClick={doSignIn} 
                   disabled={busy} 
                   className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundColor: 'var(--primary)', backgroundImage: 'linear-gradient(to right, var(--violet-600), var(--fuchsia-600))', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
+                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundImage: 'linear-gradient(to right, #7c3aed, #c026d3)', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
                     {siMethod === "email" || otpSent ? "Sign in" : "Send Login Code"} <ArrowRight className="ml-1.5 h-4 w-4" />
@@ -639,7 +639,7 @@ export default function AuthPage() {
                   onClick={doSignUp} 
                   disabled={busy} 
                   className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundColor: 'var(--primary)', backgroundImage: 'linear-gradient(to right, var(--violet-600), var(--fuchsia-600))', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
+                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundImage: 'linear-gradient(to right, #7c3aed, #c026d3)', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
                     Create account <ArrowRight className="ml-1.5 h-4 w-4" />

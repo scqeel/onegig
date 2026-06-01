@@ -785,7 +785,15 @@ async function verifyAndProcess(reference: string) {
   }
 
   if (trx?.status !== "success") {
-    await admin.from("payments").update({ status: "failed" }).eq("id", payment.id);
+    const errorMsg = trx?.gateway_response || trx?.message || trx?.status || "Payment failed";
+    let pLoad = payment.payload;
+    if (typeof pLoad === "string") {
+      try { pLoad = JSON.parse(pLoad); } catch(e) { pLoad = {}; }
+    }
+    await admin.from("payments").update({ 
+      status: "failed",
+      payload: { ...(pLoad || {}), error_message: errorMsg }
+    }).eq("id", payment.id);
     return { ok: false, status: trx?.status ?? "failed" };
   }
 

@@ -323,6 +323,19 @@ Deno.serve(async (req) => {
           message: processData?.data?.display_text || "Please enter the OTP sent to your phone."
         });
       }
+      // Insert a failed payment record so we can track it
+      await admin.from("payments").insert({
+        reference,
+        user_id: userId,
+        purpose: body.purpose,
+        amount,
+        currency: "GHS",
+        status: "failed",
+        payload: {
+          ...payload,
+          error_message: processData?.message ?? "Unable to initialize payment"
+        },
+      }).catch(err => console.error("Failed to insert failed payment:", err));
       
       return json({ error: processData?.message ?? "Unable to initialize payment" }, 200);
     }

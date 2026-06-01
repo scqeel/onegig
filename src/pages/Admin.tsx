@@ -24,7 +24,7 @@ import { NOTIFICATION_SOUNDS } from "@/components/ui/InAppNotificationListener";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
 
-type Tab = "overview" | "users" | "orders" | "withdrawals" | "pricing" | "integrations" | "settings" | "marketing" | "coupons" | "subscriptions";
+type Tab = "overview" | "users" | "orders" | "payments" | "withdrawals" | "pricing" | "integrations" | "settings" | "marketing" | "coupons" | "subscriptions";
 
 type Profile = {
   id: string;
@@ -93,6 +93,7 @@ export default function AdminPage() {
     { label: "Overview",      value: "overview",     icon: <Activity className="h-4 w-4" /> },
     { label: "Users",         value: "users",        icon: <Users className="h-4 w-4" /> },
     { label: "Orders",        value: "orders",       icon: <ShoppingCart className="h-4 w-4" /> },
+    { label: "Payments",      value: "payments",     icon: <DollarSign className="h-4 w-4" /> },
     { label: "Momo Subscriptions", value: "subscriptions", icon: <RefreshCw className="h-4 w-4" /> },
     { label: "Withdrawals",   value: "withdrawals",  icon: <Wallet className="h-4 w-4" /> },
     { label: "Pricing",       value: "pricing",      icon: <Cog className="h-4 w-4" /> },
@@ -125,9 +126,10 @@ export default function AdminPage() {
     >
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
         {tab === "overview"     && <OverviewSection />}
-        {tab === "users"        && <UsersSection />}
-        {tab === "orders"       && <OrdersSection />}
-        {tab === "withdrawals"  && <WithdrawalsSection />}
+        { tab === "users"        && <UsersSection />}
+        { tab === "orders"       && <OrdersSection />}
+        { tab === "payments"     && <PaymentsSection />}
+        { tab === "withdrawals"  && <WithdrawalsSection />}
         {tab === "pricing"      && <PricingSection />}
         {tab === "marketing"    && <MarketingSection />}
         {tab === "integrations" && <IntegrationsSection />}
@@ -136,6 +138,164 @@ export default function AdminPage() {
         {tab === "subscriptions" && <SubscriptionsSection />}
       </div>
     </DashboardLayout>
+  );
+}
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+
+function PaymentsSection() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-payments"],
+    queryFn: async () => {
+      const { data: payments, error } = await supabase
+        .from("payments")
+        .select("id, reference, purpose, amount, currency, status, payload, created_at, user_id")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      
+      if (error) throw error;
+      
+      const userIds = [...new Set((payments ?? []).map((p: any) => p.user_id).filter(Boolean))] as string[];
+      let profiles: any[] = [];
+      
+      if (userIds.length > 0) {
+        const { data: p } = await supabase.from("profiles").select("id, full_name, email, phone").in("id", userIds);
+        profiles = p ?? [];
+      }
+      const profileMap = new Map(profiles.map(p => [p.id, p]));
+      
+      return (payments ?? []).map((p: any) => ({
+        ...p,
+        customer: p.user_id ? profileMap.get(p.user_id) : null
+      }));
+    }
+  });
+
+  const forceResolve = async (payment: any) => {
+    if (!confirm("Are you sure you want to manually mark this payment as PAID and fulfill the order?")) return;
+    setBusyId(payment.id);
+    
+    // 1. Mark payment as paid
+    const { error: resolveErr } = await supabase.functions.invoke("admin-resolve-payment", {
+      body: { payment_id: payment.id }
+    });
+    
+    if (resolveErr) {
+      setBusyId(null);
+      toast({ title: "Failed to resolve payment", description: resolveErr.message, variant: "destructive" });
+      return;
+    }
+    
+    // 2. Fulfill order if it was an order
+    if (payment.purpose === "order" && payment.payload?.bundle_id) {
+      const { error: fulfillErr } = await supabase.functions.invoke("place-order", {
+        body: {
+          recipient_phone: payment.payload.recipient_phone,
+          bundle_id: payment.payload.bundle_id,
+          agent_slug: payment.payload.agent_slug,
+          manual_fulfill: true // Just mark it as delivered since we are forcing it
+        }
+      });
+      if (fulfillErr) {
+        setBusyId(null);
+        toast({ title: "Payment resolved, but order failed", description: fulfillErr.message, variant: "destructive" });
+        return;
+      }
+    }
+    
+    setBusyId(null);
+    toast({ title: "Payment successfully resolved!" });
+    qc.invalidateQueries({ queryKey: ["admin-payments"] });
+  };
+
+  if (isLoading) return <div className="p-8 text-center"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>;
+
+  const payments = data ?? [];
+  const q = search.toLowerCase();
+  
+  const filtered = payments.filter((p: any) => {
+    if (statusFilter !== "all" && p.status !== statusFilter) return false;
+    if (q) {
+      const name = (p.customer?.full_name || "").toLowerCase();
+      const phone = (p.customer?.phone || p.payload?.recipient_phone || "").toLowerCase();
+      const ref = (p.reference || "").toLowerCase();
+      const errMsg = (p.payload?.error_message || "").toLowerCase();
+      if (!name.includes(q) && !phone.includes(q) && !ref.includes(q) && !errMsg.includes(q)) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/50 p-4 rounded-2xl border border-border/40">
+        <h2 className="text-lg font-bold">Payments Monitor</h2>
+        <div className="flex flex-wrap gap-2">
+          <Input 
+            placeholder="Search reference, phone, error..." 
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="w-56 h-9 text-xs" 
+          />
+          <div className="flex bg-secondary/50 p-1 rounded-lg">
+            {["all", "paid", "failed", "initialized"].map(s => (
+              <button 
+                key={s} 
+                onClick={() => setStatusFilter(s)}
+                className={cn("px-3 py-1 text-xs font-semibold rounded-md transition-colors", statusFilter === s ? "bg-background shadow-sm" : "text-muted-foreground")}
+              >
+                {s.charAt(0).toUpperCase() + s.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-card/30 rounded-3xl border border-border/40 divide-y divide-border/30">
+        {filtered.length === 0 ? (
+          <p className="p-10 text-center text-sm text-muted-foreground">No payments found.</p>
+        ) : (
+          filtered.map((p: any) => (
+            <div key={p.id} className="p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-accent/10 transition-colors">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold">{formatGHS(p.amount)}</span>
+                  <StatusBadge status={p.status} />
+                  <span className="text-xs font-mono bg-secondary/50 px-2 py-0.5 rounded text-muted-foreground">{p.reference}</span>
+                  <span className="text-xs uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{p.purpose}</span>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {p.customer?.full_name || "Guest"} • {p.customer?.phone || p.payload?.recipient_phone || "N/A"} • {timeAgo(p.created_at)}
+                </div>
+                {p.payload?.error_message && (
+                  <div className="mt-2 text-xs font-semibold text-rose-500 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20 max-w-xl">
+                    🚨 {p.payload.error_message}
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                {p.status === "failed" && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="h-8 text-xs font-semibold border-emerald-500/30 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                    disabled={!!busyId}
+                    onClick={() => forceResolve(p)}
+                  >
+                    {busyId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Force Resolve"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
   );
 }
 

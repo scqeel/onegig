@@ -316,6 +316,42 @@ export default function AgentStorePage() {
     }
   };
 
+  const payWithRedirect = async () => {
+    if (!selectedBundle || !phone || phone.replace(/\D/g, "").length < 9) {
+      toast({ title: "Enter recipient phone", variant: "destructive" });
+      return;
+    }
+
+    setCheckoutOpen(false);
+    setPhase("processing");
+    setAuthMessage("Preparing secure checkout page...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-initiate", {
+        body: {
+          purpose: "order",
+          recipient_phone: phone.replace(/\D/g, ""),
+          bundle_id: selectedBundle.id,
+          agent_slug: slug ?? null,
+          email: email || "guest@mtopup.shop",
+          return_url: window.location.origin + `/track`,
+        },
+      });
+
+      if (error || !data?.ok) {
+        setPhase("error");
+        setErrorMsg(data?.error || error?.message || "Failed to initialize secure checkout page");
+        return;
+      }
+
+      setAuthMessage("Redirecting to Paystack...");
+      window.location.href = data.authorization_url;
+    } catch (e: any) {
+      setPhase("error");
+      setErrorMsg(e?.message || "An unexpected error occurred.");
+    }
+  };
+
   useEffect(() => {
     if (phase !== "polling" || !orderRef) return;
     
@@ -440,14 +476,24 @@ export default function AgentStorePage() {
 
   if (phase === "error") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center animate-in fade-in zoom-in duration-300">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 shadow-lg">
-          <RefreshCcw className="h-12 w-12 text-red-500" />
+          <RefreshCcw className="h-12 w-12 text-red-500 animate-spin [animation-duration:10s]" />
         </div>
         <h3 className="mt-6 text-xl font-black text-slate-800 dark:text-white">Payment Failed</h3>
-        <p className="mt-2 font-medium text-red-500">{errorMsg}</p>
-        <div className="mt-8">
-          <Button onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }} className="h-12 rounded-2xl bg-slate-950 text-white dark:bg-slate-800 font-bold px-8">
+        <p className="mt-2 font-medium text-red-500 px-4 max-w-md mx-auto">{errorMsg}</p>
+        <div className="mt-8 flex flex-col gap-3 max-w-[280px] w-full mx-auto">
+          <Button
+            onClick={payWithRedirect}
+            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            Pay via Secure Web Page
+          </Button>
+          <Button
+            onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
+            className="h-13 rounded-2xl w-full font-bold border-2 bg-slate-950 text-white dark:bg-slate-800"
+          >
             Try Again
           </Button>
         </div>

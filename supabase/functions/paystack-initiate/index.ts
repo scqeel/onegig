@@ -142,8 +142,10 @@ Deno.serve(async (req) => {
 
     if (!amount || amount <= 0) return json({ error: "Invalid amount" }, 400);
 
-    const email = (body.email ?? userEmail ?? "").trim().toLowerCase();
-    if (!email) return json({ error: "Email is required for payment" }, 400);
+    let email = (body.email ?? userEmail ?? "").trim().toLowerCase();
+    if (!email || email === "guest@mtopup.shop") {
+      email = `guest-${crypto.randomUUID().slice(0, 8)}@mtopup.shop`;
+    }
 
     const reference = `DH-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 

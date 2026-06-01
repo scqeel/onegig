@@ -42,3 +42,13 @@ entrypoint = "./functions/send-campaign-sms/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/send-campaign-sms/*.html" ]
+
+[functions.paystack-process]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/paystack-process/index.ts"
+
+[functions.paystack-reconcile]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/paystack-reconcile/index.ts"

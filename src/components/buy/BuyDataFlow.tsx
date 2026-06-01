@@ -367,6 +367,42 @@ export function BuyDataFlow({
     setPhase("polling");
   };
 
+  const payWithRedirect = async () => {
+    if (!bundle || !phone || phone.replace(/\D/g, "").length < 9) {
+      toast({ title: "Enter recipient phone", variant: "destructive" });
+      return;
+    }
+
+    setCheckoutOpen(false);
+    setPhase("processing");
+    setAuthMessage("Preparing secure checkout page...");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-initiate", {
+        body: {
+          purpose: "order",
+          recipient_phone: phone.replace(/\D/g, ""),
+          bundle_id: bundle.id,
+          agent_slug: agentSlug ?? null,
+          email: profile?.email || "guest@mtopup.shop",
+          return_url: window.location.origin + `/track`,
+        },
+      });
+
+      if (error || !data?.ok) {
+        setPhase("error");
+        setErrorMsg(data?.error || error?.message || "Failed to initialize secure checkout page");
+        return;
+      }
+
+      setAuthMessage("Redirecting to Paystack...");
+      window.location.href = data.authorization_url;
+    } catch (e: any) {
+      setPhase("error");
+      setErrorMsg(e?.message || "An unexpected error occurred.");
+    }
+  };
+
   useEffect(() => {
     if (phase !== "polling" || !orderRef) return;
     
@@ -612,18 +648,28 @@ export function BuyDataFlow({
   // ── Error state ──
   if (phase === "error") {
     return (
-      <div className="py-10 text-center">
+      <div className="py-10 text-center animate-in fade-in zoom-in duration-300">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-          <RefreshCcw className="h-8 w-8 text-destructive" />
+          <RefreshCcw className="h-8 w-8 text-destructive animate-spin [animation-duration:10s]" />
         </div>
-        <p className="mt-4 font-semibold text-destructive">{errorMsg}</p>
-        <Button
-          className="mt-5 h-11 rounded-xl px-6"
-          variant="outline"
-          onClick={() => setPhase("select")}
-        >
-          Try Again
-        </Button>
+        <p className="mt-4 font-semibold text-destructive px-4 max-w-sm mx-auto">{errorMsg}</p>
+        
+        <div className="mt-7 flex flex-col gap-3 max-w-[280px] mx-auto">
+          <Button
+            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
+            onClick={payWithRedirect}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            Pay via Secure Web Page
+          </Button>
+          <Button
+            className="h-13 rounded-2xl w-full font-bold border-2"
+            variant="outline"
+            onClick={() => setPhase("select")}
+          >
+            Try Again
+          </Button>
+        </div>
       </div>
     );
   }
@@ -987,6 +1033,19 @@ export function BuyDataFlow({
                   )}
                 </Button>
               </div>
+
+              {!payWithWallet && (
+                <div className="text-center pt-1.5 animate-in fade-in duration-300">
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Issues with phone prompts? </span>
+                  <button 
+                    type="button"
+                    onClick={payWithRedirect}
+                    className="text-[11px] font-extrabold text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                  >
+                    Pay via Web Page instead
+                  </button>
+                </div>
+              )}
 
               {/* Trust strip */}
               <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-3">

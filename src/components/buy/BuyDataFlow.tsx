@@ -248,7 +248,7 @@ export function BuyDataFlow({
   const priceFor = (b: BundleRow) =>
     priceOverrides && priceOverrides[b.id] != null
       ? priceOverrides[b.id]
-      : Number(b.user_price ?? b.base_price);
+      : Number(b.user_price ?? b.base_price ?? 0);
 
   const basePrice = bundle ? priceFor(bundle) : 0;
   const paymentFee = payWithWallet ? 0 : basePrice * 0.03;

@@ -712,7 +712,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const priceFor = (b: BundleRow) =>
     priceOverrides && priceOverrides[b.id] != null
       ? priceOverrides[b.id]
-      : Number(b.user_price ?? b.base_price);
+      : Number(b.user_price ?? b.base_price ?? 0);
 
   const baseFinalPrice = selectedBundle ? priceFor(selectedBundle) : 0;
   const priceAfterCoupon = appliedCoupon

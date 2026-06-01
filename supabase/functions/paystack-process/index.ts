@@ -339,7 +339,7 @@ Deno.serve(async (req) => {
       
       let errorMsg = processData?.message ?? "Unable to initialize payment";
       if (errorMsg === "Charge attempted") {
-        errorMsg = "A payment prompt is already active on your phone. Please check your phone to enter your PIN, or wait 3 minutes before trying again. Do not double-click.";
+        errorMsg = `A payment prompt is already active on your phone. Please check your phone to enter your PIN. Do not double-click. (DEBUG: HTTP ${processRes.status}, data.status: ${processData?.status})`;
       }
       
       return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 400);

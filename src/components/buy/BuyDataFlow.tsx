@@ -200,7 +200,7 @@ export function BuyDataFlow({
       : Number(b.user_price ?? b.base_price);
 
   const basePrice = bundle ? priceFor(bundle) : 0;
-  const paymentFee = basePrice * 0.03;
+  const paymentFee = payWithWallet ? 0 : basePrice * 0.03;
   const finalPrice = basePrice + paymentFee;
 
   const reset = () => {
@@ -792,7 +792,7 @@ export function BuyDataFlow({
               </div>
             )}
 
-            {profile && walletBalance > 0 && bundle && walletBalance >= (agentSlug ? bundle.base_price : finalPrice) && (
+            {profile && bundle && (
               <div className="border-t border-border/10 pt-3 flex items-center justify-between">
                 <div className="flex items-start gap-2">
                   <input
@@ -800,17 +800,18 @@ export function BuyDataFlow({
                     id="wallet-pay-checkbox"
                     checked={payWithWallet}
                     onChange={(e) => setPayWithWallet(e.target.checked)}
-                    className="mt-1 h-4.5 w-4.5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500"
+                    disabled={walletBalance < (agentSlug ? bundle.base_price : finalPrice)}
+                    className="mt-1 h-4.5 w-4.5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500 disabled:opacity-50"
                   />
-                  <label htmlFor="wallet-pay-checkbox" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
+                  <label htmlFor="wallet-pay-checkbox" className={cn("text-xs font-bold cursor-pointer", walletBalance >= (agentSlug ? bundle.base_price : finalPrice) ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400")}>
                     Pay with Wallet Balance
                     {agentSlug ? (
-                      <span className="block text-[9px] text-emerald-500 font-bold mt-0.5">
+                      <span className="block text-[9px] font-bold mt-0.5">
                         Agent Wholesale Deduction: {formatGHS(bundle.base_price)} (Available: {formatGHS(walletBalance)})
                       </span>
                     ) : (
-                      <span className="block text-[9px] text-slate-500 font-medium mt-0.5">
-                        You have {formatGHS(walletBalance)} available.
+                      <span className="block text-[9px] font-medium mt-0.5">
+                        You have {formatGHS(walletBalance)} available. {walletBalance < finalPrice && "(Insufficient)"}
                       </span>
                     )}
                   </label>

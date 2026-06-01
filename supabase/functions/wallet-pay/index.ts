@@ -278,36 +278,35 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Missing authorization header" }, 401);
-
+    if (!authHeader) return json({ ok: false, error: "Unauthorized" }, 401);
+    
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+
     const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const { data: ud, error: udErr } = await userClient.auth.getUser();
-    if (udErr || !ud.user?.id) return json({ error: "Unauthorized" }, 401);
+    if (udErr || !ud.user?.id) return json({ ok: false, error: "Unauthorized" }, 401);
     
     const userId = ud.user.id;
     const body = await req.json();
     
     const { bundle_id, recipient_phone, agent_slug } = body;
-    if (!bundle_id || !recipient_phone) return json({ error: "Missing required fields" }, 400);
+    if (!bundle_id || !recipient_phone) return json({ ok: false, error: "Missing required fields" }, 400);
 
     const admin = createClient(supabaseUrl, serviceKey);
 
     // 1. Check wallet balance
     const { data: balanceData, error: balanceErr } = await admin.rpc("get_wallet_balance", { _user_id: userId });
-    if (balanceErr) throw new Error("Could not read wallet balance");
+    if (balanceErr) return json({ ok: false, error: "Could not read wallet balance: " + balanceErr.message }, 500);
     const balance = Number(balanceData || 0);
 
     // 2. Fetch bundle price
     const { data: bundle } = await admin.from("bundles").select("base_price, user_price").eq("id", bundle_id).maybeSingle();
-    if (!bundle) return json({ error: "Bundle not found" }, 404);
+    if (!bundle) return json({ ok: false, error: "Bundle not found" }, 404);
 
     let sellPrice = Number(bundle.user_price ?? bundle.base_price);
     
@@ -327,13 +326,13 @@ Deno.serve(async (req) => {
     const reference = `WP-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
     const { data: tx, error: txErr } = await admin.from("wallet_transactions").insert({
       user_id: userId,
-      type: "withdrawal",
+      type: "purchase",
       amount: sellPrice,
       status: "completed",
       description: `Wallet Purchase: Bundle for ${recipient_phone} (${reference})`,
     }).select("id").single();
     
-    if (txErr || !tx) throw new Error("Failed to deduct wallet balance");
+    if (txErr || !tx) return json({ ok: false, error: "Failed to deduct wallet balance: " + (txErr?.message || "No tx returned") }, 500);
 
     // 4. Create dummy payment record for fulfillOrder
     const { data: payment } = await admin.from("payments").insert({
@@ -349,7 +348,9 @@ Deno.serve(async (req) => {
         agent_slug,
         source: agent_slug ? "agent_store" : "direct"
       }
-    }).select("*").single();
+    }).select("id, purpose, reference, amount, currency, status, user_id, created_at, payload").single();
+
+    if (!payment) return json({ ok: false, error: "Failed to create payment record" }, 500);
 
     // 5. Fulfill order
     const orderId = await fulfillOrder(admin, payment);
@@ -357,8 +358,8 @@ Deno.serve(async (req) => {
     await admin.from("payments").update({ order_id: orderId }).eq("id", payment.id);
 
     return json({ ok: true, order_id: orderId, reference, message: "Purchase successful!" });
-  } catch (e: any) {
-    console.error("wallet-pay error", e);
-    return json({ ok: false, error: e?.message ?? "Internal error" }, 500);
+  } catch (err: any) {
+    console.error("wallet-pay error:", err);
+    return json({ ok: false, error: err.message || "Internal Server Error" }, 500);
   }
 });

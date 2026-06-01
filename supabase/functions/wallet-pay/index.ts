@@ -281,7 +281,7 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ ok: false, error: "Unauthorized" }, 401);
+    if (!authHeader) return json({ ok: false, error: "Unauthorized" }, 200);
     
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -289,24 +289,24 @@ Deno.serve(async (req) => {
 
     const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
     const { data: ud, error: udErr } = await userClient.auth.getUser();
-    if (udErr || !ud.user?.id) return json({ ok: false, error: "Unauthorized" }, 401);
+    if (udErr || !ud.user?.id) return json({ ok: false, error: "Unauthorized" }, 200);
     
     const userId = ud.user.id;
     const body = await req.json();
     
     const { bundle_id, recipient_phone, agent_slug } = body;
-    if (!bundle_id || !recipient_phone) return json({ ok: false, error: "Missing required fields" }, 400);
+    if (!bundle_id || !recipient_phone) return json({ ok: false, error: "Missing required fields" }, 200);
 
     const admin = createClient(supabaseUrl, serviceKey);
 
     // 1. Check wallet balance
     const { data: balanceData, error: balanceErr } = await admin.rpc("get_wallet_balance", { _user_id: userId });
-    if (balanceErr) return json({ ok: false, error: "Could not read wallet balance: " + balanceErr.message }, 500);
+    if (balanceErr) return json({ ok: false, error: "Could not read wallet balance: " + balanceErr.message }, 200);
     const balance = Number(balanceData || 0);
 
     // 2. Fetch bundle price
     const { data: bundle } = await admin.from("bundles").select("base_price, user_price").eq("id", bundle_id).maybeSingle();
-    if (!bundle) return json({ ok: false, error: "Bundle not found" }, 404);
+    if (!bundle) return json({ ok: false, error: "Bundle not found" }, 200);
 
     let sellPrice = Number(bundle.user_price ?? bundle.base_price);
     
@@ -319,7 +319,7 @@ Deno.serve(async (req) => {
     }
 
     if (balance < sellPrice) {
-      return json({ ok: false, error: "Insufficient wallet balance", required: sellPrice, balance }, 400);
+      return json({ ok: false, error: "Insufficient wallet balance (Balance: GHS " + balance + ", Required: GHS " + sellPrice + ")", required: sellPrice, balance }, 200);
     }
 
     // 3. Deduct from wallet
@@ -332,7 +332,7 @@ Deno.serve(async (req) => {
       description: `Wallet Purchase: Bundle for ${recipient_phone} (${reference})`,
     }).select("id").single();
     
-    if (txErr || !tx) return json({ ok: false, error: "Failed to deduct wallet balance: " + (txErr?.message || "No tx returned") }, 500);
+    if (txErr || !tx) return json({ ok: false, error: "Failed to deduct wallet balance: " + (txErr?.message || "No tx returned") }, 200);
 
     // 4. Create dummy payment record for fulfillOrder
     const { data: payment } = await admin.from("payments").insert({
@@ -350,16 +350,27 @@ Deno.serve(async (req) => {
       }
     }).select("id, purpose, reference, amount, currency, status, user_id, created_at, payload").single();
 
-    if (!payment) return json({ ok: false, error: "Failed to create payment record" }, 500);
+    if (!payment) return json({ ok: false, error: "Failed to create payment record" }, 200);
 
     // 5. Fulfill order
     const orderId = await fulfillOrder(admin, payment);
+    if (!orderId) {
+      // Refund if fulfill failed (wallet payment only)
+      await admin.from("wallet_transactions").insert({
+        user_id: userId,
+        type: "refund",
+        amount: sellPrice,
+        status: "completed",
+        description: `Refund for Failed Purchase (${reference})`,
+      });
+      return json({ ok: false, error: "Order fulfillment failed" }, 200);
+    }
     
     await admin.from("payments").update({ order_id: orderId }).eq("id", payment.id);
 
     return json({ ok: true, order_id: orderId, reference, message: "Purchase successful!" });
   } catch (err: any) {
     console.error("wallet-pay error:", err);
-    return json({ ok: false, error: err.message || "Internal Server Error" }, 500);
+    return json({ ok: false, error: err.message || "Internal Server Error" }, 200);
   }
 });

@@ -291,7 +291,7 @@ export default function AgentDashboard() {
 
           {/* ── Main content ── */}
           <main>
-            {tab === "buy"          && <BuySection />}
+            {tab === "buy"          && <BuySection agentProfile={agentProfile} />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
             {tab === "marketing"    && <MarketingKitSection agentProfile={agentProfile} />}
             {tab === "leaderboard"  && <LeaderboardSection agentProfile={agentProfile} />}
@@ -387,26 +387,15 @@ export default function AgentDashboard() {
 
 // ── Buy ──────────────────────────────────────────────────────────────────────
 
-export function BuySection() {
-  const { data: bundles } = useQuery({
-    queryKey: ["agent-buy-admin-prices"],
-    queryFn: async () => {
-      const { data } = await supabase.from("bundles").select("id, base_price").eq("active", true);
-      return data ?? [];
-    },
-  });
-
-  const adminPrices: Record<string, number> = {};
-  (bundles ?? []).forEach((b: any) => { adminPrices[b.id] = Number(b.base_price); });
-
+export function BuySection({ agentProfile }: { agentProfile: any }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
       <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-        <h2 className="text-base font-bold text-white">Buy Data</h2>
-        <p className="mt-0.5 text-xs text-white/50">You purchase at admin-set base prices.</p>
+        <h2 className="text-base font-bold text-white">Buy Data (Point of Sale)</h2>
+        <p className="mt-0.5 text-xs text-white/50">Purchases here apply your retail pricing and generate store analytics.</p>
       </div>
       <div className="p-5 md:p-6">
-        <BuyDataFlow priceOverrides={adminPrices} />
+        <BuyDataFlow agentSlug={agentProfile.store_slug} />
       </div>
     </div>
   );

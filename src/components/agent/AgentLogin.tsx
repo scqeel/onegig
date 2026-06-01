@@ -11,21 +11,31 @@ interface Props {
 }
 
 export function AgentLogin({ storeName, onClose }: Props) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return toast({ title: "Please fill in all fields", variant: "destructive" });
+    if (!identifier || !password) return toast({ title: "Please fill in all fields", variant: "destructive" });
     
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      });
+      const isPhone = /^[0-9+() -]{9,}$/.test(identifier.trim());
+      let finalPayload: any = { password };
+
+      if (isPhone) {
+        let p = identifier.replace(/[^0-9+]/g, "");
+        if (p.startsWith("0")) p = "+233" + p.substring(1);
+        else if (p.startsWith("233")) p = "+" + p;
+        else if (!p.startsWith("+")) p = "+233" + p;
+        finalPayload.phone = p;
+      } else {
+        finalPayload.email = identifier.trim().toLowerCase();
+      }
+
+      const { error } = await supabase.auth.signInWithPassword(finalPayload);
 
       if (error) throw error;
       toast({ title: "Welcome back!", description: "Accessing Agent Dashboard..." });
@@ -59,15 +69,15 @@ export function AgentLogin({ storeName, onClose }: Props) {
         <form onSubmit={handleLogin} className="p-8 space-y-5">
           <div>
             <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5 uppercase tracking-wider">
-              Agent Email
+              Agent Email or Phone
             </label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="agent@example.com"
+                type="text"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                placeholder="agent@example.com or 054..."
                 className="h-14 pl-12 rounded-xl bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-base font-semibold"
               />
             </div>

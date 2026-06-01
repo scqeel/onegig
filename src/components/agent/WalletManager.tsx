@@ -46,8 +46,8 @@ export const WalletManager = () => {
     setLoadingHistory(true);
     
     const [txRes, ordRes] = await Promise.all([
-      supabase.from("wallet_transactions").select("*").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(20),
-      supabase.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("customer_user_id", profile.id).order("created_at", { ascending: false }).limit(20)
+      supabase.from("wallet_transactions").select("*").eq("user_id", profile.id).order("created_at", { ascending: false }).limit(500),
+      supabase.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("customer_user_id", profile.id).order("created_at", { ascending: false }).limit(500)
     ]);
     
     if (txRes.data) setTransactions(txRes.data);
@@ -97,7 +97,7 @@ export const WalletManager = () => {
     
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("wallet-pay", {
+      const { data, error } = await supabase.functions.invoke("paystack-process", {
         body: { action: "submit_otp", otp: finalOtp, reference: orderRef, purpose: "wallet_deposit", momo_number: "0", momo_network: "MTN" },
       });
       if (error || data?.error) {
@@ -129,6 +129,7 @@ export const WalletManager = () => {
         clearInterval(interval);
         setPhase("success");
         fetchBalance();
+        fetchHistory();
       } else if (data?.error) {
         clearInterval(interval);
         setPhase("error");
@@ -200,7 +201,7 @@ export const WalletManager = () => {
                       {isAddition ? <ArrowDownLeft className="h-5 w-5" /> : <ArrowUpRight className="h-5 w-5" />}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-white capitalize">{tx.type.replace('_', ' ')}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white capitalize">{(tx.type || 'unknown').replace('_', ' ')}</p>
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <Clock className="h-3 w-3" /> {new Date(tx.created_at).toLocaleDateString()}
                       </p>
@@ -231,7 +232,14 @@ export const WalletManager = () => {
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900 dark:text-white">{ord.bundle?.size_label} - {ord.network?.name}</p>
-                      <p className="text-xs text-slate-500 font-mono">{ord.recipient_phone}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-slate-500 font-mono">{ord.recipient_phone}</p>
+                        {ord.payment_reference?.startsWith("WP-") && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-blue-500/10 px-1 py-0.5 text-[8px] font-bold text-blue-600 uppercase tracking-wider">
+                            <Wallet className="h-2 w-2" /> Wallet
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                   <div className="text-right">

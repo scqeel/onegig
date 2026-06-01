@@ -1263,6 +1263,9 @@ export default function AgentStorePage() {
                 <DialogTitle className="text-left text-base font-black text-slate-800 dark:text-white">
                   {infoPopup.title}
                 </DialogTitle>
+                <DialogDescription className="sr-only">
+                  Details for {infoPopup.title}
+                </DialogDescription>
               </DialogHeader>
             </div>
             

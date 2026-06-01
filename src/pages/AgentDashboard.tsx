@@ -46,7 +46,8 @@ import {
   DrawerHeader,
   DrawerTitle,
   DrawerTrigger,
-  DrawerClose
+  DrawerClose,
+  DrawerDescription
 } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -337,6 +338,7 @@ export default function AgentDashboard() {
             <DrawerTrigger asChild>
               <button
                 type="button"
+                onClick={(e) => e.currentTarget.blur()}
                 className="relative flex flex-1 flex-col items-center justify-center gap-1 text-white/50 hover:text-white/80 transition-all duration-300"
               >
                 <Menu className="h-5 w-5" />
@@ -346,6 +348,7 @@ export default function AgentDashboard() {
             <DrawerContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-t-[32px]">
               <DrawerHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
                 <DrawerTitle className="text-left text-lg font-black tracking-tight">All Tools</DrawerTitle>
+                <DrawerDescription className="sr-only">Access all dashboard tools and settings</DrawerDescription>
               </DrawerHeader>
               <div className="p-4 grid grid-cols-3 gap-4 pb-12">
                 {TABS.map((t) => {
@@ -1104,10 +1107,10 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")
-        .select("id, recipient_phone, status, sell_price, agent_profit, created_at, bundle:bundles(size_label, size_mb), network:networks(name, logo_emoji)")
+        .select("id, recipient_phone, status, sell_price, agent_profit, created_at, payment_reference, bundle:bundles(size_label, size_mb), network:networks(name, logo_emoji)")
         .eq("agent_id", agentId)
         .order("created_at", { ascending: false })
-        .limit(200);
+        .limit(500);
       return data ?? [];
     },
   });
@@ -1159,7 +1162,7 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
           { label: "Delivered",    value: delivered,          icon: CheckCircle2, iconBg: "bg-emerald-500/10", iconCl: "text-emerald-500",valCl: "text-emerald-600" },
           { label: "In Progress",  value: inProgress,         icon: Clock,        iconBg: "bg-amber-500/10",   iconCl: "text-amber-500",  valCl: "text-amber-600"   },
           { label: "Failed",       value: failed,             icon: XCircle,      iconBg: "bg-rose-500/10",    iconCl: "text-rose-500",   valCl: "text-rose-600"    },
-          { label: "Total Profit", value: formatGHS(totalProfit), icon: TrendingUp, iconBg: "bg-green-500/10", iconCl: "text-green-500",  valCl: "text-green-700 dark:text-green-400" },
+          { label: "Displayed Profit", value: formatGHS(totalProfit), icon: TrendingUp, iconBg: "bg-green-500/10", iconCl: "text-green-500",  valCl: "text-green-700 dark:text-green-400" },
         ].map(({ label, value, icon: Icon, iconBg, iconCl, valCl }) => (
           <div key={label} className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
             <div className={cn("mb-3 flex h-8 w-8 items-center justify-center rounded-xl", iconBg)}>
@@ -1272,7 +1275,14 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
 
                     {/* Amount */}
                     <td className="px-5 py-4">
-                      <p className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
+                      <div className="flex flex-col items-start gap-1">
+                        <p className="text-sm font-black tabular-nums text-foreground leading-none">{formatGHS(o.sell_price)}</p>
+                        {o.payment_reference?.startsWith("WP-") && (
+                          <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider">
+                            <Wallet className="h-2.5 w-2.5" /> Wallet
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Profit */}
@@ -1341,7 +1351,7 @@ export function WithdrawalsSection({ userId }: { userId: string }) {
       const [balRes, earningsRes, withdrawalsRes] = await Promise.all([
         supabase.rpc("get_wallet_balance", { _user_id: userId }),
         supabase.from("wallet_transactions").select("amount").eq("user_id", userId).eq("type", "earning").eq("status", "completed"),
-        supabase.from("withdrawals").select("id, amount, momo_number, momo_name, momo_network, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+        supabase.from("withdrawals").select("id, amount, momo_number, momo_name, momo_network, status, created_at").eq("user_id", userId).order("created_at", { ascending: false }).limit(500),
       ]);
       const balance = Number(balRes.data ?? 0);
       const totalRevenue = (earningsRes.data ?? []).reduce((s: number, r: any) => s + Number(r.amount), 0);
@@ -1378,10 +1388,10 @@ export function WithdrawalsSection({ userId }: { userId: string }) {
         </div>
         <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft">
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            <TrendingUp className="h-3.5 w-3.5" /> Total Revenue
+            <TrendingUp className="h-3.5 w-3.5" /> Lifetime Wallet Earnings
           </div>
           <p className="mt-3 text-4xl font-bold text-foreground">{isLoading ? "…" : formatGHS(walletData?.totalRevenue ?? 0)}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Lifetime earnings</p>
+          <p className="mt-1 text-xs text-muted-foreground">All-time earnings</p>
         </div>
       </div>
 

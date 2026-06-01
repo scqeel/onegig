@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
@@ -165,19 +166,19 @@ export default function NotificationsPage() {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="flex w-full text-left gap-4 p-5 hover:bg-secondary/40 focus:bg-secondary/40 transition-colors group cursor-pointer outline-none"
+                    className="flex w-full text-left gap-3 sm:gap-4 p-4 sm:p-5 hover:bg-secondary/40 focus:bg-secondary/40 transition-colors group cursor-pointer outline-none"
                   >
                     <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getBg(n.type)}`}>
                       {getIcon(n.type)}
                     </div>
-                    <div className="flex-1 min-w-0 pr-4">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <h3 className="font-bold text-foreground truncate">{n.title}</h3>
                         <span className="shrink-0 text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-auto">{timeAgo(n.created_at)}</span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground truncate">{n.message}</p>
                     </div>
-                    <div className="flex items-center justify-center shrink-0">
+                    <div className="hidden sm:flex items-center justify-center shrink-0">
                       <Button
                         variant="ghost"
                         size="icon"
@@ -212,6 +213,7 @@ export default function NotificationsPage() {
                 </div>
               )}
               <DialogTitle className="text-xl">{selectedNotification?.title}</DialogTitle>
+              <DialogDescription className="sr-only">Notification details</DialogDescription>
             </div>
             {selectedNotification && (
                <p className="text-xs font-medium text-muted-foreground pb-2 border-b border-border/40">

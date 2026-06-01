@@ -46,7 +46,7 @@ export function AdminUserDetailsModal({
   const { data: transactions, isLoading: loadingTx } = useQuery({
     queryKey: ["admin-user-tx", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("wallet_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20);
+      const { data, error } = await supabase.from("wallet_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       return data;
     },
@@ -57,7 +57,7 @@ export function AdminUserDetailsModal({
   const { data: orders, isLoading: loadingOrders } = useQuery({
     queryKey: ["admin-user-orders", user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("customer_user_id", user.id).order("created_at", { ascending: false }).limit(20);
+      const { data, error } = await supabase.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("customer_user_id", user.id).order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       return data;
     },
@@ -191,7 +191,7 @@ export function AdminUserDetailsModal({
                             {tx.amount > 0 ? <ArrowDownLeft className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
                           </div>
                           <div>
-                            <p className="text-sm font-bold capitalize">{tx.type.replace("_", " ")}</p>
+                            <p className="text-sm font-bold capitalize">{(tx.type || 'unknown').replace("_", " ")}</p>
                             <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(tx.created_at).toLocaleDateString()}</p>
                           </div>
                         </div>

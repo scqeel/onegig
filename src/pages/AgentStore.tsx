@@ -11,7 +11,6 @@ import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 import { DraggableWidget } from "@/components/agent/DraggableWidget";
 import { OwnerDashboard } from "@/components/agent/OwnerDashboard";
 import { AgentLogin } from "@/components/agent/AgentLogin";
-import { CustomerLogin } from "@/components/store/CustomerLogin";
 import { CustomerWallet } from "@/components/store/CustomerWallet";
 import { formatGHS } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -133,6 +132,8 @@ function StorefrontNotificationsModal({ open, onOpenChange }: { open: boolean, o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border-none rounded-[32px] p-6 shadow-2xl">
+        <DialogTitle className="sr-only">Notice</DialogTitle>
+        <DialogDescription className="sr-only">Authentication or Verification Notice</DialogDescription>
         <DialogHeader>
           <DialogTitle className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
             <Bell className="h-5 w-5 text-indigo-500" /> Notifications
@@ -154,7 +155,10 @@ function StorefrontNotificationsModal({ open, onOpenChange }: { open: boolean, o
             activeNotifications.map(n => (
               <div key={n.id} className="relative p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 group transition-all">
                 <button 
-                  onClick={() => handleDismiss(n.id)}
+                  onClick={(e) => {
+                    e.currentTarget.blur();
+                    handleDismiss(n.id);
+                  }}
                   className="absolute top-3 right-3 text-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                 >
                   <X className="h-4 w-4" />
@@ -187,7 +191,6 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [currentTime, setCurrentTime] = useState("");
   const [viewMode, setViewMode] = useState<"storefront" | "dashboard">("storefront");
   const [loginOpen, setLoginOpen] = useState(false);
-  const [customerLoginOpen, setCustomerLoginOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -1113,7 +1116,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   };
 
   return (
-    <div className={`${getStoreBgClass()} relative overflow-hidden`}>
+    <div className={`min-h-dvh ${getStoreBgClass()} relative overflow-hidden`}>
       <StorefrontNotificationsModal open={notificationsOpen} onOpenChange={setNotificationsOpen} />
       
       <style>{`
@@ -1265,7 +1268,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 <CustomerWallet userId={profile.id} agentSlug={agent.store_slug} onBalanceChange={setWalletBalance} />
               ) : (
                 <button
-                  onClick={() => setCustomerLoginOpen(true)}
+                  onClick={() => nav(`/store-auth/${slug}`)}
                   className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-md"
                 >
                   <Wallet className="w-3.5 h-3.5 opacity-80" /> Login & View
@@ -1856,6 +1859,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 <DialogTitle className="text-left text-base font-black text-slate-800 dark:text-white">
                   {infoPopup.title}
                 </DialogTitle>
+                <DialogDescription className="sr-only">Information details</DialogDescription>
               </DialogHeader>
             </div>
             
@@ -1885,12 +1889,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <AgentLogin storeName={agent?.store_name || "Agent Store"} onClose={() => setLoginOpen(false)} />
       )}
 
-      {/* Customer Login Modal */}
-      <CustomerLogin 
-        isOpen={customerLoginOpen} 
-        onClose={() => setCustomerLoginOpen(false)} 
-        storeName={agent?.store_name || "Agent Store"} 
-      />
+
 
       {/* 🎮 Loyalty Rewards Hub Floating Button & Dialog */}
       {agent?.enable_loyalty_rewards !== false && (
@@ -2041,7 +2040,9 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         </DraggableWidget>
       )}
 
-    </div>
+      {/* Storefront Notifications Modal */}
+      <StorefrontNotificationsModal open={notificationsOpen} onOpenChange={setNotificationsOpen} />
+      </div>
     </div>
   );
 }

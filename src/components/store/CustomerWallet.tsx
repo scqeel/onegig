@@ -109,7 +109,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
     
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("wallet-pay", {
+      const { data, error } = await supabase.functions.invoke("paystack-process", {
         body: { action: "submit_otp", otp: finalOtp, reference: orderRef, purpose: "wallet_deposit", momo_number: "0", momo_network: "MTN" },
       });
       if (error || data?.error) {
@@ -140,7 +140,8 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
       if (data?.ok) {
         clearInterval(interval);
         setPhase("success");
-        // Balance will auto-update via realtime subscription
+        loadBalance();
+        if (loadHistory) loadHistory();
       } else if (data?.error) {
         clearInterval(interval);
         setPhase("error");

@@ -234,7 +234,7 @@ export default function SubAgentDashboard() {
 
           {/* ── Main content ── */}
           <main>
-            {tab === "buy"          && <BuySection />}
+            {tab === "buy"          && <BuySection agentProfile={agentProfile} />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
             {tab === "marketing"    && <MarketingKitSection agentProfile={agentProfile} />}
             {tab === "leaderboard"  && <LeaderboardSection agentProfile={agentProfile} />}

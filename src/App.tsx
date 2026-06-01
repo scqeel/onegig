@@ -16,6 +16,7 @@ import PublicTrackPage from "./pages/PublicTrack.tsx";
 import AdminPage from "./pages/Admin.tsx";
 import AgentDashboardPage from "./pages/AgentDashboard.tsx";
 import AgentStorePage from "./pages/AgentStore.tsx";
+import CustomerAuthPage from "./pages/CustomerAuth.tsx";
 import DashboardProfilePage from "./pages/DashboardProfile.tsx";
 import PaymentCallbackPage from "./pages/PaymentCallback.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -24,6 +25,7 @@ import SubAgentDashboardPage from "./pages/SubAgentDashboard.tsx";
 import ReferralsPage from "./pages/Referrals.tsx";
 import NotificationsPage from "./pages/Notifications.tsx";
 import { PWAInstallBanner } from "./components/PWAInstallBanner.tsx";
+import { DraggableThemeToggle } from "./components/ui/DraggableThemeToggle.tsx";
 import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardIndex = () => {
@@ -44,7 +46,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <DomainRouter>
-          <BrowserRouter>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <AuthProvider>
               <Routes>
                 <Route path="/" element={<HomePage />} />
@@ -64,11 +66,13 @@ const App = () => (
                 <Route path="/agent" element={<RequireAuth role="agent"><AgentDashboardPage /></RequireAuth>} />
                 <Route path="/sub-agent" element={<RequireAuth role="agent"><SubAgentDashboardPage /></RequireAuth>} />
                 <Route path="/store/:slug" element={<AgentStorePage />} />
+                <Route path="/store-auth/:slug" element={<CustomerAuthPage />} />
                 <Route path="/payment/callback" element={<PaymentCallbackPage />} />
                 <Route path="/join/:ref" element={<InvitePage />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <PWAInstallBanner />
+              <DraggableThemeToggle />
             </AuthProvider>
           </BrowserRouter>
         </DomainRouter>

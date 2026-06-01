@@ -143,15 +143,17 @@ Deno.serve(async (req) => {
           .eq("store_slug", body.agent_slug)
           .maybeSingle();
 
-        if (agent?.activation_paid) {
+        if (agent) {
           source = "agent_store";
-          const { data: ap } = await admin
-            .from("agent_bundle_prices")
-            .select("sell_price")
-            .eq("agent_id", agent.id)
-            .eq("bundle_id", bundle.id)
-            .maybeSingle();
-          if (ap?.sell_price != null) amount = Number(ap.sell_price);
+          if (agent.activation_paid) {
+            const { data: ap } = await admin
+              .from("agent_bundle_prices")
+              .select("sell_price")
+              .eq("agent_id", agent.id)
+              .eq("bundle_id", bundle.id)
+              .maybeSingle();
+            if (ap?.sell_price != null) amount = Number(ap.sell_price);
+          }
         }
       }
 

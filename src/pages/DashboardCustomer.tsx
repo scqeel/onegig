@@ -155,6 +155,11 @@ Status: ${o.status.toUpperCase()}`;
                         <div className="flex items-center gap-2">
                           <p className="font-bold">{o.network?.name} {o.bundle?.size_label}</p>
                           <StatusBadge status={o.status} />
+                          {o.payment_reference?.startsWith("WP-") && (
+                            <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider">
+                              Wallet
+                            </span>
+                          )}
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">{o.recipient_phone}</p>
                         <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">

@@ -6,7 +6,6 @@ import { useSettings } from "@/hooks/useSettings";
 import { InstallPromptModal } from "@/components/ui/InstallPromptModal";
 import { InAppNotificationListener } from "@/components/ui/InAppNotificationListener";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
-import { DraggableThemeToggle } from "@/components/ui/DraggableThemeToggle";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const loc = useLocation();
@@ -39,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const homePageBg = settings?.home_page_bg && settings.home_page_bg !== "none" ? settings.home_page_bg : null;
 
   return (
-    <div className="relative min-h-dvh w-full pb-24">
+    <div className="relative min-h-dvh w-full overflow-x-hidden pb-24">
       {homePageBg && (
         <>
           <div 
@@ -76,9 +75,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       {inDashboard && supportHref && (
         <DraggableWhatsApp link={supportHref} />
       )}
-
-      {/* Global Floating Theme Switcher */}
-      <DraggableThemeToggle />
 
       <InstallPromptModal />
       <InAppNotificationListener />

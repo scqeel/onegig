@@ -8,6 +8,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
+  DrawerDescription,
 } from "@/components/ui/drawer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadNotifications } from "@/hooks/useNotifications";
@@ -145,7 +146,7 @@ export function DashboardLayout({
           </aside>
 
           {/* ── Main content ── */}
-          <main className={cn("lg:col-span-9 xl:col-span-10", mainClassName)}>
+          <main className={cn("min-w-0 lg:col-span-9 xl:col-span-10", mainClassName)}>
             {children}
           </main>
         </div>
@@ -195,7 +196,10 @@ export function DashboardLayout({
             {sidebarItems.length > 4 && (
               <button 
                 type="button" 
-                onClick={() => setIsMobileMenuOpen(true)}
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  setIsMobileMenuOpen(true);
+                }}
                 className="flex-1 flex justify-center h-full items-center active:scale-95 transition-transform touch-manipulation"
               >
                 <div className="relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300 text-white/40 hover:text-white/80">
@@ -222,6 +226,7 @@ export function DashboardLayout({
               </div>
               <DrawerTitle className="text-left text-xl font-black tracking-tight text-foreground">Navigation</DrawerTitle>
             </div>
+            <DrawerDescription className="sr-only">Main navigation menu</DrawerDescription>
           </DrawerHeader>
           
           <div className="overflow-y-auto p-5 pb-12 space-y-6">

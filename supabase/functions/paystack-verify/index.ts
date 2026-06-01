@@ -353,73 +353,75 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       .eq("store_slug", agentSlug)
       .maybeSingle();
 
-    if (agent?.activation_paid) {
+    if (agent) {
       agentId = agent.id;
       parentAgentId = agent.parent_agent_id;
       source = "agent_store";
-      const { data: ap } = await admin
-        .from("agent_bundle_prices")
-        .select("sell_price")
-        .eq("agent_id", agent.id)
-        .eq("bundle_id", bundle.id)
-        .maybeSingle();
-      if (ap) {
-        sellPrice = Number(ap.sell_price);
-        
-        let parentSellPrice = Number(bundle.base_price);
-        if (parentAgentId) {
-          // Check for custom wholesale override first
-          const { data: override } = await admin
-            .from("sub_agent_wholesale_overrides")
-            .select("wholesale_price")
-            .eq("sub_agent_id", agent.id)
-            .eq("bundle_id", bundle.id)
-            .maybeSingle();
-
-          if (override?.wholesale_price) {
-            parentSellPrice = Number(override.wholesale_price);
-          } else {
-            const { data: parentAp } = await admin
-              .from("agent_bundle_prices")
-              .select("sell_price")
-              .eq("agent_id", parentAgentId)
+      if (agent.activation_paid) {
+        const { data: ap } = await admin
+          .from("agent_bundle_prices")
+          .select("sell_price")
+          .eq("agent_id", agent.id)
+          .eq("bundle_id", bundle.id)
+          .maybeSingle();
+        if (ap) {
+          sellPrice = Number(ap.sell_price);
+          
+          let parentSellPrice = Number(bundle.base_price);
+          if (parentAgentId) {
+            // Check for custom wholesale override first
+            const { data: override } = await admin
+              .from("sub_agent_wholesale_overrides")
+              .select("wholesale_price")
+              .eq("sub_agent_id", agent.id)
               .eq("bundle_id", bundle.id)
               .maybeSingle();
-            if (parentAp) {
-              parentSellPrice = Number(parentAp.sell_price);
+
+            if (override?.wholesale_price) {
+              parentSellPrice = Number(override.wholesale_price);
+            } else {
+              const { data: parentAp } = await admin
+                .from("agent_bundle_prices")
+                .select("sell_price")
+                .eq("agent_id", parentAgentId)
+                .eq("bundle_id", bundle.id)
+                .maybeSingle();
+              if (parentAp) {
+                parentSellPrice = Number(parentAp.sell_price);
+              }
+            }
+            agentProfit = Math.max(0, sellPrice - parentSellPrice);
+            parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
+          } else {
+            agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+          }
+
+          if (parentAgentId) {
+            const { data: parentAgent } = await admin
+              .from("agent_profiles")
+              .select("id, parent_agent_id")
+              .eq("id", parentAgentId)
+              .maybeSingle();
+            if (parentAgent?.parent_agent_id) {
+              grandparentAgentId = parentAgent.parent_agent_id;
             }
           }
-          agentProfit = Math.max(0, sellPrice - parentSellPrice);
-          parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
-        } else {
-          agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
-        }
 
-        if (parentAgentId) {
-          const { data: parentAgent } = await admin
-            .from("agent_profiles")
-            .select("id, parent_agent_id")
-            .eq("id", parentAgentId)
-            .maybeSingle();
-          if (parentAgent?.parent_agent_id) {
-            grandparentAgentId = parentAgent.parent_agent_id;
+          if (grandparentAgentId) {
+            const totalProfitPool = Math.max(0, sellPrice - Number(bundle.base_price));
+            agentProfit = Number((totalProfitPool * 0.65).toFixed(2));
+            parentAgentProfit = Number((totalProfitPool * 0.25).toFixed(2));
+            grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
           }
-        }
 
-        if (grandparentAgentId) {
-          const totalProfitPool = Math.max(0, sellPrice - Number(bundle.base_price));
-          agentProfit = Number((totalProfitPool * 0.65).toFixed(2));
-          parentAgentProfit = Number((totalProfitPool * 0.25).toFixed(2));
-          grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
-        }
-
-        // Apply Coupon discounts to agent profits and sell prices
-        if (couponDiscount > 0) {
-          if (!isGlobalCoupon) {
-            // Sponsored by the store agent - deduct from their margin
-            agentProfit = Math.max(0, agentProfit - couponDiscount);
+          // Apply Coupon discounts to agent profits and sell prices
+          if (couponDiscount > 0) {
+            if (!isGlobalCoupon) {
+              // Sponsored by the store agent - deduct from their margin
+              agentProfit = Math.max(0, agentProfit - couponDiscount);
+            }
+            sellPrice = Math.max(0, sellPrice - couponDiscount);
           }
-          sellPrice = Math.max(0, sellPrice - couponDiscount);
         }
       }
     }

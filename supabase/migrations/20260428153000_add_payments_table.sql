@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   reference TEXT NOT NULL UNIQUE,
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
-  purpose TEXT NOT NULL CHECK (purpose IN ('order', 'agent_activation')),
+  purpose TEXT NOT NULL CHECK (purpose IN ('order', 'agent_activation', 'wallet_deposit')),
   amount NUMERIC(10,2) NOT NULL,
   currency TEXT NOT NULL DEFAULT 'GHS',
   status TEXT NOT NULL DEFAULT 'initialized' CHECK (status IN ('initialized', 'paid', 'failed')),

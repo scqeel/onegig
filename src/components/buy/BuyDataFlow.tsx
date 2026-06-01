@@ -432,26 +432,64 @@ export function BuyDataFlow({
   // ── Success state ──
   if (phase === "success") {
     return (
-      <div className="relative py-10 text-center">
+      <div className="relative py-8 px-4 w-full max-w-md mx-auto animate-in fade-in zoom-in duration-500">
         <Confetti />
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-success/10">
-          <CheckCircle2 className="h-12 w-12 text-success" />
+        
+        {/* Premium Receipt Card */}
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-800 overflow-hidden relative">
+          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-400 bg-[length:200%_auto] animate-gradient"></div>
+          
+          <div className="p-8 pb-6 text-center">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10 mb-5 ring-[10px] ring-emerald-50/50 dark:ring-emerald-500/5">
+              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+            </div>
+            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Payment Successful</h3>
+            <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+              Your <span className="font-bold text-slate-700 dark:text-slate-300">{bundle?.size_label}</span> is on its way to
+            </p>
+            <div className="mt-2 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-lg font-black text-slate-800 dark:text-slate-200">
+              {phone}
+            </div>
+          </div>
+          
+          <div className="px-8 pb-8">
+            <div className="pt-6 border-t border-dashed border-slate-200 dark:border-slate-700 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Payment Method</span>
+                <span className="text-sm font-bold flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+                  {payWithWallet ? (
+                    <><div className="h-2 w-2 rounded-full bg-primary" /> Wallet</>
+                  ) : (
+                    <><div className="h-2 w-2 rounded-full bg-yellow-500" /> MoMo ({momoNetwork})</>
+                  )}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Amount Paid</span>
+                <span className="text-sm font-black text-slate-800 dark:text-slate-100">{formatGHS(finalPrice)}</span>
+              </div>
+              
+              {orderRef && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Transaction Ref</span>
+                  <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{orderRef.split('-')[0] + '...'}</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-        <h3 className="mt-5 text-xl font-bold">Purchase Successful! 🎉</h3>
-        <p className="mt-2 text-muted-foreground">
-          Your {bundle?.size_label} will be delivered to{" "}
-          <span className="font-semibold text-foreground">{phone}</span>
-          <br/>within 10 - 60 mins.
+
+        <p className="mt-6 text-center text-xs font-semibold text-muted-foreground/80">
+          Delivery usually takes 10 - 60 minutes.
         </p>
-        {orderRef && (
-          <p className="mt-1 text-xs text-muted-foreground">Ref: {orderRef}</p>
-        )}
-        <div className="mx-auto mt-7 grid max-w-xs grid-cols-2 gap-3">
-          <Button variant="outline" className="h-12 rounded-2xl" onClick={reset}>
+
+        <div className="mt-6 grid grid-cols-2 gap-3 max-w-sm mx-auto">
+          <Button variant="outline" className="h-14 rounded-2xl font-bold border-2" onClick={reset}>
             Buy Again
           </Button>
           <Button
-            className="h-12 rounded-2xl gradient-primary"
+            className="h-14 rounded-2xl font-bold bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
             onClick={() => {
               if (onSuccess) onSuccess();
               else nav(`/track?ref=${orderRef}`);
@@ -880,10 +918,10 @@ export function BuyDataFlow({
                     payWithWallet 
                       ? "border-primary bg-primary/5 shadow-sm" 
                       : "border-slate-100 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900",
-                    walletBalance < (agentSlug ? bundle.base_price : finalPrice) && "opacity-50 cursor-not-allowed border-dashed"
+                    walletBalance < finalPrice && "opacity-50 cursor-not-allowed border-dashed"
                   )}
                   onClick={() => {
-                    if (walletBalance >= (agentSlug ? bundle.base_price : finalPrice)) {
+                    if (walletBalance >= finalPrice) {
                       setPayWithWallet(!payWithWallet);
                     }
                   }}
@@ -900,18 +938,21 @@ export function BuyDataFlow({
                         <span className={cn("text-sm font-bold", payWithWallet ? "text-primary" : "text-foreground")}>
                           Pay with Wallet
                         </span>
-                        {agentSlug ? (
-                          <span className="text-[10px] font-semibold text-muted-foreground mt-0.5">
-                            Cost: {formatGHS(bundle.base_price)} | Bal: <span className="text-primary">{formatGHS(walletBalance)}</span>
+                        {agentSlug && finalPrice > Number(bundle.base_price) ? (
+                          <span className="text-[10px] font-semibold text-muted-foreground mt-0.5 flex flex-col gap-0.5">
+                            <span>Available Balance: <span className="text-primary font-bold">{formatGHS(walletBalance)}</span></span>
+                            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded inline-block w-fit mt-1 font-bold">
+                              Pay {formatGHS(finalPrice)} upfront, instantly earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
+                            </span>
                           </span>
                         ) : (
                           <span className="text-[10px] font-semibold text-muted-foreground mt-0.5">
-                            Available Balance: <span className="text-foreground">{formatGHS(walletBalance)}</span>
+                            Available Balance: <span className="text-foreground font-bold">{formatGHS(walletBalance)}</span>
                           </span>
                         )}
                       </div>
                     </div>
-                    {walletBalance < (agentSlug ? bundle.base_price : finalPrice) && (
+                    {walletBalance < finalPrice && (
                       <span className="text-[10px] font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-md">
                         Insufficient
                       </span>
@@ -937,7 +978,7 @@ export function BuyDataFlow({
                   {payWithWallet ? (
                     <>
                       <Lock className="mr-2 h-4 w-4" />
-                      Pay {formatGHS(agentSlug ? bundle.base_price : finalPrice)} Securely
+                      Pay {formatGHS(finalPrice)} Securely
                     </>
                   ) : (
                     <>

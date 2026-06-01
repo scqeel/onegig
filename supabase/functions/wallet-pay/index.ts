@@ -153,18 +153,20 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       .eq("store_slug", agentSlug)
       .maybeSingle();
 
-    if (agent?.activation_paid) {
+    if (agent) {
       agentId = agent.id;
       source = "agent_store";
-      const { data: ap } = await admin
-        .from("agent_bundle_prices")
-        .select("sell_price")
-        .eq("agent_id", agent.id)
-        .eq("bundle_id", bundle.id)
-        .maybeSingle();
-      if (ap) {
-        sellPrice = Number(ap.sell_price);
-        agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+      if (agent.activation_paid) {
+        const { data: ap } = await admin
+          .from("agent_bundle_prices")
+          .select("sell_price")
+          .eq("agent_id", agent.id)
+          .eq("bundle_id", bundle.id)
+          .maybeSingle();
+        if (ap) {
+          sellPrice = Number(ap.sell_price);
+          agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+        }
       }
     }
   }
@@ -335,7 +337,7 @@ Deno.serve(async (req) => {
     if (txErr || !tx) return json({ ok: false, error: "Failed to deduct wallet balance: " + (txErr?.message || "No tx returned") }, 200);
 
     // 4. Create dummy payment record for fulfillOrder
-    const { data: payment } = await admin.from("payments").insert({
+    const { data: payment, error: paymentError } = await admin.from("payments").insert({
       reference,
       user_id: userId,
       purpose: "order",
@@ -350,7 +352,8 @@ Deno.serve(async (req) => {
       }
     }).select("id, purpose, reference, amount, currency, status, user_id, created_at, payload").single();
 
-    if (!payment) return json({ ok: false, error: "Failed to create payment record" }, 200);
+    if (paymentError) console.error("Payment insert error:", paymentError);
+    if (!payment) return json({ ok: false, error: "Failed to create payment record: " + (paymentError?.message || "Unknown error") }, 200);
 
     // 5. Fulfill order
     const orderId = await fulfillOrder(admin, payment);

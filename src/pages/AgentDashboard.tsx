@@ -292,7 +292,7 @@ export default function AgentDashboard() {
           </aside>
 
           {/* ── Main content ── */}
-          <main>
+          <main className="min-w-0 w-full">
             {tab === "buy"          && <BuySection agentProfile={agentProfile} />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
             {tab === "marketing"    && <MarketingKitSection agentProfile={agentProfile} />}
@@ -1187,7 +1187,7 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
           />
         </div>
 
-        <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
+        <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1 overflow-x-auto hide-scrollbar max-w-full">
           {FILTERS.map(({ label, value, count }) => (
             <button
               key={value}

@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
   const { data: canAdmin } = await admin.rpc("has_role", { _user_id: ud.user.id, _role: "admin" });
   if (!canAdmin) return json({ error: "Forbidden" }, 403);
 
-  const { data: profile } = await admin.from("profiles").select("full_name, username").eq("id", user_id).maybeSingle();
+  const { data: profile } = await admin.from("profiles").select("full_name, username, referred_by").eq("id", user_id).maybeSingle();
   if (!profile) return json({ error: "User profile not found" }, 404);
 
   const baseSlug = slugify(profile.username || profile.full_name || `agent-${user_id.slice(0, 6)}`);
@@ -57,6 +57,18 @@ Deno.serve(async (req) => {
     if (i > 100) break;
   }
 
+  let parentAgentId = null;
+  if (profile.referred_by) {
+    const { data: parentAgent } = await admin
+      .from("agent_profiles")
+      .select("id")
+      .eq("user_id", profile.referred_by)
+      .maybeSingle();
+    if (parentAgent?.id) {
+      parentAgentId = parentAgent.id;
+    }
+  }
+
   const { error: profileErr } = await admin.from("agent_profiles").upsert(
     {
       user_id,
@@ -64,6 +76,7 @@ Deno.serve(async (req) => {
       store_name: `${profile.full_name || "My"} Store`,
       activation_paid: true,
       activation_paid_at: new Date().toISOString(),
+      parent_agent_id: parentAgentId,
     },
     { onConflict: "user_id" }
   );

@@ -1,4 +1,6 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendSMS } from "../_shared/sms.ts";
+import { sendWebPushNotification } from "../_shared/push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,14 +37,57 @@ Deno.serve(async (req) => {
 
     const message = messagePayload || `Your OneGig login code is ${token}. Do not share this with anyone.`;
 
+    // 1. Send SMS via standard txtconnect gateway
     await sendSMS({ to: phone, message });
+
+    // 2. Fallback: Push to parent agent's in-app notifications if the registering user has a referrer
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const admin = createClient(supabaseUrl, serviceKey);
+
+      let cleanPhone = phone.replace(/\D/g, "");
+      let queryPhone = cleanPhone;
+      if (cleanPhone.startsWith("233")) {
+        queryPhone = "0" + cleanPhone.slice(3);
+      } else if (!cleanPhone.startsWith("0")) {
+        queryPhone = "0" + cleanPhone;
+      }
+
+      // Find the profile matching the phone
+      const { data: prof } = await admin
+        .from("profiles")
+        .select("id, full_name, referred_by")
+        .or(`phone.eq.${cleanPhone},phone.eq.${queryPhone}`)
+        .maybeSingle();
+
+      if (prof?.referred_by) {
+        const subAgentName = prof.full_name || phone;
+        console.log(`Sending in-app notification to parent agent (${prof.referred_by}) for OTP fallback.`);
+        
+        await admin.from("app_notifications").insert({
+          title: "Sub-Agent Signup OTP",
+          message: `Your registering sub-agent (${subAgentName}) has a pending verification code: ${token}`,
+          type: "info",
+          sound_name: "paystack",
+          target_user_id: prof.referred_by,
+          is_global: false
+        });
+
+        await sendWebPushNotification(admin, prof.referred_by, {
+          title: "Sub-Agent Signup OTP",
+          message: `Your registering sub-agent (${subAgentName}) has a pending verification code: ${token}`,
+          url: "/agent"
+        }).catch(err => console.error("Push notification error:", err));
+      }
+    } catch (dbErr) {
+      console.error("Database fallback hook error:", dbErr);
+    }
 
     // Supabase Send SMS Auth Hook expects a 200 OK response with an empty JSON object or valid schema
     return json({});
   } catch (e: any) {
     console.error("auth-sms-webhook error", e);
-    // Even if it fails, returning 200 is sometimes required by Supabase to not block the flow endlessly, 
-    // but 500 is better for debugging.
     return json({ error: e?.message ?? "Internal error" }, 500);
   }
 });

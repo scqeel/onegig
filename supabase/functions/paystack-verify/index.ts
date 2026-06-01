@@ -123,6 +123,38 @@ async function deliverData(
 async function activateAgent(admin: ReturnType<typeof createClient>, userId: string, refSlug?: string | null) {
   console.log(`Activating agent with userId: ${userId}`);
 
+  // Resolve parent agent ID (using refSlug if present, falling back to referred_by in profiles)
+  let parentAgentId = null;
+  if (refSlug) {
+    const { data: parentAgent } = await admin
+      .from("agent_profiles")
+      .select("id")
+      .eq("store_slug", refSlug)
+      .maybeSingle();
+    if (parentAgent?.id) {
+      parentAgentId = parentAgent.id;
+    }
+  }
+  
+  if (!parentAgentId) {
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("referred_by")
+      .eq("id", userId)
+      .maybeSingle();
+      
+    if (prof?.referred_by) {
+      const { data: parentAgent } = await admin
+        .from("agent_profiles")
+        .select("id")
+        .eq("user_id", prof.referred_by)
+        .maybeSingle();
+      if (parentAgent?.id) {
+        parentAgentId = parentAgent.id;
+      }
+    }
+  }
+
   // 1. Check if they already have an agent profile record
   const { data: existingAgent, error: checkErr } = await admin
     .from("agent_profiles")
@@ -144,18 +176,6 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       console.log("Agent profile already marked as active. Ensuring role...");
       await admin.from("user_roles").upsert({ user_id: userId, role: "agent" }, { onConflict: "user_id,role" });
       return existingAgent.id;
-    }
-
-    let parentAgentId = null;
-    if (refSlug) {
-      const { data: parentAgent } = await admin
-        .from("agent_profiles")
-        .select("id")
-        .eq("store_slug", refSlug)
-        .maybeSingle();
-      if (parentAgent?.id) {
-        parentAgentId = parentAgent.id;
-      }
     }
 
     // Update existing inactive profile to active
@@ -202,18 +222,6 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       n++;
       slug = `${baseSlug}-${n}`;
       if (n > 50) break;
-    }
-
-    let parentAgentId = null;
-    if (refSlug) {
-      const { data: parentAgent } = await admin
-        .from("agent_profiles")
-        .select("id")
-        .eq("store_slug", refSlug)
-        .maybeSingle();
-      if (parentAgent?.id) {
-        parentAgentId = parentAgent.id;
-      }
     }
 
     console.log(`Inserting new agent profile with slug: ${slug}, parent: ${parentAgentId}`);

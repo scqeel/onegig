@@ -142,19 +142,24 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
   if (bErr || !bundle) throw new Error("Bundle not found");
 
   let agentId: string | null = null;
+  let parentAgentId: string | null = null;
+  let grandparentAgentId: string | null = null;
   let sellPrice = Number(payment.amount ?? bundle.user_price ?? bundle.base_price);
   let agentProfit = 0;
+  let parentAgentProfit = 0;
+  let grandparentAgentProfit = 0;
   let source: "direct" | "agent_store" = "direct";
 
   if (agentSlug) {
     const { data: agent } = await admin
       .from("agent_profiles")
-      .select("id, user_id, activation_paid")
+      .select("id, user_id, activation_paid, parent_agent_id")
       .eq("store_slug", agentSlug)
       .maybeSingle();
 
     if (agent) {
       agentId = agent.id;
+      parentAgentId = agent.parent_agent_id;
       source = "agent_store";
       if (agent.activation_paid) {
         const { data: ap } = await admin
@@ -165,7 +170,53 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
           .maybeSingle();
         if (ap) {
           sellPrice = Number(ap.sell_price);
-          agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+          
+          let parentSellPrice = Number(bundle.base_price);
+          if (parentAgentId) {
+            // Check for custom wholesale override first
+            const { data: override } = await admin
+              .from("sub_agent_wholesale_overrides")
+              .select("wholesale_price")
+              .eq("sub_agent_id", agent.id)
+              .eq("bundle_id", bundle.id)
+              .maybeSingle();
+
+            if (override?.wholesale_price) {
+              parentSellPrice = Number(override.wholesale_price);
+            } else {
+              const { data: parentAp } = await admin
+                .from("agent_bundle_prices")
+                .select("sell_price")
+                .eq("agent_id", parentAgentId)
+                .eq("bundle_id", bundle.id)
+                .maybeSingle();
+              if (parentAp) {
+                parentSellPrice = Number(parentAp.sell_price);
+              }
+            }
+            agentProfit = Math.max(0, sellPrice - parentSellPrice);
+            parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
+          } else {
+            agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+          }
+
+          if (parentAgentId) {
+            const { data: parentAgent } = await admin
+              .from("agent_profiles")
+              .select("id, parent_agent_id")
+              .eq("id", parentAgentId)
+              .maybeSingle();
+            if (parentAgent?.parent_agent_id) {
+              grandparentAgentId = parentAgent.parent_agent_id;
+            }
+          }
+
+          if (grandparentAgentId) {
+            const totalProfitPool = Math.max(0, sellPrice - Number(bundle.base_price));
+            agentProfit = Number((totalProfitPool * 0.65).toFixed(2));
+            parentAgentProfit = Number((totalProfitPool * 0.25).toFixed(2));
+            grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
+          }
         }
       }
     }
@@ -186,10 +237,12 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       network_id: bundle.network_id || null,
       bundle_id: bundle.id || null,
       agent_id: agentId || null,
+      parent_agent_id: parentAgentId || null,
       source,
       base_price: bundle.base_price,
       sell_price: sellPrice,
       agent_profit: agentProfit,
+      parent_agent_profit: parentAgentProfit,
       status: "processing",
       payment_status: "paid",
       payment_reference: paymentReference || null,
@@ -259,6 +312,64 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       await sendWebPushNotification(admin, agentRow.user_id, {
         title: "New Store Sale!",
         message: `You earned GHS ${agentProfit.toFixed(2)} profit from a sale of ${bundle.size_label} to ${recipient}.`,
+        url: "/agent"
+      });
+    }
+  }
+
+  if (delivery.ok && parentAgentId && parentAgentProfit > 0) {
+    const { data: parentAgentRow } = await admin.from("agent_profiles").select("user_id").eq("id", parentAgentId).maybeSingle();
+    if (parentAgentRow?.user_id) {
+      await admin.from("wallet_transactions").insert({
+        user_id: parentAgentRow.user_id,
+        type: "earning",
+        amount: parentAgentProfit,
+        status: "completed",
+        related_order_id: order.id,
+        description: `Network profit from sub-agent order ${order.reference}`,
+      });
+      
+      await admin.from("app_notifications").insert({
+        title: "Sub-Agent Sale!",
+        message: `You earned GHS ${parentAgentProfit.toFixed(2)} network profit from a sale of ${bundle.size_label}.`,
+        type: "success",
+        sound_name: "paystack",
+        target_user_id: parentAgentRow.user_id,
+        is_global: false
+      });
+      
+      await sendWebPushNotification(admin, parentAgentRow.user_id, {
+        title: "Sub-Agent Sale!",
+        message: `You earned GHS ${parentAgentProfit.toFixed(2)} network profit from a sale of ${bundle.size_label}.`,
+        url: "/agent"
+      });
+    }
+  }
+
+  if (delivery.ok && grandparentAgentId && grandparentAgentProfit > 0) {
+    const { data: grandparentAgentRow } = await admin.from("agent_profiles").select("user_id").eq("id", grandparentAgentId).maybeSingle();
+    if (grandparentAgentRow?.user_id) {
+      await admin.from("wallet_transactions").insert({
+        user_id: grandparentAgentRow.user_id,
+        type: "earning",
+        amount: grandparentAgentProfit,
+        status: "completed",
+        related_order_id: order.id,
+        description: `Grandparent Recruiter profit from downline order ${order.reference}`,
+      });
+      
+      await admin.from("app_notifications").insert({
+        title: "Downline Recruiter Earning!",
+        message: `You earned GHS ${grandparentAgentProfit.toFixed(2)} grandparent recruiter profit from a downline purchase.`,
+        type: "success",
+        sound_name: "paystack",
+        target_user_id: grandparentAgentRow.user_id,
+        is_global: false
+      });
+      
+      await sendWebPushNotification(admin, grandparentAgentRow.user_id, {
+        title: "Downline Recruiter Earning!",
+        message: `You earned GHS ${grandparentAgentProfit.toFixed(2)} grandparent recruiter profit from a downline purchase.`,
         url: "/agent"
       });
     }

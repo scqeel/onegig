@@ -71,6 +71,25 @@ Deno.serve(async (req) => {
     }
   }
 
+  if (!parentAgentId) {
+    const { data: prof } = await admin
+      .from("profiles")
+      .select("referred_by")
+      .eq("id", userId)
+      .maybeSingle();
+      
+    if (prof?.referred_by) {
+      const { data: parentAgent } = await admin
+        .from("agent_profiles")
+        .select("id")
+        .eq("user_id", prof.referred_by)
+        .maybeSingle();
+      if (parentAgent?.id) {
+        parentAgentId = parentAgent.id;
+      }
+    }
+  }
+
   if (existingAgent) {
     console.log(`User already has an agent profile (id: ${existingAgent.id}, paid: ${existingAgent.activation_paid})`);
     

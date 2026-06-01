@@ -38,12 +38,24 @@ export default function AuthPage() {
     queryKey: ["auth-parent-agent", refSlug],
     enabled: !!refSlug,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: agent } = await supabase
         .from("agent_profiles")
-        .select("store_name, store_slug, store_logo_url, store_brand_color")
+        .select("store_name, store_slug, store_logo_url, store_brand_color, user_id")
         .eq("store_slug", refSlug)
         .maybeSingle();
-      return data;
+      
+      if (agent?.user_id) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("referral_code")
+          .eq("id", agent.user_id)
+          .maybeSingle();
+        return {
+          ...agent,
+          referral_code: profile?.referral_code || null
+        };
+      }
+      return agent;
     },
   });
 
@@ -69,7 +81,7 @@ export default function AuthPage() {
   const [suPhone, setSuPhone] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suConfirmPassword, setSuConfirmPassword] = useState("");
-  const [suReferralCode, setSuReferralCode] = useState(searchParams.get("invite") || "");
+  const [suReferralCode, setSuReferralCode] = useState(searchParams.get("invite") || searchParams.get("ref") || "");
   const [showPassword, setShowPassword] = useState(false);
 
   const [siTimer, setSiTimer] = useState(0);
@@ -165,11 +177,12 @@ export default function AuthPage() {
     try {
       const normalizedEmail = suEmail.trim().toLowerCase();
       const formattedPhone = formatPhone(suPhone);
+      const parentRefCode = (parentAgent as any)?.referral_code;
       const options = { 
         data: { 
           full_name: suFullName.trim(), 
           username: suUsername.toLowerCase().trim(),
-          referred_by_code: suReferralCode.trim() || null
+          referred_by_code: suReferralCode.trim() || parentRefCode || null
         } 
       };
       

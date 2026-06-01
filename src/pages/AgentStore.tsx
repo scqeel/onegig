@@ -616,7 +616,11 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       } else if (data?.error) {
         clearInterval(interval);
         setPhase("error");
-        setErrorMsg(data.error);
+        let errMsg = data.error;
+        if (errMsg === "Charge attempted") {
+          errMsg = "A payment prompt is already active on your phone. Please check your phone to enter your PIN. (If no prompt arrives, your Supabase Edge Functions may still be using Test API Keys instead of Live Keys!)";
+        }
+        setErrorMsg(errMsg);
       } else if (data?.status && !["pending", "processing", "ongoing", "send_otp", "pay_offline"].includes(data.status.toLowerCase())) {
         clearInterval(interval);
         setPhase("error");
@@ -797,7 +801,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
       if (error || data?.error) {
         const errPayload = data?.error || error?.message || "Payment initialization failed";
-        const errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
+        let errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
+        if (errMsg === "Charge attempted") {
+          errMsg = "A payment prompt is already active on your phone. Please check your phone to enter your PIN. (If no prompt arrives, your Supabase Edge Functions may still be using Test API Keys instead of Live Keys!)";
+        }
         setErrorMsg(errMsg);
         setPhase("error");
         return;

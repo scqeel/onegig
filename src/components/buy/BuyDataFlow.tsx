@@ -320,7 +320,10 @@ export function BuyDataFlow({
 
     if (data?.error) {
       setPhase("error");
-      const errMsg = typeof data.error === "object" ? JSON.stringify(data.error) : data.error;
+      let errMsg = typeof data.error === "object" ? JSON.stringify(data.error) : data.error;
+      if (errMsg === "Charge attempted") {
+        errMsg = "A payment prompt is already active on your phone. Please check your phone to enter your PIN. (If no prompt arrives, your Supabase Edge Functions may still be using Test API Keys instead of Live Keys!)";
+      }
       setErrorMsg(errMsg);
       return;
     }

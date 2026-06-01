@@ -313,14 +313,12 @@ export function BuyDataFlow({
     });
 
     if (error) {
-      console.error(error);
       setPhase("error");
       setErrorMsg(error?.message || "Payment initialization failed");
       return;
     }
 
     if (data?.error) {
-      console.error(data.error);
       setPhase("error");
       const errMsg = typeof data.error === "object" ? JSON.stringify(data.error) : data.error;
       setErrorMsg(errMsg);

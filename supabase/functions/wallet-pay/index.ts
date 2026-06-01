@@ -166,6 +166,12 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
         sellPrice = Number(ap.sell_price);
         agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
       }
+
+      // If the purchaser is the agent themselves, charge wholesale price
+      if (agent.user_id === customerUserId) {
+        sellPrice = Number(bundle.base_price);
+        agentProfit = 0;
+      }
     }
   }
 
@@ -312,10 +318,15 @@ Deno.serve(async (req) => {
     let sellPrice = Number(bundle.user_price ?? bundle.base_price);
     
     if (agent_slug) {
-      const { data: agent } = await admin.from("agent_profiles").select("id").eq("store_slug", agent_slug).maybeSingle();
+      const { data: agent } = await admin.from("agent_profiles").select("id, user_id").eq("store_slug", agent_slug).maybeSingle();
       if (agent?.id) {
-        const { data: ap } = await admin.from("agent_bundle_prices").select("sell_price").eq("agent_id", agent.id).eq("bundle_id", bundle_id).maybeSingle();
-        if (ap) sellPrice = Number(ap.sell_price);
+        // If the purchaser is the agent themselves, charge wholesale price
+        if (agent.user_id === userId) {
+          sellPrice = Number(bundle.base_price);
+        } else {
+          const { data: ap } = await admin.from("agent_bundle_prices").select("sell_price").eq("agent_id", agent.id).eq("bundle_id", bundle_id).maybeSingle();
+          if (ap) sellPrice = Number(ap.sell_price);
+        }
       }
     }
 

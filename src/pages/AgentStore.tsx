@@ -1799,7 +1799,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             </div>
 
             {/* 💰 Pay with Wallet Toggle */}
-            {profile && walletBalance > 0 && walletBalance >= finalPrice && !isOwner && (
+            {profile && walletBalance > 0 && walletBalance >= (isOwner && selectedBundle ? selectedBundle.base_price : finalPrice) && (
               <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-between">
                 <div className="flex items-start gap-2">
                   <input
@@ -1811,9 +1811,15 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                   />
                   <label htmlFor="wallet-pay-checkbox" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
                     Pay with Wallet Balance
-                    <span className="block text-[9px] text-slate-500 font-medium mt-0.5">
-                      You have {formatGHS(walletBalance)} available.
-                    </span>
+                    {isOwner && selectedBundle ? (
+                      <span className="block text-[9px] text-emerald-500 font-bold mt-0.5">
+                        Agent Wholesale Deduction: {formatGHS(selectedBundle.base_price)} (Available: {formatGHS(walletBalance)})
+                      </span>
+                    ) : (
+                      <span className="block text-[9px] text-slate-500 font-medium mt-0.5">
+                        You have {formatGHS(walletBalance)} available.
+                      </span>
+                    )}
                   </label>
                 </div>
               </div>

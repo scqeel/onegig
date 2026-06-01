@@ -99,10 +99,15 @@ Deno.serve(async (req) => {
     let userEmail: string | null = null;
 
     if (authHeader) {
-      const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-      const { data: ud } = await userClient.auth.getUser();
-      userId = ud.user?.id ?? null;
-      userEmail = ud.user?.email ?? null;
+      try {
+        const safeAnonKey = anonKey || serviceKey;
+        const userClient = createClient(supabaseUrl, safeAnonKey, { global: { headers: { Authorization: authHeader } } });
+        const { data: ud } = await userClient.auth.getUser();
+        userId = ud.user?.id ?? null;
+        userEmail = ud.user?.email ?? null;
+      } catch (err) {
+        console.warn("Failed to get user from auth header", err);
+      }
     }
 
     let amount = 0;
@@ -268,35 +273,41 @@ Deno.serve(async (req) => {
     const email = (body.email || userEmail || "guest@mtopup.shop").trim().toLowerCase();
     const reference = `DH-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
 
-    const processRes = await fetch("https://api.paystack.co/charge", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${paystackSecret}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        amount: Math.round(amount * 100),
-        reference,
-        currency: "GHS",
-        mobile_money: {
-          phone: body.momo_number.replace(/\D/g, ""),
-          provider: toPaystackProvider(body.momo_network)
+    let processRes: Response;
+    try {
+      processRes = await fetch("https://api.paystack.co/charge", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${paystackSecret}`,
+          "Content-Type": "application/json",
         },
-        metadata: {
-          purpose: body.purpose,
-          user_id: userId,
-          ...payload,
-        }
-      }),
-    });
+        body: JSON.stringify({
+          email,
+          amount: Math.round(amount * 100),
+          reference,
+          currency: "GHS",
+          mobile_money: {
+            phone: body.momo_number.replace(/\D/g, ""),
+            provider: toPaystackProvider(body.momo_network),
+          },
+          metadata: {
+            purpose: body.purpose,
+            user_id: userId,
+            ...payload,
+          },
+        }),
+      });
+    } catch (fetchErr: unknown) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : "Network error";
+      console.error("Paystack fetch failed:", msg);
+      return json({ error: `Could not reach payment gateway. ${msg}` }, 200);
+    }
 
     let processData;
     try {
       processData = await processRes.json();
     } catch (e) {
-      const text = await processRes.text().catch(() => "");
-      console.error("Paystack API returned non-JSON:", processRes.status, text);
+      console.error("Paystack API returned non-JSON:", processRes.status);
       return json({ error: `Paystack API Error ${processRes.status}.` }, 200);
     }
 
@@ -342,7 +353,7 @@ Deno.serve(async (req) => {
         errorMsg = `A payment prompt is already active on your phone. Please check your phone to enter your PIN. Do not double-click. (DEBUG: HTTP ${processRes.status}, data.status: ${processData?.status})`;
       }
       
-      return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 400);
+      return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 200);
     }
 
     // Insert payment record

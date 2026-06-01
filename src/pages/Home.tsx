@@ -44,6 +44,7 @@ import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/contexts/AuthContext";
 
 /* ─────────────────────────────────────────────
    Scroll-reveal hook
@@ -177,6 +178,10 @@ export default function HomePage() {
   const [activeNetwork, setActiveNetwork] = useState("mtn");
   const network = NETWORKS.find((n) => n.id === activeNetwork)!;
   const { theme, setTheme } = useTheme();
+  const { user, isAdmin, isAgent, signOut } = useAuth();
+
+  const dashboardPath = isAdmin ? '/admin' : isAgent ? '/agent' : '/dashboard/customer';
+  const dashboardLabel = isAdmin ? 'Admin Dashboard' : isAgent ? 'Agent Dashboard' : 'My Dashboard';
 
   const { data: homeBg } = useQuery({
     queryKey: ["home-bg"],
@@ -208,9 +213,15 @@ export default function HomePage() {
             <Link to="/track" className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
               <Search className="h-3.5 w-3.5" /> Track Order
             </Link>
-            <Link to="/auth?tab=signin" className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
-              Agent Sign In
-            </Link>
+            {user ? (
+              <Link to={dashboardPath} className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                {dashboardLabel}
+              </Link>
+            ) : (
+              <Link to="/auth?tab=signin" className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+                Agent Sign In
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -230,14 +241,14 @@ export default function HomePage() {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 border-l-0 bg-white p-6 shadow-2xl">
+            <SheetContent side="right" className="w-72 border-l-0 bg-white/60 backdrop-blur-2xl dark:bg-[#05080f]/60 dark:border-white/10 p-6 shadow-2xl">
               <SheetHeader className="mb-8 text-left">
-                <SheetTitle><Logo size="sm" className="mix-blend-multiply" /></SheetTitle>
+                <SheetTitle><Logo size="sm" className="mix-blend-multiply dark:mix-blend-normal" /></SheetTitle>
                 <SheetDescription className="sr-only">Navigation</SheetDescription>
               </SheetHeader>
               <div className="flex flex-col gap-3">
                 <SheetClose asChild>
-                  <Link to="/buy" className="group flex items-center justify-between rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 p-4 shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all active:scale-[0.98]">
+                  <Link to="/buy" className="group flex items-center justify-between rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 p-4 shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)] active:scale-[0.98]">
                     <div className="flex items-center gap-3">
                       <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
                         <Zap className="h-4 w-4 text-white" />
@@ -249,28 +260,54 @@ export default function HomePage() {
                 </SheetClose>
 
                 <SheetClose asChild>
-                  <Link to="/track" className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]">
+                  <Link to="/track" className="group flex items-center justify-between rounded-2xl border border-white/40 bg-white/40 dark:bg-white/5 dark:border-white/10 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-white/10 active:scale-[0.98]">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-50">
-                        <Search className="h-4 w-4 text-indigo-500" />
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500/10">
+                        <Search className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
                       </div>
-                      <span className="font-semibold text-slate-700">Track Order</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">Track Order</span>
                     </div>
-                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-slate-500 transition-colors" />
+                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
                   </Link>
                 </SheetClose>
 
-                <SheetClose asChild>
-                  <Link to="/auth?tab=signin" className="group flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-fuchsia-50">
-                        <User className="h-4 w-4 text-fuchsia-500" />
+                {user ? (
+                  <>
+                    <SheetClose asChild>
+                      <Link to={dashboardPath} className="group flex items-center justify-between rounded-2xl border border-white/40 bg-white/40 dark:bg-white/5 dark:border-white/10 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-white/10 active:scale-[0.98]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-fuchsia-500/10">
+                            <BriefcaseBusiness className="h-4 w-4 text-fuchsia-500 dark:text-fuchsia-400" />
+                          </div>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">{dashboardLabel}</span>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                      </Link>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <button onClick={signOut} className="group w-full flex items-center justify-between rounded-2xl border border-red-500/10 bg-red-50/50 dark:bg-red-500/5 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-red-50 dark:hover:bg-red-500/10 active:scale-[0.98]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
+                            <User className="h-4 w-4 text-red-500" />
+                          </div>
+                          <span className="font-semibold text-red-600 dark:text-red-400">Log Out</span>
+                        </div>
+                      </button>
+                    </SheetClose>
+                  </>
+                ) : (
+                  <SheetClose asChild>
+                    <Link to="/auth?tab=signin" className="group flex items-center justify-between rounded-2xl border border-white/40 bg-white/40 dark:bg-white/5 dark:border-white/10 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-white/10 active:scale-[0.98]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-500/10">
+                          <User className="h-4 w-4 text-pink-500 dark:text-pink-400" />
+                        </div>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200">Agent Sign In</span>
                       </div>
-                      <span className="font-semibold text-slate-700">Agent Sign In</span>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-300 group-hover:text-slate-500 transition-colors" />
-                  </Link>
-                </SheetClose>
+                      <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                    </Link>
+                  </SheetClose>
+                )}
               </div>
             </SheetContent>
           </Sheet>

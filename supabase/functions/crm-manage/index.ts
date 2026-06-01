@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendSMS } from "../_shared/sms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,6 +67,14 @@ Deno.serve(async (req) => {
       }
       await admin.from("app_settings").upsert({ key: settingKey, value: customers });
       return json({ ok: true, customers });
+    } else if (action === "send_sms") {
+      const phone = body.phone;
+      const message = body.message;
+      if (!phone || !message) return json({ error: "Missing phone or message" }, 400);
+      
+      const cleanPhone = phone.replace(/\D/g, "");
+      await sendSMS({ to: cleanPhone, message });
+      return json({ ok: true });
     }
 
     return json({ error: "Invalid action" }, 400);

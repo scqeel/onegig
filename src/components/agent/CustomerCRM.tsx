@@ -62,11 +62,26 @@ export function CustomerCRM() {
         .maybeSingle();
 
       if (!profileRow) {
-        toast({
-          title: "User not registered",
-          description: "This customer does not have a registered platform profile yet. You can still message them on WhatsApp!",
-          variant: "destructive"
+        // Fallback to sending direct SMS
+        const { error: smsError } = await supabase.functions.invoke("crm-manage", {
+          body: { action: "send_sms", phone: cleanPhone, message: alertMessage }
         });
+
+        if (smsError) {
+          toast({
+            title: "Failed to send SMS",
+            description: smsError.message,
+            variant: "destructive"
+          });
+        } else {
+          toast({ 
+            title: "SMS Sent Successfully!", 
+            description: "This customer does not have the app, so we sent them a direct SMS instead!" 
+          });
+          setAlertTitle("");
+          setAlertMessage("");
+          setAlertOpen(false);
+        }
         setIsSendingAlert(false);
         return;
       }

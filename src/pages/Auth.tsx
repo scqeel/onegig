@@ -182,7 +182,8 @@ export default function AuthPage() {
         data: { 
           full_name: suFullName.trim(), 
           username: suUsername.toLowerCase().trim(),
-          referred_by_code: suReferralCode.trim() || parentRefCode || null
+          referred_by_code: suReferralCode.trim() || parentRefCode || null,
+          intent: accountType
         } 
       };
       

@@ -303,6 +303,7 @@ export function BuyDataFlow({
       }
 
       setOrderRef(data.reference || null);
+      window.dispatchEvent(new Event('wallet-updated'));
       setPhase("delivering");
       setTimeout(() => setPhase("success"), 3000);
       return;

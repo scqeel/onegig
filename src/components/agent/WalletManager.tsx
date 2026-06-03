@@ -62,6 +62,16 @@ export const WalletManager = () => {
   useEffect(() => {
     fetchBalance();
     fetchHistory();
+
+    const handleUpdate = () => {
+      fetchBalance();
+      fetchHistory();
+    };
+
+    window.addEventListener('wallet-updated', handleUpdate);
+    return () => {
+      window.removeEventListener('wallet-updated', handleUpdate);
+    };
   }, [profile?.id]);
 
   const initiateDeposit = async () => {

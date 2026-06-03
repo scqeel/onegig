@@ -795,6 +795,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         }
 
         setPhase("success");
+        window.dispatchEvent(new Event('wallet-updated'));
         return;
       }
 

@@ -36,37 +36,34 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
   const activeGateway = settings?.active_payment_gateway || "paystack";
   console.log("[CustomerWallet] activeGateway resolved to:", activeGateway);
 
-  useEffect(() => {
+  const loadBalance = async () => {
     if (!userId) {
       setIsLoading(false);
       return;
     }
-    
-    const loadBalance = async () => {
+    try {
       const { data } = await supabase.from("profiles").select("wallet_balance").eq("id", userId).maybeSingle();
       if (data) {
         setBalance(Number(data.wallet_balance));
         onBalanceChange?.(Number(data.wallet_balance));
       }
+    } catch (e) {
+      console.error("Error loading wallet balance:", e);
+    } finally {
       setIsLoading(false);
-    };
-    
+    }
+  };
+
+  useEffect(() => {
     loadBalance();
-    
-    // Subscribe to balance changes
-    const channel = supabase.channel(`wallet_updates_${userId}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "profiles",
-        filter: `id=eq.${userId}`
-      }, (payload: any) => {
-        setBalance(Number(payload.new.wallet_balance));
-        onBalanceChange?.(Number(payload.new.wallet_balance));
-      }).subscribe();
-      
+
+    const handleUpdate = () => {
+      loadBalance();
+    };
+
+    window.addEventListener('wallet-updated', handleUpdate);
     return () => {
-      supabase.removeChannel(channel);
+      window.removeEventListener('wallet-updated', handleUpdate);
     };
   }, [userId]);
 
@@ -149,6 +146,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
         clearInterval(interval);
         setPhase("success");
         loadBalance();
+        window.dispatchEvent(new Event('wallet-updated'));
         if (loadHistory) loadHistory();
       } else if (data?.error) {
         clearInterval(interval);

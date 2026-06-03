@@ -25,6 +25,7 @@ export function useNetworks() {
       if (error) throw error;
       return data as NetworkRow[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -42,6 +43,7 @@ export function useBundles(networkId: string | null) {
       if (error) throw error;
       return data as BundleRow[];
     },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -60,5 +62,6 @@ export function useAgentBundles(agentId: string | null) {
       (data ?? []).forEach((r: any) => (map[r.bundle_id] = Number(r.sell_price)));
       return map;
     },
+    staleTime: 5 * 60 * 1000,
   });
 }

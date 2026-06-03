@@ -26,3 +26,13 @@ This file serves as a persistent record of critical bugs encountered and their s
 **Issue**: Chrome DevTools fired a "Blocked aria-hidden" warning when opening the mobile navigation Drawer.
 **Root Cause**: The `DrawerTrigger` from Vaul/shadcn remains focused underneath the Drawer overlay, causing browser accessibility warnings.
 **Fix/Lesson**: Attach `onClick={(e) => e.currentTarget.blur()}` to `DrawerTrigger` buttons (or similar overlay triggers) so they manually drop focus when the overlay mounts.
+
+## 6. Manual Resolution Lacking Side Effects
+**Issue**: Manually resolving wallet deposits or agent activations via the Admin Dashboard updated the payment status to `"paid"` in the `payments` table but failed to actually credit the user's wallet or activate the agent.
+**Root Cause**: The `admin-resolve-payment` Edge Function only changed the status column in the database and lacked any of the business logic (such as inserting records into `wallet_transactions` or executing recruiter reward splits) required for manual completion of deposits or activations.
+**Fix/Lesson**: Administrative manual resolution endpoints must execute the same business logic and side effects as automatic webhook/verification callbacks to guarantee data integrity across manually force-completed states.
+
+## 7. Verify Endpoint Early-Return Lockouts
+**Issue**: If an automatic webhook or verification callback failed midway (e.g. database network error, Deno timeout) after the payment status was updated to `"paid"`, subsequent retries or manual resolutions would early-return and never credit the wallet.
+**Root Cause**: The verify Edge Functions checked `if (payment.status === "paid") { return { already_processed: true }; }` at the very beginning of the logic. Once marked paid, all transaction insert code was permanently bypassed.
+**Fix/Lesson**: Avoid naive status-based early-returns in verification functions. Check if the actual side effects (such as the corresponding wallet transaction row) exist in the database, and run self-healing code if they are missing.

@@ -21,6 +21,8 @@ import {
   Zap,
   Sun,
   Moon,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -192,6 +194,17 @@ export default function HomePage() {
     staleTime: 60_000,
   });
 
+  const { data: homeBgVideo } = useQuery({
+    queryKey: ["home-bg-video"],
+    queryFn: async () => {
+      const { data } = await supabase.from("app_settings").select("value").eq("key", "home_page_bg_video").maybeSingle();
+      return data?.value || "";
+    },
+    staleTime: 60_000,
+  });
+
+  const [isMuted, setIsMuted] = useState(true);
+
   const bgStyle = homeBg && homeBg !== "none" ? { backgroundImage: `url(${homeBg})`, backgroundSize: "cover", backgroundPosition: "center" } : {};
 
   const { ref: statsRef,        inView: statsInView }        = useInView(0.15);
@@ -316,7 +329,20 @@ export default function HomePage() {
 
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-[#05080f]" style={bgStyle}>
-        {(!homeBg || homeBg === "none") && (
+        {/* Background video rendering */}
+        {homeBgVideo && (
+          <video
+            src={homeBgVideo}
+            autoPlay
+            loop
+            muted={isMuted}
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover z-0 pointer-events-none"
+          />
+        )}
+
+        {/* Ambient glows when no image or video is configured */}
+        {(!homeBg || homeBg === "none") && !homeBgVideo && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
             <div className="absolute -top-40 left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
             <div className="absolute top-1/3 right-0 h-[450px] w-[450px] rounded-full bg-fuchsia-600/15 blur-[120px]" />
@@ -325,12 +351,28 @@ export default function HomePage() {
           </div>
         )}
         
-        {/* Dark overlay to ensure text is readable on patterned backgrounds */}
-        {homeBg && homeBg !== "none" && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
+        {/* Dark overlay to ensure text is readable on patterned backgrounds (images/videos) */}
+        {((homeBg && homeBg !== "none") || homeBgVideo) && (
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10" />
         )}
 
-        <div className="relative mx-auto max-w-6xl px-5 pb-28 pt-16 md:px-8 md:pt-24 lg:pb-36 lg:pt-28">
+        {/* Floating Mute/Unmute toggle button */}
+        {homeBgVideo && (
+          <button
+            type="button"
+            onClick={() => setIsMuted(!isMuted)}
+            className="absolute bottom-6 right-6 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/60 text-white backdrop-blur-md transition-all hover:scale-105 active:scale-95 shadow-lg pointer-events-auto"
+            aria-label={isMuted ? "Unmute background video" : "Mute background video"}
+          >
+            {isMuted ? (
+              <VolumeX className="h-4 w-4" />
+            ) : (
+              <Volume2 className="h-4 w-4 animate-pulse" />
+            )}
+          </button>
+        )}
+
+        <div className="relative z-20 mx-auto max-w-6xl px-5 pb-28 pt-16 md:px-8 md:pt-24 lg:pb-36 lg:pt-28">
 
           {/* Badge */}
           <div className={`mb-8 animate-hero-badge ${HD.badge}`}>

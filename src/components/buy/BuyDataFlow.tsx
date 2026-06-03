@@ -97,7 +97,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
                     ? "bg-primary text-primary-foreground"
                     : active
                     ? "border-2 border-primary bg-primary/10 text-primary"
-                    : "border-2 border-border bg-white text-muted-foreground"
+                    : "border-2 border-border bg-background dark:bg-slate-900 text-muted-foreground"
                 )}
               >
                 {done ? <CheckCircle2 className="h-4 w-4" /> : n}
@@ -615,34 +615,74 @@ export function BuyDataFlow({
   // ── Processing state ──
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
     return (
-      <div className="py-14 text-center">
-        <div className="mx-auto flex h-24 w-24 animate-float-pulse items-center justify-center rounded-full gradient-primary shadow-glow">
-          <Zap className="h-10 w-10 text-white animate-pulse" />
+      <div className="py-14 text-center space-y-8 animate-in fade-in duration-300">
+        <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
+          {/* Glowing background ring */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-spin [animation-duration:3s] blur-md opacity-35"></div>
+          {/* Inner glass/bg circle */}
+          <div className="absolute inset-1 rounded-full bg-slate-50 dark:bg-[#0c1224] flex items-center justify-center border border-slate-100 dark:border-white/5 shadow-inner"></div>
+          {/* Pulse center icon */}
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 shadow-lg shadow-purple-500/30 animate-float-pulse">
+            <Zap className="h-7 w-7 text-white" />
+          </div>
         </div>
-        <h3 className="mt-6 text-xl font-bold text-foreground">
-          {phase === "processing" && "Initiating Payment..."}
-          {phase === "polling" && "Awaiting Authorization"}
-          {phase === "delivering" && "Payment Received! Sending Data..."}
-        </h3>
-        {phase === "polling" && (
-          <p className="mt-2 text-sm font-medium text-primary max-w-sm mx-auto">
-            {authMessage || `Please check your phone (${momoNumber}) to authorize the payment.`}
-          </p>
-        )}
-        {phase === "delivering" && (
-          <p className="mt-2 text-sm font-medium text-primary">
-            Connecting to {network?.name} network to deliver your bundle.
-          </p>
-        )}
-        <p className="mt-1 text-xs text-muted-foreground">
-          Do not close this window. Your bundle will be delivered automatically.
-        </p>
         
+        <div className="space-y-3">
+          <h3 className="text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
+            {phase === "processing" && (
+              <>
+                <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Initiating Payment</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-purple-500 animate-ping" />
+              </>
+            )}
+            {phase === "polling" && (
+              <>
+                <span className="bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">Awaiting Authorization</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping" />
+              </>
+            )}
+            {phase === "delivering" && (
+              <>
+                <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Sending Data Bundle</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+              </>
+            )}
+          </h3>
+
+          {phase === "polling" && (
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-2.5 rounded-full border border-indigo-100 dark:border-indigo-900/40 shadow-sm max-w-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                {authMessage || `Please check your phone (${momoNumber}) to authorize...`}
+              </div>
+            </div>
+          )}
+
+          {phase === "delivering" && (
+            <div className="flex flex-col items-center animate-pulse">
+              <div className="flex items-center gap-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-2.5 rounded-full border border-emerald-100 dark:border-emerald-900/40 shadow-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                Connecting to {network?.name} network...
+              </div>
+            </div>
+          )}
+
+          <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
+            Do not close this window. Your bundle will be delivered automatically.
+          </p>
+        </div>
+
         {(phase === "polling" || phase === "delivering") && (
-          <div className="mt-8 flex items-center justify-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-primary animate-bounce" />
-            <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:0.2s]" />
-            <span className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:0.4s]" />
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" />
+            <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.2s]" />
+            <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.4s]" />
           </div>
         )}
       </div>

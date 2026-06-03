@@ -15,18 +15,18 @@ export default function PublicBuyPage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Nav ── */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 md:px-8">
           <Link to="/">
             <Logo size="sm" />
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground">
+            <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground dark:hover:text-white">
               <Link to="/track">
                 <Search className="h-3.5 w-3.5" /> Track Order
               </Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs">
+            <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs dark:border-slate-800 dark:hover:bg-slate-900">
               <Link to="/auth?tab=signin">Agent Sign In</Link>
             </Button>
           </div>
@@ -56,20 +56,30 @@ export default function PublicBuyPage() {
         <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
 
           {/* ── Main flow ── */}
-          <div className="space-y-4">
-            <div className="overflow-hidden rounded-3xl border border-border/60 bg-white shadow-float">
-              <div className="border-b border-border/60 bg-secondary/30 px-6 py-4">
-                <p className="text-sm font-bold text-foreground">Select a bundle and pay</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">No account required · Instant delivery</p>
+          <div className="space-y-5">
+            <div className="overflow-hidden rounded-[2rem] border border-border/60 dark:border-slate-800/80 bg-card dark:bg-[#0b101d]/60 backdrop-blur-xl shadow-float dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+              <div className="border-b border-border/60 dark:border-slate-800/80 bg-secondary/30 dark:bg-[#141b30]/40 px-6 py-5 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-extrabold text-foreground dark:text-white flex items-center gap-1.5">
+                    Select a bundle and pay
+                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground dark:text-slate-400">No account required · Instant delivery</p>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
+                  <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
+                </div>
               </div>
-              <div className="p-5 md:p-7">
+              <div className="p-6 md:p-8">
                 <BuyDataFlow />
               </div>
             </div>
 
             {/* Already paid strip */}
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border/60 bg-white px-5 py-3.5 shadow-soft">
-              <span className="text-sm text-muted-foreground">Already paid? Find your order here.</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 dark:border-slate-800 bg-card dark:bg-[#0b101d]/40 px-5 py-4 shadow-soft">
+              <span className="text-sm text-muted-foreground dark:text-slate-400">Already paid? Find your order here.</span>
               <Link
                 to="/track"
                 className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
@@ -84,9 +94,9 @@ export default function PublicBuyPage() {
             <div className="sticky top-20 space-y-4">
 
               {/* Why us */}
-              <div className="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-soft">
-                <div className="border-b border-border/60 bg-secondary/30 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Why OneGig?</p>
+              <div className="overflow-hidden rounded-2xl border border-border/60 dark:border-slate-800 bg-card dark:bg-[#0b101d]/60 backdrop-blur-xl shadow-soft">
+                <div className="border-b border-border/60 dark:border-slate-800 bg-secondary/30 dark:bg-[#141b30]/30 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Why OneGig?</p>
                 </div>
                 <div className="space-y-4 p-4">
                   {TRUST_ITEMS.map(({ icon: Icon, title, desc }) => (
@@ -95,8 +105,8 @@ export default function PublicBuyPage() {
                         <Icon className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">{title}</p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{desc}</p>
+                        <p className="text-sm font-semibold text-foreground dark:text-white">{title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground dark:text-slate-400">{desc}</p>
                       </div>
                     </div>
                   ))}
@@ -104,9 +114,9 @@ export default function PublicBuyPage() {
               </div>
 
               {/* Networks */}
-              <div className="overflow-hidden rounded-2xl border border-border/60 bg-white shadow-soft">
-                <div className="border-b border-border/60 bg-secondary/30 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Networks supported</p>
+              <div className="overflow-hidden rounded-2xl border border-border/60 dark:border-slate-800 bg-card dark:bg-[#0b101d]/60 backdrop-blur-xl shadow-soft">
+                <div className="border-b border-border/60 dark:border-slate-800 bg-secondary/30 dark:bg-[#141b30]/30 px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Networks supported</p>
                 </div>
                 <div className="space-y-2 p-4">
                   {[
@@ -116,12 +126,12 @@ export default function PublicBuyPage() {
                   ].map((n) => (
                     <div
                       key={n.name}
-                      className="flex items-center gap-3 rounded-xl border border-border/60 bg-secondary/30 px-3 py-2.5 hover:bg-secondary/60 transition-colors"
+                      className="flex items-center gap-3 rounded-xl border border-border/40 dark:border-slate-800/60 bg-secondary/10 dark:bg-[#141b30]/10 px-3 py-2.5 hover:bg-secondary/20 dark:hover:bg-[#141b30]/20 transition-colors"
                     >
                       <span className="text-xl">{n.emoji}</span>
                       <div>
-                        <p className="text-sm font-semibold text-foreground">{n.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{n.detail}</p>
+                        <p className="text-sm font-semibold text-foreground dark:text-white">{n.name}</p>
+                        <p className="text-[10px] text-muted-foreground dark:text-slate-400">{n.detail}</p>
                       </div>
                     </div>
                   ))}

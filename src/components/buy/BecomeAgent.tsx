@@ -14,6 +14,8 @@ type Phase = "select" | "processing" | "polling" | "success" | "error" | "otp";
 
 export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const { data: settings } = useSettings();
+  const activeGateway = settings?.active_payment_gateway || "paystack";
+  console.log("[BecomeAgent] activeGateway resolved to:", activeGateway);
   const { isAgent, profile, refresh } = useAuth();
   const { toast } = useToast();
   const nav = useNavigate();
@@ -54,7 +56,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
     }
 
     setPhase("processing");
-    const { error, data } = await supabase.functions.invoke("paystack-process", {
+    const { error, data } = await supabase.functions.invoke(`${activeGateway}-process`, {
       body: {
         purpose: "agent_activation",
         momo_number: momoNumber,
@@ -90,7 +92,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
     setPhase("processing");
     
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: { action: "submit_otp", otp: finalOtp, reference: orderRef }
       });
       setIsSubmittingOtp(false);
@@ -163,7 +165,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         return clearInterval(interval);
       }
 
-      const { data, error } = await supabase.functions.invoke("paystack-verify", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-verify`, {
         body: { reference: orderRef }
       });
 

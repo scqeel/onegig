@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { formatGHS } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSettings } from "@/hooks/useSettings";
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,9 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
   const [otp, setOtp] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const { toast } = useToast();
+  const { data: settings } = useSettings();
+  const activeGateway = settings?.active_payment_gateway || "paystack";
+  console.log("[CustomerWallet] activeGateway resolved to:", activeGateway);
 
   useEffect(() => {
     if (!userId) {
@@ -79,7 +83,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
 
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           purpose: "wallet_deposit",
           amount: numAmount,
@@ -109,7 +113,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
     
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: { action: "submit_otp", otp: finalOtp, reference: orderRef, purpose: "wallet_deposit", momo_number: "0", momo_network: "MTN" },
       });
       if (error || data?.error) {
@@ -136,7 +140,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
         setErrorMsg("Timed out");
         return clearInterval(interval);
       }
-      const { data } = await supabase.functions.invoke("paystack-verify", { body: { reference: orderRef } });
+      const { data } = await supabase.functions.invoke(`${activeGateway}-verify`, { body: { reference: orderRef } });
       if (data?.ok) {
         clearInterval(interval);
         setPhase("success");

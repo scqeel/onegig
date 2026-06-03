@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetworksAndBundles";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import { Confetti } from "@/components/Confetti";
@@ -134,6 +135,9 @@ export function BuyDataFlow({
 }: Props) {
   const nav = useNavigate();
   const { profile } = useAuth();
+  const { data: settings } = useSettings();
+  const activeGateway = settings?.active_payment_gateway || "paystack";
+  console.log("[BuyDataFlow] activeGateway resolved to:", activeGateway);
   const { toast } = useToast();
   const { data: networks = [] } = useNetworks();
   const [network, setNetwork] = useState<NetworkRow | null>(null);
@@ -300,7 +304,7 @@ export function BuyDataFlow({
       return;
     }
 
-    const { data, error } = await supabase.functions.invoke("paystack-process", {
+    const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
       body: {
         purpose: "order",
         recipient_phone: phone.replace(/\D/g, ""),
@@ -341,7 +345,7 @@ export function BuyDataFlow({
     if (!finalOtp || !orderRef) return;
     setPhase("processing");
     
-    const { data, error } = await supabase.functions.invoke("paystack-process", {
+    const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
       body: {
         action: "submit_otp",
         otp: finalOtp,
@@ -378,7 +382,7 @@ export function BuyDataFlow({
     setAuthMessage("Preparing secure checkout page...");
 
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-initiate", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-initiate`, {
         body: {
           purpose: "order",
           recipient_phone: phone.replace(/\D/g, ""),
@@ -395,7 +399,7 @@ export function BuyDataFlow({
         return;
       }
 
-      setAuthMessage("Redirecting to Paystack...");
+      setAuthMessage(`Redirecting to ${activeGateway === "theteller" ? "theTeller" : "Paystack"}...`);
       window.location.href = data.authorization_url;
     } catch (e: any) {
       setPhase("error");
@@ -409,7 +413,7 @@ export function BuyDataFlow({
     let interval: any;
     let attempts = 0;
     let isTransitioning = false;
-
+ 
     const checkStatus = async () => {
       if (isTransitioning) return;
       attempts++;
@@ -419,7 +423,7 @@ export function BuyDataFlow({
         return clearInterval(interval);
       }
 
-      const { data, error } = await supabase.functions.invoke("paystack-verify", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-verify`, {
         body: { reference: orderRef }
       });
 

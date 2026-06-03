@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetworksAndBundles";
+import { useSettings } from "@/hooks/useSettings";
 import { TrackOrder } from "@/components/buy/TrackOrder";
 import { WalletManager } from "@/components/agent/WalletManager";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
@@ -184,6 +185,9 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const { toast } = useToast();
   const { profile } = useAuth();
   const [walletBalance, setWalletBalance] = useState(0);
+  const { data: settings } = useSettings();
+  const activeGateway = settings?.active_payment_gateway || "paystack";
+  console.log("[AgentStore] activeGateway resolved to:", activeGateway);
 
   // Navigation & Theme tabs
   const [activeTab, setActiveTab] = useState<Tab>("orders");
@@ -587,7 +591,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         return clearInterval(interval);
       }
 
-      const { data, error } = await supabase.functions.invoke("paystack-verify", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-verify`, {
         body: { reference: orderRef }
       });
 
@@ -793,7 +797,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           purpose: "order",
           recipient_phone: phone.replace(/\D/g, ""),
@@ -840,7 +844,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     setPhase("processing");
     
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           action: "submit_otp",
           otp: finalOtp,
@@ -881,7 +885,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     setAuthMessage("Preparing secure checkout page...");
 
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-initiate", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-initiate`, {
         body: {
           purpose: "order",
           recipient_phone: phone.replace(/\D/g, ""),
@@ -898,7 +902,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         return;
       }
 
-      setAuthMessage("Redirecting to Paystack...");
+      setAuthMessage(`Redirecting to ${activeGateway === "theteller" ? "theTeller" : "Paystack"}...`);
       window.location.href = data.authorization_url;
     } catch (e: any) {
       setPhase("error");
@@ -910,7 +914,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     if (otpTimer > 0) return;
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           purpose: "order",
           recipient_phone: phone.replace(/\D/g, ""),

@@ -365,136 +365,314 @@ export default function AuthPage() {
               ← Back to homepage
             </Link>
           </div>
-
-          {/* ── Sign In ── */}
-          {!isSignUp && (
-            <div className="animate-fade-up">
-              <div className="mb-7">
-                <span 
-                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
-                  style={parentAgent ? { color: brandColor, borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
-                >
-                  <Users className="h-3 w-3" /> Welcome Back
-                </span>
-                <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Sign in</h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  Access your dashboard, track orders, and manage your account.
-                </p>
-              </div>
-
-              <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
-                <button
-                  type="button"
-                  onClick={() => { setSiMethod("email"); setOtpSent(false); }}
-                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "email" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
-                  style={siMethod === "email" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
-                >
-                  Email
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSiMethod("phone")}
-                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "phone" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
-                  style={siMethod === "phone" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
-                >
-                  Phone Number
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {siMethod === "email" ? (
-                  <>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground">Email address</label>
-                      <Input
-                        autoFocus type="email" inputMode="email"
-                        placeholder="you@example.com"
-                        value={siEmail} onChange={(e) => setSiEmail(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-foreground">Password</label>
-                    <Link to="#" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"} placeholder="Enter your password"
-                      value={siPassword} onChange={(e) => setSiPassword(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && doSignIn()}
-                      className={`${inputCls} pr-10`}
-                    />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
+          <div className="glass-card p-6 md:p-8 rounded-[2.25rem] overflow-hidden">
+            {/* ── Sign In ── */}
+            {!isSignUp && (
+              <div className="animate-fade-up">
+                <div className="mb-7">
+                  <span 
+                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
+                    style={parentAgent ? { color: brandColor, borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
+                  >
+                    <Users className="h-3 w-3" /> Welcome Back
+                  </span>
+                  <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Sign in</h2>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    Access your dashboard, track orders, and manage your account.
+                  </p>
                 </div>
-                  </>
-                ) : (
-                  <>
+
+                <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => { setSiMethod("email"); setOtpSent(false); }}
+                    className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "email" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                    style={siMethod === "email" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
+                  >
+                    Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSiMethod("phone")}
+                    className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${siMethod === "phone" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                    style={siMethod === "phone" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
+                  >
+                    Phone Number
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {siMethod === "email" ? (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Email address</label>
+                        <Input
+                          autoFocus type="email" inputMode="email"
+                          placeholder="you@example.com"
+                          value={siEmail} onChange={(e) => setSiEmail(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground">Password</label>
+                      <Link to="#" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>
+                    </div>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? "text" : "password"} placeholder="Enter your password"
+                        value={siPassword} onChange={(e) => setSiPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && doSignIn()}
+                        className={`${inputCls} pr-10`}
+                      />
+                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Phone Number</label>
+                        <Input
+                          autoFocus={!otpSent} type="tel" inputMode="tel"
+                          placeholder="0551234567"
+                          disabled={otpSent}
+                          value={siPhone} onChange={(e) => setSiPhone(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      {otpSent && (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                          <label className="text-xs font-semibold text-foreground text-center block">Verification Code</label>
+                          <div className="flex justify-center pb-2">
+                            <InputOTP 
+                              maxLength={6} 
+                              value={siOtp} 
+                              onChange={(val) => {
+                                setSiOtp(val);
+                                if (val.length === 6 && !busy) {
+                                  setTimeout(() => document.getElementById("btn-signin-submit")?.click(), 50);
+                                }
+                              }}
+                            >
+                              <InputOTPGroup className="gap-2">
+                                {[0, 1, 2, 3, 4, 5].map((i) => (
+                                  <InputOTPSlot 
+                                    key={i} 
+                                    index={i} 
+                                    className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50" 
+                                  />
+                                ))}
+                              </InputOTPGroup>
+                            </InputOTP>
+                          </div>
+                          <div className="flex items-center justify-between mt-3 px-1">
+                            <button type="button" onClick={() => setOtpSent(false)} className="text-xs text-primary hover:underline font-semibold">Change number</button>
+                            {siTimer > 0 ? (
+                              <span className="text-xs text-muted-foreground font-medium">Resend in <span className="text-foreground">{siTimer}s</span></span>
+                            ) : (
+                              <button type="button" onClick={resendSiOtp} className="text-xs text-primary font-bold hover:underline">Try again</button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <Button 
+                    id="btn-signin-submit" 
+                    onClick={doSignIn} 
+                    disabled={busy} 
+                    className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                    style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundImage: 'linear-gradient(to right, #7c3aed, #c026d3)', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
+                  >
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
+                      {siMethod === "email" || otpSent ? "Sign in" : "Send Login Code"} <ArrowRight className="ml-1.5 h-4 w-4" />
+                    </>}
+                  </Button>
+                </div>
+
+                <div className="mt-6 space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Need an agent account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setSearchParams({ tab: "signup", intent: "agent" }, { replace: true })}
+                      className="font-bold text-primary hover:text-primary/80"
+                    >
+                      Create one →
+                    </button>
+                  </p>
+                  <p className="text-xs text-muted-foreground/60">
+                    Just buying data? No account needed —{" "}
+                    <Link to="/buy" className="underline hover:text-foreground">go to homepage</Link>.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* ── Sign Up ── */}
+            {isSignUp && (
+              <div className="animate-fade-up">
+                <div className="mb-7">
+                  <span 
+                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
+                    style={parentAgent ? { color: brandColor, borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
+                  >
+                    <BriefcaseBusiness className="h-3 w-3" /> Get Started
+                  </span>
+                  <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Create account</h2>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    Join us as {accountType === "agent" ? "a Reseller/Agent" : "a Customer"}.
+                  </p>
+                </div>
+
+                <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => { setAccountType("customer"); setSearchParams({ tab: "signup" }, { replace: true }); }}
+                    className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "customer" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                    style={accountType === "customer" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
+                  >
+                    Customer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setAccountType("agent"); setSearchParams({ tab: "signup", intent: "agent" }, { replace: true }); }}
+                    className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "agent" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                    style={accountType === "agent" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
+                  >
+                    Reseller / Agent
+                  </button>
+                </div>
+
+                <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
+                  <button
+                    type="button"
+                    onClick={() => { setSuMethod("email"); }}
+                    className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${suMethod === "email" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                    style={suMethod === "email" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
+                  >
+                    Email Method
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setSuMethod("phone"); }}
+                    className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${suMethod === "phone" ? "bg-white text-primary shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
+                    style={suMethod === "phone" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
+                  >
+                    Phone Method
+                  </button>
+                </div>
+
+                <div className="space-y-4 max-h-[380px] overflow-y-auto no-scrollbar pr-1 py-1">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Full name</label>
+                    <Input
+                      autoFocus type="text" placeholder="John Doe"
+                      value={suFullName} onChange={(e) => setSuFullName(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Username</label>
+                    <Input
+                      type="text" placeholder="johndoe"
+                      value={suUsername} onChange={(e) => setSuUsername(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
+
+                  {suMethod === "email" ? (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Email address</label>
+                        <Input
+                          type="email" inputMode="email" placeholder="you@example.com"
+                          value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Password</label>
+                        <Input
+                          type="password" placeholder="Min. 6 characters"
+                          value={suPassword} onChange={(e) => setSuPassword(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-semibold text-foreground">Confirm Password</label>
+                        <Input
+                          type="password" placeholder="Confirm your password"
+                          value={suConfirmPassword} onChange={(e) => setSuConfirmPassword(e.target.value)}
+                          className={inputCls}
+                        />
+                      </div>
+                    </>
+                  ) : (
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-foreground">Phone Number</label>
                       <Input
-                        autoFocus={!otpSent} type="tel" inputMode="tel"
-                        placeholder="0551234567"
-                        disabled={otpSent}
-                        value={siPhone} onChange={(e) => setSiPhone(e.target.value)}
+                        type="tel" inputMode="tel" placeholder="0551234567"
+                        value={suPhone} onChange={(e) => setSuPhone(e.target.value)}
                         className={inputCls}
                       />
                     </div>
-                    {otpSent && (
-                      <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                        <label className="text-xs font-semibold text-foreground text-center block">Verification Code</label>
-                        <div className="flex justify-center pb-2">
-                          <InputOTP 
-                            maxLength={6} 
-                            value={siOtp} 
-                            onChange={(val) => {
-                              setSiOtp(val);
-                              if (val.length === 6 && !busy) {
-                                setTimeout(() => document.getElementById("btn-signin-submit")?.click(), 50);
-                              }
-                            }}
-                          >
-                            <InputOTPGroup className="gap-2">
-                              {[0, 1, 2, 3, 4, 5].map((i) => (
-                                <InputOTPSlot 
-                                  key={i} 
-                                  index={i} 
-                                  className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50" 
-                                />
-                              ))}
-                            </InputOTPGroup>
-                          </InputOTP>
-                        </div>
-                        <div className="flex items-center justify-between mt-3 px-1">
-                          <button type="button" onClick={() => setOtpSent(false)} className="text-xs text-primary hover:underline font-semibold">Change number</button>
-                          {siTimer > 0 ? (
-                            <span className="text-xs text-muted-foreground font-medium">Resend in <span className="text-foreground">{siTimer}s</span></span>
-                          ) : (
-                            <button type="button" onClick={resendSiOtp} className="text-xs text-primary font-bold hover:underline">Try again</button>
-                          )}
-                        </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground">Referral Code (Optional)</label>
+                    </div>
+                    <Input
+                      placeholder="e.g. OG-ABCD12"
+                      value={suReferralCode} onChange={(e) => setSuReferralCode(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && doSignUp()}
+                      className={inputCls}
+                    />
+                  </div>
+
+                  {/* Perks reminder */}
+                  {accountType === "agent" && (
+                    <div 
+                      className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2"
+                      style={parentAgent ? { borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
+                    >
+                      <p className="text-xs font-semibold text-primary mb-1.5" style={parentAgent ? { color: brandColor } : {}}>
+                        {parentAgent ? `What you get under ${storeName}` : "What you get as an agent"}
+                      </p>
+                      <div className="space-y-1">
+                        {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
+                          <div key={p} className="flex items-center gap-2">
+                            <CheckCircle className="h-3 w-3 shrink-0 text-primary" style={parentAgent ? { color: brandColor } : {}} />
+                            <span className="text-xs text-muted-foreground">{p}</span>
+                          </div>
+                        ))}
                       </div>
-                    )}
-                  </>
-                )}
+                    </div>
+                  )}
+                </div>
 
                 <Button 
-                  id="btn-signin-submit" 
-                  onClick={doSignIn} 
+                  id="btn-signup-submit" 
+                  onClick={doSignUp} 
                   disabled={busy} 
-                  className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
+                  className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5 mt-5"
                   style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundImage: 'linear-gradient(to right, #7c3aed, #c026d3)', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
                 >
                   {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
-                    {siMethod === "email" || otpSent ? "Sign in" : "Send Login Code"} <ArrowRight className="ml-1.5 h-4 w-4" />
+                    Create account <ArrowRight className="ml-1.5 h-4 w-4" />
                   </>}
                 </Button>
               </div>
+            )}
 
-              <div className="mt-6 space-y-2">
+            <div className="mt-6 space-y-2">
+              {!isSignUp ? (
                 <p className="text-sm text-muted-foreground">
                   Need an agent account?{" "}
                   <button
@@ -505,173 +683,17 @@ export default function AuthPage() {
                     Create one →
                   </button>
                 </p>
-                <p className="text-xs text-muted-foreground/60">
-                  Just buying data? No account needed —{" "}
-                  <Link to="/buy" className="underline hover:text-foreground">go to homepage</Link>.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ── Sign Up ── */}
-          {isSignUp && (
-            <div className="animate-fade-up">
-              <div className="mb-7">
-                <span 
-                  className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
-                  style={parentAgent ? { color: brandColor, borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
-                >
-                  {accountType === "agent" ? <><BriefcaseBusiness className="h-3 w-3" /> Agent Registration</> : <><Users className="h-3 w-3" /> Customer Registration</>}
-                </span>
-                <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground">Create account</h2>
-                <p className="mt-1.5 text-sm text-muted-foreground">
-                  {accountType === "agent" 
-                    ? (parentAgent ? `Set prices, manage your store, and earn under ${storeName}.` : "Set prices, manage your store, and earn on every sale.") 
-                    : "Track your purchases, easily reorder, and manage your account."}
-                </p>
-              </div>
-
-              <div className="mb-6 flex rounded-[14px] bg-slate-100/80 p-1.5 shadow-inner dark:bg-slate-800/80">
-                <button
-                  type="button"
-                  onClick={() => setAccountType("customer")}
-                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "customer" ? "bg-white shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
-                  style={accountType === "customer" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
-                >
-                  I want to buy data
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setAccountType("agent")}
-                  className={`flex-1 rounded-[10px] py-2.5 text-xs font-extrabold transition-all duration-300 ${accountType === "agent" ? "bg-white shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"}`}
-                  style={accountType === "agent" && parentAgent ? { color: brandColor, backgroundColor: '#fff' } : {}}
-                >
-                  I want to resell
-                </button>
-              </div>
-
-
-
-              <div className="space-y-4">
-                  <>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground">Full name</label>
-                        <Input
-                          autoFocus placeholder="Kwame Mensah"
-                          value={suFullName} onChange={(e) => setSuFullName(e.target.value)}
-                          className={inputCls}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground">Username</label>
-                        <Input
-                          placeholder="kwame123"
-                          value={suUsername} onChange={(e) => setSuUsername(e.target.value)}
-                          className={inputCls}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground">Email address</label>
-                        <Input
-                          type="email" inputMode="email" placeholder="you@example.com"
-                          value={suEmail} onChange={(e) => setSuEmail(e.target.value)}
-                          className={inputCls}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-xs font-semibold text-foreground">Phone Number</label>
-                        <Input
-                          type="tel" inputMode="tel" placeholder="0551234567"
-                          value={suPhone} onChange={(e) => setSuPhone(e.target.value)}
-                          className={inputCls}
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground">Password</label>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"} placeholder="Create a strong password"
-                          value={suPassword} onChange={(e) => setSuPassword(e.target.value)}
-                          className={`${inputCls} pr-10`}
-                        />
-                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                          {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground">Confirm Password</label>
-                      <div className="relative">
-                        <Input
-                          type={showPassword ? "text" : "password"} placeholder="Confirm your password"
-                          value={suConfirmPassword} onChange={(e) => setSuConfirmPassword(e.target.value)}
-                          className={`${inputCls} pr-10`}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold text-foreground">Referral Code (Optional)</label>
-                      </div>
-                      <Input
-                        placeholder="e.g. OG-ABCD12"
-                        value={suReferralCode} onChange={(e) => setSuReferralCode(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && doSignUp()}
-                        className={inputCls}
-                      />
-                    </div>
-
-                    {/* Perks reminder */}
-                    {accountType === "agent" && (
-                      <div 
-                        className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2"
-                        style={parentAgent ? { borderColor: `${brandColor}33`, backgroundColor: `${brandColor}0D` } : {}}
-                      >
-                        <p className="text-xs font-semibold text-primary mb-1.5" style={parentAgent ? { color: brandColor } : {}}>
-                          {parentAgent ? `What you get under ${storeName}` : "What you get as an agent"}
-                        </p>
-                        <div className="space-y-1">
-                          {["Wholesale prices on all bundles", "Your own shareable store link", "Earn margins on every sale"].map((p) => (
-                            <div key={p} className="flex items-center gap-2">
-                              <CheckCircle className="h-3 w-3 shrink-0 text-primary" style={parentAgent ? { color: brandColor } : {}} />
-                              <span className="text-xs text-muted-foreground">{p}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </>
-
-                <Button 
-                  id="btn-signup-submit" 
-                  onClick={doSignUp} 
-                  disabled={busy} 
-                  className="h-12 w-full rounded-[14px] text-sm font-black text-white shadow-lg transition-all duration-300 hover:-translate-y-0.5"
-                  style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundImage: 'linear-gradient(to right, #7c3aed, #c026d3)', boxShadow: '0 10px 15px -3px rgba(124, 58, 237, 0.3)' }}
-                >
-                  {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <>
-                    Create account <ArrowRight className="ml-1.5 h-4 w-4" />
-                  </>}
-                </Button>
-              </div>
-
-              <div className="mt-6 space-y-2">
+              ) : (
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
                   <button type="button" onClick={() => switchTo("signin")} className="font-bold text-primary hover:text-primary/80">
                     Sign in →
                   </button>
                 </p>
-                <p className="text-xs text-muted-foreground/60">Regular buyers don't need accounts to purchase data.</p>
-              </div>
+              )}
+              <p className="text-xs text-muted-foreground/60">Regular buyers don't need accounts to purchase data.</p>
             </div>
-          )}
+          </div>
 
           <p className="mt-10 text-xs text-muted-foreground/40">
             By continuing you agree to our terms and privacy policy.

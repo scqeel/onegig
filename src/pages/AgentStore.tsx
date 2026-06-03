@@ -717,14 +717,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const getCardClass = () => {
     switch (theme) {
       case "glassmorphism":
-        return "bg-white/40 dark:bg-slate-900/30 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-lg text-slate-800 dark:text-slate-200";
+      case "minimalist":
+      default:
+        return "glass-card text-slate-800 dark:text-slate-100";
       case "cyberpunk":
         return "bg-zinc-950 border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)] text-cyan-400 font-mono";
       case "luxury":
         return "bg-gradient-to-br from-stone-900 to-stone-950 border border-amber-500/25 shadow-xl text-stone-100";
-      case "minimalist":
-      default:
-        return "bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 shadow-sm text-slate-800 dark:text-slate-100";
     }
   };
 

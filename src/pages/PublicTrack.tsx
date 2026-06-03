@@ -17,7 +17,7 @@ export default function PublicTrackPage() {
       />
 
       {/* Top nav */}
-      <nav className="border-b border-border/30 bg-background/70 backdrop-blur-xl">
+      <nav className="border-b border-border/40 glass">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-5 py-4 md:px-8">
           <Link
             to="/"
@@ -26,14 +26,14 @@ export default function PublicTrackPage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Link>
-
+ 
           <div className="flex items-center gap-2">
             <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary/15">
               <Wifi className="h-3.5 w-3.5 text-primary" />
             </div>
             <span className="text-sm font-black">OneGig</span>
           </div>
-
+ 
           <Link
             to="/buy"
             className="flex items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/5 hover:text-primary"
@@ -43,7 +43,7 @@ export default function PublicTrackPage() {
           </Link>
         </div>
       </nav>
-
+ 
       {/* Content */}
       <div className="mx-auto max-w-2xl px-5 py-12 md:px-8 md:py-16">
         {/* Hero */}
@@ -59,9 +59,9 @@ export default function PublicTrackPage() {
             Enter the phone number used when you bought your data bundle.
           </p>
         </div>
-
+ 
         {/* Card */}
-        <div className="overflow-hidden rounded-3xl border border-border/50 bg-card/80 shadow-float backdrop-blur-md">
+        <div className="overflow-hidden rounded-3xl glass-card">
           <div className="p-6 md:p-8">
             <TrackOrder />
           </div>

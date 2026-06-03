@@ -15,7 +15,7 @@ export default function PublicBuyPage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Nav ── */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+      <header className="sticky top-0 z-30 border-b border-border/40 glass">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 md:px-8">
           <Link to="/">
             <Logo size="sm" />
@@ -57,8 +57,8 @@ export default function PublicBuyPage() {
 
           {/* ── Main flow ── */}
           <div className="space-y-5">
-            <div className="overflow-hidden rounded-[2rem] border border-border/60 dark:border-slate-800/80 bg-card dark:bg-[#0b101d]/60 backdrop-blur-xl shadow-float dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-              <div className="border-b border-border/60 dark:border-slate-800/80 bg-secondary/30 dark:bg-[#141b30]/40 px-6 py-5 flex items-center justify-between">
+            <div className="overflow-hidden rounded-[2rem] glass-card">
+              <div className="border-b border-border/40 bg-secondary/20 dark:bg-slate-900/20 px-6 py-5 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-extrabold text-foreground dark:text-white flex items-center gap-1.5">
                     Select a bundle and pay
@@ -78,7 +78,7 @@ export default function PublicBuyPage() {
             </div>
 
             {/* Already paid strip */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 dark:border-slate-800 bg-card dark:bg-[#0b101d]/40 px-5 py-4 shadow-soft">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 glass-card">
               <span className="text-sm text-muted-foreground dark:text-slate-400">Already paid? Find your order here.</span>
               <Link
                 to="/track"
@@ -94,8 +94,8 @@ export default function PublicBuyPage() {
             <div className="sticky top-20 space-y-4">
 
               {/* Why us */}
-              <div className="overflow-hidden rounded-2xl border border-border/60 dark:border-slate-800 bg-card dark:bg-[#0b101d]/60 backdrop-blur-xl shadow-soft">
-                <div className="border-b border-border/60 dark:border-slate-800 bg-secondary/30 dark:bg-[#141b30]/30 px-4 py-3">
+              <div className="overflow-hidden rounded-2xl glass-card">
+                <div className="border-b border-border/45 bg-secondary/20 dark:bg-slate-900/20 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Why OneGig?</p>
                 </div>
                 <div className="space-y-4 p-4">
@@ -114,8 +114,8 @@ export default function PublicBuyPage() {
               </div>
 
               {/* Networks */}
-              <div className="overflow-hidden rounded-2xl border border-border/60 dark:border-slate-800 bg-card dark:bg-[#0b101d]/60 backdrop-blur-xl shadow-soft">
-                <div className="border-b border-border/60 dark:border-slate-800 bg-secondary/30 dark:bg-[#141b30]/30 px-4 py-3">
+              <div className="overflow-hidden rounded-2xl glass-card">
+                <div className="border-b border-border/45 bg-secondary/20 dark:bg-slate-900/20 px-4 py-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Networks supported</p>
                 </div>
                 <div className="space-y-2 p-4">
@@ -126,7 +126,7 @@ export default function PublicBuyPage() {
                   ].map((n) => (
                     <div
                       key={n.name}
-                      className="flex items-center gap-3 rounded-xl border border-border/40 dark:border-slate-800/60 bg-secondary/10 dark:bg-[#141b30]/10 px-3 py-2.5 hover:bg-secondary/20 dark:hover:bg-[#141b30]/20 transition-colors"
+                      className="flex items-center gap-3 rounded-xl border border-border/30 dark:border-slate-800/40 bg-secondary/10 dark:bg-slate-900/10 px-3 py-2.5 hover:bg-secondary/20 dark:hover:bg-slate-900/20 transition-colors"
                     >
                       <span className="text-xl">{n.emoji}</span>
                       <div>

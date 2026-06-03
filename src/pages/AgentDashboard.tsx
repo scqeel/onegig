@@ -97,6 +97,8 @@ export default function AgentDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { data: unreadCount } = useUnreadNotifications();
 
+  const [dismissedPrompt, setDismissedPrompt] = useState(false);
+
   const { data: agentProfile, isLoading } = useQuery({
     queryKey: ["my-agent-profile", user?.id],
     enabled: !!user?.id,
@@ -109,6 +111,12 @@ export default function AgentDashboard() {
       return data as any;
     },
   });
+
+  useEffect(() => {
+    if (agentProfile?.id) {
+      setDismissedPrompt(localStorage.getItem(`og_dismiss_setup_${agentProfile.id}`) === "true");
+    }
+  }, [agentProfile?.id]);
 
   const initial = agentProfile?.store_name?.[0]?.toUpperCase() ?? "A";
   const isSubAgent = !!agentProfile?.parent_agent_id;
@@ -143,9 +151,7 @@ export default function AgentDashboard() {
     );
   }
 
-  const [dismissedPrompt, setDismissedPrompt] = useState(() => {
-    return localStorage.getItem(`og_dismiss_setup_${agentProfile.id}`) === "true";
-  });
+
 
   const showSetupPrompt = 
     (!agentProfile.support_whatsapp || !agentProfile.store_tagline) && 

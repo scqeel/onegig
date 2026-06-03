@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     const redirectUrl = body.return_url || `${frontendOrigin}/track`;
 
     // Call theTeller checkout initiation API
-    const initiateRes = await fetch("https://api.theteller.net/v1.1/transaction/initiate", {
+    const initiateRes = await fetch("https://prod.theteller.net/v1.1/transaction/initiate", {
       method: "POST",
       headers: {
         "Authorization": `Basic ${authString}`,

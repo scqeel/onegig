@@ -618,7 +618,7 @@ async function verifyAndProcess(reference: string) {
   const authString = btoa(`${merchantId}:${apiKey}`);
 
   // Call theTeller status verify API
-  const verifyRes = await fetch(`https://api.theteller.net/v1.1/users/transactions/${encodeURIComponent(reference)}/status`, {
+  const verifyRes = await fetch(`https://prod.theteller.net/v1.1/users/transactions/${encodeURIComponent(reference)}/status`, {
     headers: {
       "Authorization": `Basic ${authString}`,
       "Merchant-Id": merchantId

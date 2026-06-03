@@ -241,7 +241,7 @@ Deno.serve(async (req) => {
     // Call theTeller Process transaction API
     let processRes: Response;
     try {
-      processRes = await fetch("https://api.theteller.net/v1.1/transaction/process", {
+      processRes = await fetch("https://prod.theteller.net/v1.1/transaction/process", {
         method: "POST",
         headers: {
           "Authorization": `Basic ${authString}`,

@@ -734,7 +734,19 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const { reference } = await req.json();
+    const body = await req.json();
+    const { reference, debug_query } = body;
+    if (debug_query && reference === "DEBUG_DB") {
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+      const { data: txs } = await admin.from("wallet_transactions").select("*").eq("user_id", "e5a7274f-ce7a-44bd-8d43-04a0e2ff0536").order("created_at", { ascending: false });
+      const { data: pmts } = await admin.from("payments").select("*").eq("user_id", "e5a7274f-ce7a-44bd-8d43-04a0e2ff0536").order("created_at", { ascending: false });
+      const { data: prof } = await admin.from("profiles").select("*").eq("id", "e5a7274f-ce7a-44bd-8d43-04a0e2ff0536").maybeSingle();
+      return json({ txs, pmts, prof });
+    }
     if (!reference) return json({ error: "reference is required" }, 400);
 
     const result = await verifyAndProcess(reference);

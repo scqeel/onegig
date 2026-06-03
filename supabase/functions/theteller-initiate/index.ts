@@ -149,7 +149,15 @@ Deno.serve(async (req) => {
         frontendOrigin = new URL(referer).origin;
       } catch (_) {}
     }
-    const redirectUrl = body.return_url || `${frontendOrigin}/track`;
+    let redirectUrl = body.return_url || `${frontendOrigin}/track`;
+    
+    // theTeller requires a valid, HTTPS redirect URL (no localhost/HTTP)
+    if (redirectUrl.includes("localhost") || redirectUrl.includes("127.0.0.1") || redirectUrl.startsWith("http://")) {
+      redirectUrl = redirectUrl.replace(/^http:\/\/localhost(:\d+)?/, "https://mtopup.shop");
+      if (redirectUrl.startsWith("http://")) {
+        redirectUrl = "https://" + redirectUrl.slice(7);
+      }
+    }
 
     // Call theTeller checkout initiation API
     const initiateRes = await fetch("https://checkout.theteller.net/initiate", {

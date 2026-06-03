@@ -707,13 +707,18 @@ async function verifyAndProcess(reference: string) {
     
     const depositAmount = Number(pLoad?.deposit_amount || payment.amount);
     
-    await admin.from("wallet_transactions").insert({
+    const { error: wErr } = await admin.from("wallet_transactions").insert({
       user_id: userId,
       type: "deposit",
       amount: depositAmount,
       status: "completed",
       description: `Wallet Deposit via theTeller (${reference})`,
     });
+
+    if (wErr) {
+      console.error("Wallet deposit insert failed:", wErr);
+      throw new Error("Wallet deposit insert failed: " + wErr.message);
+    }
 
     const { data: uProf } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
     if (uProf?.phone) {

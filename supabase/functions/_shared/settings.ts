@@ -30,6 +30,22 @@ export async function getTellerMerchantId(): Promise<string> {
 
 export async function getTellerApiKey(): Promise<string> {
   const envVal = Deno.env.get("THETELLER_API_KEY");
-  if (envVal) return envVal;
-  return await getAppSetting("theteller_api_key");
+  const rawKey = envVal || (await getAppSetting("theteller_api_key"));
+  if (!rawKey) return "";
+  
+  const trimmed = rawKey.trim();
+  if (trimmed.length === 32 && /^[a-f0-9]+$/i.test(trimmed)) {
+    return trimmed;
+  }
+  
+  try {
+    const decoded = atob(trimmed);
+    if (decoded.length === 32 && /^[a-f0-9]+$/i.test(decoded)) {
+      return decoded;
+    }
+  } catch (e) {
+    // Ignore and fallback
+  }
+  
+  return trimmed;
 }

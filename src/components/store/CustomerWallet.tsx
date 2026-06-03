@@ -17,9 +17,10 @@ interface CustomerWalletProps {
   userId: string | null;
   agentSlug?: string | null;
   onBalanceChange?: (newBalance: number) => void;
+  loadHistory?: () => void;
 }
 
-export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerWalletProps) {
+export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory }: CustomerWalletProps) {
   const [balance, setBalance] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isTopupOpen, setIsTopupOpen] = useState(false);

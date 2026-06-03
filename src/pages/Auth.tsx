@@ -84,6 +84,15 @@ export default function AuthPage() {
   const [suReferralCode, setSuReferralCode] = useState(searchParams.get("invite") || searchParams.get("ref") || "");
   const [showPassword, setShowPassword] = useState(false);
 
+  useEffect(() => {
+    if (parentAgent?.referral_code) {
+      const currentRef = localStorage.getItem("agent_ref") || refParam;
+      if (!suReferralCode || suReferralCode === refParam || suReferralCode === currentRef) {
+        setSuReferralCode(parentAgent.referral_code);
+      }
+    }
+  }, [parentAgent?.referral_code, refParam]);
+
   const [siTimer, setSiTimer] = useState(0);
   const [suTimer, setSuTimer] = useState(0);
 
@@ -178,11 +187,15 @@ export default function AuthPage() {
       const normalizedEmail = suEmail.trim().toLowerCase();
       const formattedPhone = formatPhone(suPhone);
       const parentRefCode = (parentAgent as any)?.referral_code;
+      let finalReferralCode = suReferralCode.trim();
+      if (parentAgent && (finalReferralCode === parentAgent.store_slug || finalReferralCode === refSlug)) {
+        finalReferralCode = parentRefCode || "";
+      }
       const options = { 
         data: { 
           full_name: suFullName.trim(), 
           username: suUsername.toLowerCase().trim(),
-          referred_by_code: suReferralCode.trim() || parentRefCode || null,
+          referred_by_code: finalReferralCode || parentRefCode || null,
           intent: accountType
         } 
       };

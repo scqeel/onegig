@@ -2090,45 +2090,9 @@ export function LeaderboardSection({ agentProfile }: { agentProfile: any }) {
   const { data: leaderboard, isLoading } = useQuery({
     queryKey: ["agent-leaderboard"],
     queryFn: async () => {
-      // 1. Fetch all active agent profiles
-      const { data: agents, error: agentErr } = await supabase
-        .from("agent_profiles")
-        .select("id, store_name, store_slug, user_id, created_at")
-        .eq("activation_paid", true);
-        
-      if (agentErr) throw agentErr;
-      
-      // 2. Fetch order counts and volume for completed (delivered) orders
-      const { data: orders, error: orderErr } = await supabase
-        .from("orders")
-        .select("agent_id, sell_price")
-        .eq("status", "delivered");
-        
-      if (orderErr) throw orderErr;
-      
-      // 3. Aggregate order stats by agent
-      const statsMap: Record<string, { count: number; volume: number }> = {};
-      (orders ?? []).forEach((o: any) => {
-        if (!o.agent_id) return;
-        const current = statsMap[o.agent_id] || { count: 0, volume: 0 };
-        current.count += 1;
-        current.volume += Number(o.sell_price || 0);
-        statsMap[o.agent_id] = current;
-      });
-      
-      // 4. Map stats to agent profiles and sort by volume
-      return (agents ?? [])
-        .map((a: any) => {
-          const stats = statsMap[a.id] || { count: 0, volume: 0 };
-          return {
-            id: a.id,
-            store_name: a.store_name,
-            store_slug: a.store_slug,
-            count: stats.count,
-            volume: stats.volume,
-          };
-        })
-        .sort((a, b) => b.volume - a.volume);
+      const { data, error } = await supabase.rpc("get_agent_leaderboard");
+      if (error) throw error;
+      return data;
     },
   });
 

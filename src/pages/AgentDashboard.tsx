@@ -2442,13 +2442,13 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
     // Draw background gradient
     const grad = ctx.createLinearGradient(0, 0, 0, 1920);
     if (template === "obsidian") {
-      grad.addColorStop(0, "#0b1329");
-      grad.addColorStop(0.5, "#1c2541");
-      grad.addColorStop(1, "#0d1b2a");
+      grad.addColorStop(0, "#080b11");
+      grad.addColorStop(0.5, "#0f172a");
+      grad.addColorStop(1, "#030712");
     } else if (template === "neon") {
-      grad.addColorStop(0, "#022c22");
-      grad.addColorStop(0.5, "#064e3b");
-      grad.addColorStop(1, "#022c22");
+      grad.addColorStop(0, "#011612");
+      grad.addColorStop(0.5, "#022c22");
+      grad.addColorStop(1, "#010f0c");
     } else if (template === "gold") {
       grad.addColorStop(0, "#1c1917");
       grad.addColorStop(0.5, "#0c0a09");
@@ -2461,34 +2461,77 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 1080, 1920);
 
+    // Theme style configurations
+    const textColor = template === "light" ? "#0f172a" : "#ffffff";
+    const subColor = template === "light" ? "#475569" : "#94a3b8";
+    const accentColor = template === "obsidian" ? "#f43f5e" : template === "neon" ? "#10b981" : template === "gold" ? "#eab308" : "#4f46e5";
+    const glassBg = template === "light" ? "rgba(255, 255, 255, 0.95)" : "rgba(15, 23, 42, 0.75)";
+    const glassBorder = template === "light" ? "rgba(148, 163, 184, 0.15)" : "rgba(255, 255, 255, 0.08)";
+
+    // Modern Background Glows (radial gradients)
+    if (template !== "light") {
+      // Top Right Glow
+      const glow1 = ctx.createRadialGradient(900, 300, 50, 900, 300, 600);
+      glow1.addColorStop(0, accentColor + "20"); // 12% opacity
+      glow1.addColorStop(1, "transparent");
+      ctx.fillStyle = glow1;
+      ctx.beginPath();
+      ctx.arc(900, 300, 600, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Bottom Left Glow
+      const glow2 = ctx.createRadialGradient(180, 1600, 50, 180, 1600, 600);
+      glow2.addColorStop(0, accentColor + "15"); // 8% opacity
+      glow2.addColorStop(1, "transparent");
+      ctx.fillStyle = glow2;
+      ctx.beginPath();
+      ctx.arc(180, 1600, 600, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     // Subtle decorative concentric circles
-    ctx.strokeStyle = template === "light" ? "rgba(79, 70, 229, 0.04)" : "rgba(255, 255, 255, 0.03)";
-    ctx.lineWidth = 6;
+    ctx.strokeStyle = template === "light" ? "rgba(79, 70, 229, 0.04)" : "rgba(255, 255, 255, 0.02)";
+    ctx.lineWidth = 4;
     for (let i = 0; i < 8; i++) {
       ctx.beginPath();
       ctx.arc(540, 960, 300 + i * 150, 0, Math.PI * 2);
       ctx.stroke();
     }
 
-    // Theme style configurations
-    const textColor = template === "light" ? "#0f172a" : "#ffffff";
-    const subColor = template === "light" ? "#475569" : "#94a3b8";
-    const accentColor = template === "obsidian" ? "#f43f5e" : template === "neon" ? "#10b981" : template === "gold" ? "#eab308" : "#4f46e5";
-    const glassBg = template === "light" ? "rgba(255, 255, 255, 0.9)" : "rgba(15, 23, 42, 0.65)";
-    const glassBorder = template === "light" ? "rgba(148, 163, 184, 0.2)" : "rgba(255, 255, 255, 0.1)";
+    // Top-Right Diagonal Promo Ribbon
+    ctx.save();
+    ctx.translate(1080 - 180, 180);
+    ctx.rotate(Math.PI / 4); // 45 degrees
+    
+    // Ribbon Background
+    ctx.fillStyle = accentColor;
+    ctx.fillRect(-300, -40, 600, 80);
+    
+    // Ribbon Text
+    ctx.fillStyle = (template === "obsidian" || template === "light") ? "#ffffff" : "#0f172a";
+    ctx.textAlign = "center";
+    ctx.font = "black 32px 'Outfit', 'Inter', system-ui, sans-serif";
+    ctx.fillText("SPECIAL DISCOUNT", 0, 12);
+    ctx.restore();
 
     // Draw header titles
     ctx.textAlign = "center";
     ctx.fillStyle = accentColor;
-    ctx.font = "bold 44px sans-serif";
+    ctx.font = "bold 44px 'Outfit', 'Inter', system-ui, sans-serif";
     ctx.fillText("OFFICIAL DATA RESELLER", 540, 180);
 
+    // Deep shadowed Store Name
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.4)";
+    ctx.shadowBlur = 20;
+    ctx.shadowOffsetY = 8;
     ctx.fillStyle = textColor;
-    ctx.font = "extrabold 90px sans-serif";
+    ctx.font = "black 94px 'Outfit', 'Inter', system-ui, sans-serif";
     ctx.fillText((agentProfile.store_name || "MY DATA STORE").toUpperCase(), 540, 290);
+    ctx.restore();
 
     ctx.fillStyle = subColor;
-    ctx.font = "italic 40px sans-serif";
+    ctx.font = "italic 40px 'Outfit', 'Inter', system-ui, sans-serif";
     ctx.fillText(tagline || "Fast & Affordable Data Bundles", 540, 360);
 
     // Draw price board glassmorphism card
@@ -2499,7 +2542,12 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
     const radius = 50;
 
     ctx.fillStyle = glassBg;
-    ctx.strokeStyle = glassBorder;
+    // Gradient card border
+    const borderGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+    borderGrad.addColorStop(0, "rgba(255, 255, 255, 0.2)");
+    borderGrad.addColorStop(0.5, "rgba(255, 255, 255, 0.05)");
+    borderGrad.addColorStop(1, accentColor + "33");
+    ctx.strokeStyle = borderGrad;
     ctx.lineWidth = 3;
 
     ctx.beginPath();
@@ -2516,54 +2564,96 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
     ctx.fill();
     ctx.stroke();
 
-    // Hot pricing card header
-    ctx.fillStyle = accentColor;
-    ctx.font = "extrabold 50px sans-serif";
-    ctx.fillText("TODAY'S SPECIAL RATES", 540, 550);
-    
-    ctx.strokeStyle = accentColor;
-    ctx.lineWidth = 5;
+    // Table header badge
+    ctx.fillStyle = template === "light" ? "rgba(79, 70, 229, 0.06)" : "rgba(255, 255, 255, 0.03)";
+    ctx.strokeStyle = accentColor + "30";
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(340, 580);
-    ctx.lineTo(740, 580);
+    ctx.roundRect(540 - 320, 500, 640, 80, 40);
+    ctx.fill();
     ctx.stroke();
 
+    ctx.fillStyle = accentColor;
+    ctx.font = "black 36px 'Outfit', 'Inter', system-ui, sans-serif";
+    ctx.fillText("TODAY'S COMPETITIVE RATES", 540, 552);
+
     // Draw featured list
-    const startY = 680;
+    const startY = 690;
     const rowGap = 160;
+
+    const getNetworkStyle = (netCode: string) => {
+      const code = (netCode || "").toLowerCase();
+      if (code.includes("mtn")) return { bg: "rgba(234, 179, 8, 0.15)", text: "#eab308", border: "rgba(234, 179, 8, 0.3)" };
+      if (code.includes("telecel") || code.includes("voda")) return { bg: "rgba(239, 68, 68, 0.15)", text: "#ef4444", border: "rgba(239, 68, 68, 0.3)" };
+      if (code.includes("airtel") || code.includes("tigo") || code.includes("at")) return { bg: "rgba(59, 130, 246, 0.15)", text: "#3b82f6", border: "rgba(59, 130, 246, 0.3)" };
+      return { bg: "rgba(124, 58, 237, 0.15)", text: "#7c3aed", border: "rgba(124, 58, 237, 0.3)" };
+    };
 
     featuredBundles.forEach((b: any, index: number) => {
       if (index >= 4) return;
       const y = startY + index * rowGap;
 
-      // Draw Row highlight card background
-      ctx.fillStyle = template === "light" ? "rgba(0, 0, 0, 0.02)" : "rgba(255, 255, 255, 0.02)";
+      // Row background highlight
+      ctx.fillStyle = template === "light" ? "rgba(0, 0, 0, 0.015)" : "rgba(255, 255, 255, 0.015)";
       ctx.beginPath();
-      ctx.roundRect(cardX + 40, y - 60, cardW - 80, 115, 20);
+      ctx.roundRect(cardX + 40, y - 60, cardW - 80, 120, 24);
       ctx.fill();
 
-      // Network Badge text
+      // Network Badge
       const logo = b.network?.logo_emoji || "📶";
-      ctx.textAlign = "left";
-      ctx.fillStyle = textColor;
-      ctx.font = "bold 44px sans-serif";
-      ctx.fillText(`${logo} ${b.network?.name || "Network"}`, cardX + 70, y + 15);
+      const netStyle = getNetworkStyle(b.network?.code);
+      ctx.fillStyle = netStyle.bg;
+      ctx.strokeStyle = netStyle.border;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.roundRect(cardX + 60, y - 40, 240, 80, 40);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.textAlign = "center";
+      ctx.fillStyle = template === "light" ? netStyle.text : "#ffffff";
+      ctx.font = "bold 32px 'Outfit', 'Inter', system-ui, sans-serif";
+      ctx.fillText(`${logo} ${b.network?.name || "Network"}`, cardX + 180, y + 12);
 
       // Bundle Size Label
-      ctx.fillStyle = subColor;
-      ctx.font = "500 40px sans-serif";
-      ctx.fillText(b.size_label, cardX + 420, y + 15);
+      ctx.textAlign = "left";
+      ctx.fillStyle = textColor;
+      ctx.font = "extrabold 42px 'Outfit', 'Inter', system-ui, sans-serif";
+      ctx.fillText(b.size_label, cardX + 330, y + 15);
 
-      // Sell Price
+      // Comparison crossed-out price
       ctx.textAlign = "right";
+      const mockRegularPrice = Math.ceil(b.sellPrice * 1.25);
+      ctx.fillStyle = "rgba(148, 163, 184, 0.55)";
+      ctx.font = "500 30px 'Outfit', 'Inter', system-ui, sans-serif";
+      const regularText = `GH₵ ${mockRegularPrice.toFixed(2)}`;
+      
+      const priceText = `GH₵ ${b.sellPrice.toFixed(2)}`;
+      ctx.font = "black 52px 'Outfit', 'Inter', system-ui, sans-serif";
+      const priceWidth = ctx.measureText(priceText).width;
+
+      ctx.fillStyle = "rgba(148, 163, 184, 0.55)";
+      ctx.font = "500 30px 'Outfit', 'Inter', system-ui, sans-serif";
+      ctx.fillText(regularText, cardX + cardW - 70 - priceWidth - 25, y + 10);
+      
+      // Draw red strike-through
+      const regularWidth = ctx.measureText(regularText).width;
+      ctx.strokeStyle = "rgba(239, 68, 68, 0.65)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(cardX + cardW - 70 - priceWidth - 25 - regularWidth, y);
+      ctx.lineTo(cardX + cardW - 70 - priceWidth - 25, y);
+      ctx.stroke();
+
+      // Reseller price
       ctx.fillStyle = accentColor;
-      ctx.font = "extrabold 52px sans-serif";
-      ctx.fillText(`GH₵ ${b.sellPrice.toFixed(2)}`, cardX + cardW - 70, y + 15);
+      ctx.font = "black 52px 'Outfit', 'Inter', system-ui, sans-serif";
+      ctx.fillText(priceText, cardX + cardW - 70, y + 15);
     });
 
-    // Draw QR code and "Scan to Buy" footer
+    // Draw QR code card footer
     ctx.fillStyle = glassBg;
-    ctx.strokeStyle = glassBorder;
+    ctx.strokeStyle = borderGrad;
     ctx.beginPath();
     ctx.moveTo(cardX + radius, 1440);
     ctx.lineTo(cardX + cardW - radius, 1440);
@@ -2581,16 +2671,26 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
     // Footer Text
     ctx.textAlign = "left";
     ctx.fillStyle = textColor;
-    ctx.font = "extrabold 48px sans-serif";
+    ctx.font = "extrabold 48px 'Outfit', 'Inter', system-ui, sans-serif";
     ctx.fillText("SCAN TO ORDER INSTANTLY", cardX + 60, 1540);
 
     ctx.fillStyle = subColor;
-    ctx.font = "500 36px sans-serif";
+    ctx.font = "500 36px 'Outfit', 'Inter', system-ui, sans-serif";
     ctx.fillText("Instant Delivery • No Signup Required", cardX + 60, 1610);
 
+    // Link URL Button
+    ctx.fillStyle = accentColor + "12";
+    ctx.strokeStyle = accentColor + "35";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.roundRect(cardX + 60, 1655, 450, 80, 20);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.textAlign = "center";
     ctx.fillStyle = accentColor;
-    ctx.font = "bold 38px monospace";
-    ctx.fillText(storeUrl.replace(/^https?:\/\//, ""), cardX + 60, 1720);
+    ctx.font = "bold 34px monospace";
+    ctx.fillText(storeUrl.replace(/^https?:\/\//, ""), cardX + 285, 1708);
 
     // Draw QR Code
     if (qrImage) {
@@ -2600,7 +2700,7 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
       ctx.fillRect(cardX + cardW - 320, 1485, 260, 260);
       ctx.fillStyle = textColor;
       ctx.textAlign = "center";
-      ctx.font = "bold 24px sans-serif";
+      ctx.font = "bold 24px 'Outfit', 'Inter', system-ui, sans-serif";
       ctx.fillText("Loading QR...", cardX + cardW - 190, 1620);
     }
   };

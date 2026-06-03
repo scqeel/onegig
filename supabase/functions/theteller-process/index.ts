@@ -239,6 +239,10 @@ Deno.serve(async (req) => {
 
     const authString = btoa(`${apiUser}:${apiKey}`);
 
+    let rSwitch = "MTN";
+    if (provider === "vod") rSwitch = "VDF";
+    else if (provider === "tgo") rSwitch = "TGO";
+
     // Call theTeller Process transaction API
     let processRes: Response;
     try {
@@ -247,17 +251,16 @@ Deno.serve(async (req) => {
         headers: {
           "Authorization": `Basic ${authString}`,
           "Content-Type": "application/json",
+          "Merchant-Id": merchantId
         },
         body: JSON.stringify({
           amount: Math.round(amount * 100).toString().padStart(12, "0"), // theTeller requires amount padded to 12 digits in minor units (e.g. "000000005000")
-          merchant_id: merchantId,
+          processing_code: "000200",
           transaction_id: reference,
           desc: `${body.purpose} payment`,
-          "r-switch": provider.toUpperCase(),
-          payment_details: {
-            number: body.momo_number.replace(/\D/g, ""),
-            network: provider,
-          },
+          merchant_id: merchantId,
+          subscriber_number: body.momo_number.replace(/\D/g, ""),
+          "r-switch": rSwitch
         }),
       });
     } catch (fetchErr: unknown) {

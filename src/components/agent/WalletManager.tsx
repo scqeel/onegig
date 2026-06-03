@@ -26,6 +26,15 @@ export const WalletManager = () => {
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [otpTimer, setOtpTimer] = useState(0);
+
+  useEffect(() => {
+    if (otpTimer <= 0) return;
+    const interval = setInterval(() => {
+      setOtpTimer(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpTimer]);
 
   const [historyTab, setHistoryTab] = useState<"transactions" | "orders">("transactions");
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -84,25 +93,7 @@ export const WalletManager = () => {
 
     setPhase("processing");
     try {
-      if (activeGateway === "theteller") {
-        const { data, error } = await supabase.functions.invoke("theteller-initiate", {
-          body: {
-            purpose: "wallet_deposit",
-            amount: Number(amount),
-            email: profile?.email || "guest@mtopup.shop",
-            return_url: window.location.origin + "/payment/callback",
-          }
-        });
 
-        if (error || !data?.ok) {
-          const rawErr = data?.error ?? error?.message ?? "Failed to initialize payment page";
-          setErrorMsg(typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr));
-          return setPhase("error");
-        }
-
-        window.location.href = data.authorization_url;
-        return;
-      }
 
       const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
@@ -121,8 +112,42 @@ export const WalletManager = () => {
       }
 
       setOrderRef(data.reference);
-      if (data.status === "send_otp") return setPhase("otp");
+      if (data.status === "send_otp") {
+        setOtpTimer(60);
+        return setPhase("otp");
+      }
       setPhase("polling");
+    } catch (e: any) {
+      setErrorMsg(e.message);
+      setPhase("error");
+    }
+  };
+
+  const resendDepositOtp = async () => {
+    if (otpTimer > 0) return;
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
+        body: {
+          purpose: "wallet_deposit",
+          amount: Number(amount),
+          momo_number: momoNumber,
+          momo_network: momoNetwork,
+          email: profile?.email || "guest@mtopup.shop",
+        }
+      });
+      if (error || data?.error) {
+        setErrorMsg(data?.error || error?.message || "Failed to resend OTP");
+        setPhase("error");
+        return;
+      }
+      setOrderRef(data.reference);
+      if (data.status === "send_otp") {
+        setOtpTimer(60);
+        setPhase("otp");
+      } else {
+        setPhase("polling");
+      }
     } catch (e: any) {
       setErrorMsg(e.message);
       setPhase("error");
@@ -394,13 +419,17 @@ export const WalletManager = () => {
                   >
                     Cancel
                   </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={initiateDeposit}
-                    className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline hover:text-blue-700 dark:hover:text-blue-300"
-                  >
-                    Try again
-                  </Button>
+                  {otpTimer > 0 ? (
+                    <span className="text-xs text-slate-500">Resend in {otpTimer}s</span>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      onClick={resendDepositOtp}
+                      className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline hover:text-blue-700 dark:hover:text-blue-300"
+                    >
+                      Resend OTP
+                    </Button>
+                  )}
                 </div>
                 
                 {/* Visible submit button to allow manual submission */}

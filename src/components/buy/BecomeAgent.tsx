@@ -30,6 +30,15 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [isSubmittingOtp, setIsSubmittingOtp] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+
+  useEffect(() => {
+    if (otpTimer <= 0) return;
+    const interval = setInterval(() => {
+      setOtpTimer(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpTimer]);
 
   const refSlug = localStorage.getItem("agent_ref");
   
@@ -55,36 +64,12 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
       return;
     }
     
-    if (activeGateway !== "theteller") {
-      if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
-        toast({ title: "Enter mobile money number", variant: "destructive" });
-        return;
-      }
+    if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
+      toast({ title: "Enter mobile money number", variant: "destructive" });
+      return;
     }
 
     setPhase("processing");
-    
-    if (activeGateway === "theteller") {
-      const { data, error } = await supabase.functions.invoke("theteller-initiate", {
-        body: {
-          purpose: "agent_activation",
-          email: profile?.email || "guest@mtopup.shop",
-          ref_slug: refSlug || undefined,
-          return_url: window.location.origin + "/payment/callback",
-        }
-      });
-      
-      if (error || !data?.ok) {
-        const errPayload = data?.error ?? error?.message ?? "Payment initialization failed";
-        const errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
-        setErrorMsg(errMsg);
-        setPhase("error");
-        return;
-      }
-      
-      window.location.href = data.authorization_url;
-      return;
-    }
 
     const { error, data } = await supabase.functions.invoke(`${activeGateway}-process`, {
       body: {
@@ -106,6 +91,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
 
     if (data?.status === "send_otp") {
       setOrderRef(data.reference);
+      setOtpTimer(60);
       setErrorMsg(data.message || "Please enter the OTP sent to your phone.");
       setPhase("otp");
       return;
@@ -113,6 +99,41 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
 
     setOrderRef(data.reference);
     setPhase("polling");
+  };
+
+  const resendActivationOtp = async () => {
+    if (otpTimer > 0) return;
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
+        body: {
+          purpose: "agent_activation",
+          momo_number: momoNumber,
+          momo_network: momoNetwork,
+          email: profile?.email || "guest@mtopup.shop",
+          ref_slug: refSlug || undefined,
+        },
+      });
+
+      if (error || data?.error) {
+        setErrorMsg(data?.error || error?.message || "Failed to resend OTP");
+        setPhase("error");
+        return;
+      }
+
+      if (data?.status === "send_otp") {
+        setOrderRef(data.reference);
+        setOtpTimer(60);
+        setPhase("otp");
+        toast({ title: "OTP Resent", description: "A new OTP has been sent." });
+      } else {
+        setOrderRef(data.reference);
+        setPhase("polling");
+      }
+    } catch (e: any) {
+      setErrorMsg(e.message || "Failed to resend OTP");
+      setPhase("error");
+    }
   };
 
   const submitOtp = async (overrideOtp?: string | React.MouseEvent) => {
@@ -330,6 +351,27 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
             className="text-center text-lg tracking-widest font-mono h-12"
             maxLength={6}
           />
+          <div className="flex items-center justify-between px-1 text-xs">
+            <Button
+              variant="ghost"
+              onClick={reset}
+              className="h-auto p-0 text-slate-500 hover:text-slate-700 font-bold"
+            >
+              Cancel
+            </Button>
+            {otpTimer > 0 ? (
+              <span className="text-slate-500 font-bold">Resend in {otpTimer}s</span>
+            ) : (
+              <Button
+                variant="ghost"
+                onClick={resendActivationOtp}
+                className="h-auto p-0 text-primary font-bold hover:underline"
+                style={parentAgent ? { color: brandColor } : {}}
+              >
+                Resend OTP
+              </Button>
+            )}
+          </div>
           <Button 
             id="btn-activation-otp-submit"
             onClick={() => submitOtp()} 

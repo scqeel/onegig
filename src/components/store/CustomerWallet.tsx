@@ -32,7 +32,16 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [otpTimer, setOtpTimer] = useState(0);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (otpTimer <= 0) return;
+    const interval = setInterval(() => {
+      setOtpTimer(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpTimer]);
   const { data: settings } = useSettings();
   const activeGateway = settings?.active_payment_gateway || "paystack";
   console.log("[CustomerWallet] activeGateway resolved to:", activeGateway);
@@ -85,25 +94,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
 
     setPhase("processing");
     try {
-      if (activeGateway === "theteller") {
-        const { data, error } = await supabase.functions.invoke("theteller-initiate", {
-          body: {
-            purpose: "wallet_deposit",
-            amount: numAmount,
-            email: "customer@mtopup.shop",
-            return_url: window.location.origin + "/payment/callback",
-          }
-        });
-        
-        if (error || !data?.ok) {
-          const rawErr = data?.error ?? error?.message ?? "Failed to initialize payment page";
-          setErrorMsg(typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr));
-          return setPhase("error");
-        }
-        
-        window.location.href = data.authorization_url;
-        return;
-      }
+
 
       const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
@@ -122,8 +113,42 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
       }
       
       setOrderRef(data.reference);
-      if (data.status === "send_otp") return setPhase("otp");
+      if (data.status === "send_otp") {
+        setOtpTimer(60);
+        return setPhase("otp");
+      }
       setPhase("polling");
+    } catch (e: any) {
+      setErrorMsg(e.message);
+      setPhase("error");
+    }
+  };
+
+  const resendDepositOtp = async () => {
+    if (otpTimer > 0) return;
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
+        body: {
+          purpose: "wallet_deposit",
+          amount: Number(amount),
+          momo_number: momoNumber,
+          momo_network: momoNetwork,
+          email: "customer@mtopup.shop",
+        }
+      });
+      if (error || data?.error) {
+        setErrorMsg(data?.error || error?.message || "Failed to resend OTP");
+        setPhase("error");
+        return;
+      }
+      setOrderRef(data.reference);
+      if (data.status === "send_otp") {
+        setOtpTimer(60);
+        setPhase("otp");
+      } else {
+        setPhase("polling");
+      }
     } catch (e: any) {
       setErrorMsg(e.message);
       setPhase("error");
@@ -293,13 +318,17 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
                   >
                     Cancel
                   </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={initiateDeposit}
-                    className="h-auto p-0 text-xs text-emerald-500 font-bold hover:text-emerald-400"
-                  >
-                    Try again
-                  </Button>
+                  {otpTimer > 0 ? (
+                    <span className="text-xs text-slate-500">Resend in {otpTimer}s</span>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      onClick={resendDepositOtp}
+                      className="h-auto p-0 text-xs text-emerald-500 font-bold hover:text-emerald-400"
+                    >
+                      Resend OTP
+                    </Button>
+                  )}
                 </div>
                 
                 <div className="mt-6">

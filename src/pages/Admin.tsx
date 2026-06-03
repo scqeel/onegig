@@ -606,9 +606,10 @@ function UsersSection() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const [profilesRes, rolesRes] = await Promise.all([
+      const [profilesRes, rolesRes, agentProfilesRes] = await Promise.all([
         supabase.from("profiles").select("id, full_name, username, email, phone").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.from("agent_profiles").select("id, user_id, store_name, store_slug, activation_paid"),
       ]);
 
       const rolesMap = new Map<string, string[]>();
@@ -617,9 +618,15 @@ function UsersSection() {
         rolesMap.set(r.user_id, [...prev, r.role]);
       });
 
+      const agentProfileMap = new Map<string, any>();
+      (agentProfilesRes.data ?? []).forEach((ap: any) => {
+        agentProfileMap.set(ap.user_id, ap);
+      });
+
       return (profilesRes.data ?? []).map((p: any) => ({
         ...p,
         roles: rolesMap.get(p.id) ?? ["user"],
+        agentProfile: agentProfileMap.get(p.id) ?? null,
       }));
     },
   });
@@ -732,12 +739,23 @@ function UsersSection() {
                     {u.email && <span>{u.email}</span>}
                     {u.phone && <><span className="hidden sm:inline opacity-40">·</span><span>{u.phone}</span></>}
                   </div>
-                  <div className="mt-1.5 flex gap-1">
+                  <div className="mt-1.5 flex flex-wrap gap-1">
                     {u.roles.map((r: string) => (
                       <span key={r} className={cn("rounded-md border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider", roleStyle[r] ?? roleStyle.user)}>
                         {r}
                       </span>
                     ))}
+                    {u.roles.includes("agent") && (
+                      u.agentProfile?.activation_paid ? (
+                        <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                          Active Store
+                        </span>
+                      ) : (
+                        <span className="rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                          Store Inactive
+                        </span>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
@@ -759,6 +777,18 @@ function UsersSection() {
                     {busyId === u.id
                       ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
                       : <><UserCog className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Agent</>}
+                  </Button>
+                )}
+                {u.roles.includes("agent") && !u.agentProfile?.activation_paid && (
+                  <Button
+                    variant="outline" size="sm"
+                    className="h-9 md:h-8 rounded-xl border-emerald-500/30 bg-background/50 text-xs font-semibold text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
+                    disabled={busyId === u.id}
+                    onClick={() => makeAgent(u.id)}
+                  >
+                    {busyId === u.id
+                      ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
+                      : <><CheckCircle2 className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Verify Account</>}
                   </Button>
                 )}
                 {!u.roles.includes("admin") && (

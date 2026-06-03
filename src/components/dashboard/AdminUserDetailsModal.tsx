@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, ArrowUpRight, ArrowDownLeft, Clock, History, KeyRound, Wallet, Ban } from "lucide-react";
+import { Loader2, ArrowUpRight, ArrowDownLeft, Clock, History, KeyRound, Wallet, Ban, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function AdminUserDetailsModal({ 
@@ -134,7 +134,7 @@ export function AdminUserDetailsModal({
               <DialogTitle className="text-xl font-black">{user.full_name || user.username || "Anonymous"}</DialogTitle>
               <DialogDescription className="mt-1 font-mono text-xs text-muted-foreground">{user.id}</DialogDescription>
             </div>
-            <div className="flex gap-1 flex-wrap justify-end">
+            <div className="flex gap-1 flex-wrap justify-end items-center">
               {user.roles?.map((r: string) => (
                 <span key={r} className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider", 
                   r === 'admin' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 
@@ -144,6 +144,17 @@ export function AdminUserDetailsModal({
                   {r}
                 </span>
               ))}
+              {user.roles?.includes("agent") && (
+                user.agentProfile?.activation_paid ? (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    Active Store
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/10 text-rose-500 border border-rose-500/20 animate-pulse">
+                    Store Inactive
+                  </span>
+                )
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm text-muted-foreground">
@@ -161,6 +172,32 @@ export function AdminUserDetailsModal({
         <div className="max-h-[60vh] overflow-y-auto p-6 scrollbar-none">
           {tab === "overview" && (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              {user.roles?.includes("agent") && !user.agentProfile?.activation_paid && (
+                <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">⚡ Store Activation Pending</p>
+                    <p className="text-xs text-muted-foreground">This agent's store is currently inactive and requires verification/activation before it can go live.</p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    onClick={async () => {
+                      try {
+                        const { error } = await supabase.functions.invoke("admin-convert-agent", { body: { user_id: user.id } });
+                        if (error) throw error;
+                        toast({ title: "Account verified and store activated successfully!" });
+                        qc.invalidateQueries({ queryKey: ["admin-users"] });
+                        onClose();
+                      } catch (err: any) {
+                        toast({ title: "Verification failed", description: err.message, variant: "destructive" });
+                      }
+                    }} 
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shrink-0"
+                  >
+                    Verify & Activate
+                  </Button>
+                </div>
+              )}
+
               <div className="flex items-center justify-between p-5 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10">
                 <div className="flex items-center gap-4">
                   <div className="h-12 w-12 rounded-full bg-primary/20 flex items-center justify-center text-primary">

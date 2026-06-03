@@ -31,6 +31,7 @@ import {
   Trophy,
   Award,
   Zap,
+  X,
   Activity,
   Eye,
   ShoppingCart,
@@ -141,6 +142,15 @@ export default function AgentDashboard() {
       </div>
     );
   }
+
+  const [dismissedPrompt, setDismissedPrompt] = useState(() => {
+    return localStorage.getItem(`og_dismiss_setup_${agentProfile.id}`) === "true";
+  });
+
+  const showSetupPrompt = 
+    (!agentProfile.support_whatsapp || !agentProfile.store_tagline) && 
+    !dismissedPrompt && 
+    tab !== "settings";
 
   return (
     <div className="min-h-dvh bg-background">
@@ -292,7 +302,41 @@ export default function AgentDashboard() {
           </aside>
 
           {/* ── Main content ── */}
-          <main className="min-w-0 w-full">
+          <main className="min-w-0 w-full animate-in fade-in duration-300">
+            {showSetupPrompt && (
+              <div className="mb-6 p-5 rounded-[2rem] glass-card border-amber-500/25 bg-amber-500/5 flex items-start justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex gap-4">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-inner">
+                    <Zap className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-amber-600 dark:text-amber-400">⚡ Complete your store setup!</p>
+                    <p className="text-xs leading-relaxed text-muted-foreground">
+                      Customize your store tagline, add a WhatsApp support contact, and set up your wholesale bundle prices under Settings to start selling successfully.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setTab("settings")}
+                      className="mt-2 text-xs font-bold text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+                    >
+                      Configure store settings →
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.setItem(`og_dismiss_setup_${agentProfile.id}`, "true");
+                    setDismissedPrompt(true);
+                  }}
+                  className="rounded-xl p-1.5 text-muted-foreground/40 hover:bg-secondary/80 hover:text-foreground transition-colors shrink-0"
+                  aria-label="Dismiss prompt"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            
             {tab === "buy"          && <BuySection agentProfile={agentProfile} />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
             {tab === "marketing"    && <MarketingKitSection agentProfile={agentProfile} />}

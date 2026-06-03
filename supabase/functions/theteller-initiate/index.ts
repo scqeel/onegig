@@ -169,9 +169,19 @@ Deno.serve(async (req) => {
     });
 
     const initiateData = await initiateRes.json();
-    if (!initiateRes.ok || initiateData?.code !== "200") {
+    if (!initiateRes.ok || Number(initiateData?.code) !== 200) {
       console.error("theTeller Redirect Initiate Failed:", initiateData);
-      return json({ error: initiateData?.reason ?? "Failed to initiate redirect checkout" }, 200);
+      let errMsg = "Failed to initiate redirect checkout";
+      if (initiateData?.reason) {
+        if (typeof initiateData.reason === "object") {
+          errMsg = Object.entries(initiateData.reason)
+            .map(([key, val]) => `${key}: ${val}`)
+            .join(", ");
+        } else {
+          errMsg = String(initiateData.reason);
+        }
+      }
+      return json({ error: errMsg }, 200);
     }
 
     // Insert initialized payment record

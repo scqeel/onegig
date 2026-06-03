@@ -95,7 +95,8 @@ export const WalletManager = () => {
         });
 
         if (error || !data?.ok) {
-          setErrorMsg(data?.error || error?.message || "Failed to initialize payment page");
+          const rawErr = data?.error ?? error?.message ?? "Failed to initialize payment page";
+          setErrorMsg(typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr));
           return setPhase("error");
         }
 
@@ -114,7 +115,8 @@ export const WalletManager = () => {
       });
 
       if (error || data?.error) {
-        setErrorMsg(data?.error || "Deposit failed");
+        const rawErr = data?.error ?? error?.message ?? "Deposit failed";
+        setErrorMsg(typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr));
         return setPhase("error");
       }
 

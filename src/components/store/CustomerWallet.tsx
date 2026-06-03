@@ -96,7 +96,8 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
         });
         
         if (error || !data?.ok) {
-          setErrorMsg(data?.error || error?.message || "Failed to initialize payment page");
+          const rawErr = data?.error ?? error?.message ?? "Failed to initialize payment page";
+          setErrorMsg(typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr));
           return setPhase("error");
         }
         
@@ -115,7 +116,8 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
       });
       
       if (error || data?.error) {
-        setErrorMsg(data?.error || "Top-up failed");
+        const rawErr = data?.error ?? error?.message ?? "Top-up failed";
+        setErrorMsg(typeof rawErr === "object" ? JSON.stringify(rawErr) : String(rawErr));
         return setPhase("error");
       }
       

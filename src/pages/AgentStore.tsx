@@ -98,7 +98,9 @@ function StorefrontNotificationsModal({ open, onOpenChange }: { open: boolean, o
     try {
       const stored = localStorage.getItem('og_store_dismissed_notifications');
       if (stored) setDismissedIds(JSON.parse(stored));
-    } catch(e) {}
+    } catch (e) {
+      console.warn("Failed to load store dismissed notifications", e);
+    }
   }, []);
 
   useEffect(() => {

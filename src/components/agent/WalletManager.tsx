@@ -8,10 +8,13 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Wallet, Plus, ArrowUpRight, ArrowDownLeft, Clock, RefreshCcw, CheckCircle2, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { useSettings } from "@/hooks/useSettings";
 
 export const WalletManager = () => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { data: settings } = useSettings();
+  const activeGateway = settings?.active_payment_gateway || "paystack";
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [depositOpen, setDepositOpen] = useState(false);
@@ -67,7 +70,7 @@ export const WalletManager = () => {
 
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           purpose: "wallet_deposit",
           amount: Number(amount),
@@ -97,7 +100,7 @@ export const WalletManager = () => {
     
     setPhase("processing");
     try {
-      const { data, error } = await supabase.functions.invoke("paystack-process", {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: { action: "submit_otp", otp: finalOtp, reference: orderRef, purpose: "wallet_deposit", momo_number: "0", momo_network: "MTN" },
       });
       if (error || data?.error) {
@@ -124,7 +127,7 @@ export const WalletManager = () => {
         setErrorMsg("Timed out");
         return clearInterval(interval);
       }
-      const { data } = await supabase.functions.invoke("paystack-verify", { body: { reference: orderRef } });
+      const { data } = await supabase.functions.invoke(`${activeGateway}-verify`, { body: { reference: orderRef } });
       if (data?.ok) {
         clearInterval(interval);
         setPhase("success");

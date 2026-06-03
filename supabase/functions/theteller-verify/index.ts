@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getPaystackSecretKey } from "../_shared/settings.ts";
 import { sendWebPushNotification } from "../_shared/push.ts";
 import { sendSMS } from "../_shared/sms.ts";
+import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,7 +14,7 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-// Removed local getPaystackSecret
+// Removed local getTellerMerchantId and getTellerApiKey helper
 
 function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
@@ -120,7 +120,6 @@ async function deliverData(
 async function activateAgent(admin: ReturnType<typeof createClient>, userId: string, refSlug?: string | null) {
   console.log(`Activating agent with userId: ${userId}`);
 
-  // Resolve parent agent ID (using refSlug if present, falling back to referred_by in profiles)
   let parentAgentId = null;
   if (refSlug) {
     const { data: parentAgent } = await admin
@@ -152,7 +151,6 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
     }
   }
 
-  // 1. Check if they already have an agent profile record
   const { data: existingAgent, error: checkErr } = await admin
     .from("agent_profiles")
     .select("id, activation_paid, store_slug, store_name")
@@ -166,17 +164,11 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
   let finalAgentId = existingAgent?.id || null;
 
   if (existingAgent) {
-    console.log(`User already has an agent profile (id: ${existingAgent.id}, paid: ${existingAgent.activation_paid})`);
-    
     if (existingAgent.activation_paid) {
-      // Already activated! Ensure they have the role and return.
-      console.log("Agent profile already marked as active. Ensuring role...");
       await admin.from("user_roles").upsert({ user_id: userId, role: "agent" }, { onConflict: "user_id,role" });
       return existingAgent.id;
     }
 
-    // Update existing inactive profile to active
-    console.log(`Updating existing agent profile to paid... Parent: ${parentAgentId}`);
     const { data: updatedAgent, error: updateErr } = await admin
       .from("agent_profiles")
       .update({
@@ -188,14 +180,9 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       .select("id")
       .single();
 
-    if (updateErr) {
-      console.error("Error updating existing agent profile:", updateErr);
-      throw updateErr;
-    }
+    if (updateErr) throw updateErr;
     finalAgentId = updatedAgent?.id;
   } else {
-    // Create a new agent profile
-    console.log("No existing agent profile found. Creating a new one...");
     const { data: profile } = await admin
       .from("profiles")
       .select("full_name, username")
@@ -221,7 +208,6 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       if (n > 50) break;
     }
 
-    console.log(`Inserting new agent profile with slug: ${slug}, parent: ${parentAgentId}`);
     const { data: newAgent, error: insertErr } = await admin
       .from("agent_profiles")
       .insert({
@@ -235,25 +221,14 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       .select("id")
       .single();
 
-    if (insertErr) {
-      console.error("Error inserting new agent profile:", insertErr);
-      throw insertErr;
-    }
+    if (insertErr) throw insertErr;
     finalAgentId = newAgent?.id;
   }
 
-  // 2. Ensure they have the agent user role
-  console.log("Upserting agent role in user_roles...");
-  const { error: roleErr } = await admin
+  await admin
     .from("user_roles")
     .upsert({ user_id: userId, role: "agent" }, { onConflict: "user_id,role" });
-  if (roleErr) {
-    console.error("Error upserting user role:", roleErr);
-    throw roleErr;
-  }
 
-  // 3. Seed default agent bundle prices (base + 1 cedi markup, or parent's sell price + 1)
-  console.log("Seeding default agent bundle prices...");
   const { data: bundles } = await admin.from("bundles").select("id, base_price").eq("active", true);
   if (bundles?.length && finalAgentId) {
     const rows = await Promise.all(bundles.map(async (b: any) => {
@@ -275,17 +250,9 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
       };
     }));
     
-    const { error: priceErr } = await admin
-      .from("agent_bundle_prices")
-      .upsert(rows, { onConflict: "agent_id,bundle_id" });
-    if (priceErr) {
-      console.error("Error seeding bundle prices:", priceErr);
-    } else {
-      console.log("Successfully seeded bundle prices!");
-    }
+    await admin.from("agent_bundle_prices").upsert(rows, { onConflict: "agent_id,bundle_id" });
   }
 
-  console.log("Activation completed successfully!");
   return finalAgentId;
 }
 
@@ -325,13 +292,11 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
   let grandparentAgentProfit = 0;
   let source: "direct" | "agent_store" = "direct";
 
-  // Coupon settlement resolution
   const couponCode = payload.coupon_code || null;
   const couponDiscount = Number(payload.coupon_discount || 0);
   let isGlobalCoupon = true;
 
   if (couponCode) {
-    // 1. Fetch coupon details to verify store-specific vs global
     const { data: couponToIncrement } = await admin
       .from("coupons")
       .select("id, current_uses, agent_id")
@@ -339,7 +304,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       .maybeSingle();
 
     if (couponToIncrement) {
-      // 2. Increment coupon uses in database
       await admin
         .from("coupons")
         .update({ current_uses: (couponToIncrement.current_uses || 0) + 1 })
@@ -374,7 +338,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
           
           let parentSellPrice = Number(bundle.base_price);
           if (parentAgentId) {
-            // Check for custom wholesale override first
             const { data: override } = await admin
               .from("sub_agent_wholesale_overrides")
               .select("wholesale_price")
@@ -419,10 +382,8 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
             grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
           }
 
-          // Apply Coupon discounts to agent profits and sell prices
           if (couponDiscount > 0) {
             if (!isGlobalCoupon) {
-              // Sponsored by the store agent - deduct from their margin
               agentProfit = Math.max(0, agentProfit - couponDiscount);
             }
             sellPrice = Math.max(0, sellPrice - couponDiscount);
@@ -431,7 +392,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       }
     }
   } else {
-    // Direct purchase discount adjustment
     if (couponDiscount > 0) {
       sellPrice = Math.max(0, sellPrice - couponDiscount);
     }
@@ -477,7 +437,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     throw new Error(oErr?.message ?? "Order create failed");
   }
 
-  // Send Processing SMS
   if (customerPhone) {
     const isSelf = customerPhone === recipient;
     const waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
@@ -485,7 +444,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
       : `Your OneGig order of ${bundle.size_label} for ${recipient} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
     
-    // Fire and forget
     sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
   }
 
@@ -591,9 +549,8 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       }
     }
 
-    // 🎮 Loyalty Rewards Points settle
     if (customerUserId && agentId) {
-      const pointsToCredit = Math.floor(sellPrice * 10); // 10 points per GHS 1.00 spent
+      const pointsToCredit = Math.floor(sellPrice * 10);
       const pointsToDeduct = payload.points_redeemed ? Math.round(Number(payload.points_redeemed) * 10) : 0;
       const netPointsChange = pointsToCredit - pointsToDeduct;
 
@@ -614,11 +571,8 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
           agent_id: agentId,
           points_balance: newPoints
         }, { onConflict: "user_id,agent_id" });
-
-      console.log(`Processed loyalty points: credited ${pointsToCredit}, deducted ${pointsToDeduct}. New balance: ${newPoints}`);
     }
 
-    // 🔄 Momo Subscription (Recurring Delivery) insertion
     if (payload.subscribe && customerUserId && agentId) {
       const freq = payload.frequency === "weekly" ? "weekly" : "monthly";
       const days = freq === "weekly" ? 7 : 30;
@@ -635,8 +589,6 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
           status: "active",
           next_billing_at: nextBillingDate
         });
-
-      console.log(`Created new active recurring Momo subscription for user ${customerUserId}`);
     }
 
     if (customerUserId) {
@@ -657,197 +609,117 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
 async function verifyAndProcess(reference: string) {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const paystackSecret = await getPaystackSecretKey();
-  if (!paystackSecret) throw new Error("Missing Paystack secret");
+  const merchantId = await dbGetTellerMerchantId();
+  const apiKey = await dbGetTellerApiKey();
+  if (!merchantId || !apiKey) throw new Error("Missing theTeller configurations");
 
   const admin = createClient(supabaseUrl, serviceKey);
 
-  const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-    headers: { Authorization: `Bearer ${paystackSecret}` },
+  const authString = btoa(`${merchantId}:${apiKey}`);
+
+  // Call theTeller status verify API
+  const verifyRes = await fetch(`https://api.theteller.net/v1.1/users/transactions/${encodeURIComponent(reference)}/status`, {
+    headers: {
+      "Authorization": `Basic ${authString}`,
+      "Merchant-Id": merchantId
+    },
   });
 
   const verifyData = await verifyRes.json();
-  if (!verifyRes.ok || !verifyData?.status) {
-    throw new Error(verifyData?.message ?? "Unable to verify payment");
+  if (!verifyRes.ok) {
+    throw new Error(verifyData?.reason || "Unable to verify payment via theTeller");
   }
 
-  const trx = verifyData.data;
+  const isSuccess = verifyData.code === "000";
+  const isPending = verifyData.code === "111" || verifyData.code === "100" || verifyData.status === "pending";
 
-  let metadata = trx?.metadata ?? {};
-  if (typeof metadata === "string") {
-    try {
-      metadata = JSON.parse(metadata);
-    } catch (e) {
-      metadata = {};
-    }
-  }
-
-  const purpose = 
-    metadata?.purpose === "agent_activation" ? "agent_activation" :
-    metadata?.purpose === "wallet_deposit" ? "wallet_deposit" :
-    "order";
-
-  const fallbackPayload = purpose === "order"
-    ? {
-        bundle_id: metadata?.bundle_id || null,
-        recipient_phone: metadata?.recipient_phone || null,
-        agent_slug: metadata?.agent_slug || null,
-        source: metadata?.source || "direct",
-        coupon_code: metadata?.coupon_code || null,
-        coupon_discount: metadata?.coupon_discount || null,
-      }
-    : { user_id: metadata?.user_id || null };
-
-  const { data: paymentRow, error: paymentReadErr } = await admin
+  const { data: paymentRow } = await admin
     .from("payments")
     .select("*")
     .eq("reference", reference)
     .maybeSingle();
 
-  const paymentsTableAvailable = !paymentReadErr || !/payments/i.test(paymentReadErr.message ?? "");
-
-  // If payments table is unavailable (migration not yet applied), continue with stateless verification
-  // so checkout and fulfillment still work.
-  if (!paymentsTableAvailable) {
-    if (["pay_offline", "pending", "send_otp", "ongoing"].includes(trx?.status)) {
-      return { ok: false, status: "pending", reason: "Payment is pending authorization" };
-    }
-    if (trx?.status !== "success") {
-      return { ok: false, status: trx?.status ?? "failed" };
-    }
-
-    let orderId: string | null = null;
-
-    if (purpose === "order") {
-      orderId = await fulfillOrder(admin, {
-        reference,
-        user_id: metadata?.user_id || null,
-        payload: fallbackPayload,
-      });
-    }
-
-    if (purpose === "agent_activation") {
-      const userId = metadata?.user_id;
-      if (!userId) throw new Error("Missing user for activation payment");
-      await activateAgent(admin, String(userId), metadata?.ref_slug || null);
-    }
-
-    if (purpose === "wallet_deposit") {
-      const userId = metadata?.user_id;
-      if (!userId) throw new Error("Missing user for deposit");
-      
-      const paidAmount = Number(trx?.amount ?? 0) / 100;
-      const depositAmount = Number(metadata?.deposit_amount ?? (paidAmount / 1.03).toFixed(2));
-      
-      const { error: wErr } = await admin.from("wallet_transactions").insert({
-        user_id: userId,
-        type: "deposit",
-        amount: depositAmount,
-        status: "completed",
-        description: `Wallet Deposit via Paystack (${reference})`,
-      });
-      if (wErr) throw new Error("Wallet insert failed: " + wErr.message);
-
-      const { data: uProf } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
-      if (uProf?.phone) {
-        sendSMS({ to: uProf.phone, message: `Your OneGig wallet deposit of GHS ${depositAmount} was successful!` }).catch((err) => console.error("SMS Error:", err));
-      }
-    }
-
-    return { ok: true, purpose, order_id: orderId, payments_logged: false };
-  }
+  if (!paymentRow) throw new Error("Payment record unavailable");
 
   let payment = paymentRow;
-
-  if (!payment) {
-    const payload = fallbackPayload;
-
-    const amountFromPaystack = Number(trx?.amount ?? 0) / 100;
-    const { data: inserted } = await admin
-      .from("payments")
-      .insert({
-        reference,
-        user_id: metadata?.user_id || null,
-        purpose,
-        amount: amountFromPaystack,
-        currency: String(trx?.currency || "GHS"),
-        status: "initialized",
-        payload,
-      })
-      .select("*")
-      .maybeSingle();
-    payment = inserted ?? null;
-  }
-
-  if (!payment) throw new Error("Payment record unavailable");
 
   if (payment.status === "paid") {
     return { ok: true, already_processed: true, purpose: payment.purpose, order_id: payment.order_id ?? null };
   }
 
-  if (["pay_offline", "pending", "send_otp", "ongoing"].includes(trx?.status)) {
+  if (isPending) {
     return { ok: false, status: "pending", reason: "Payment is pending authorization" };
   }
 
-  if (trx?.status !== "success") {
-    const errorMsg = trx?.gateway_response || trx?.message || trx?.status || "Payment failed";
+  if (!isSuccess) {
+    const errorMsg = verifyData.reason || "Payment failed";
     let pLoad = payment.payload;
     if (typeof pLoad === "string") {
       try { pLoad = JSON.parse(pLoad); } catch(e) { pLoad = {}; }
     }
-    await admin.from("payments").update({ 
-      status: "failed",
-      payload: { ...(pLoad || {}), error_message: errorMsg }
-    }).eq("id", payment.id);
-    return { ok: false, status: trx?.status ?? "failed" };
+    await admin
+      .from("payments")
+      .update({
+        status: "failed",
+        payload: {
+          ...pLoad,
+          error_message: errorMsg,
+          gateway_response: verifyData
+        }
+      })
+      .eq("id", payment.id);
+
+    return { ok: false, status: "failed", reason: errorMsg };
   }
 
-  const paidAmount = Number(trx.amount ?? 0) / 100;
-  if (Math.round(paidAmount * 100) < Math.round(Number(payment.amount) * 100)) {
-    throw new Error("Paid amount is less than expected");
+  // Mark payment as paid
+  let pLoad = payment.payload;
+  if (typeof pLoad === "string") {
+    try { pLoad = JSON.parse(pLoad); } catch(e) { pLoad = {}; }
   }
+  await admin
+    .from("payments")
+    .update({
+      status: "paid",
+      payload: {
+        ...pLoad,
+        gateway_response: verifyData
+      }
+    })
+    .eq("id", payment.id);
 
   let orderId: string | null = null;
 
   if (payment.purpose === "order") {
     orderId = await fulfillOrder(admin, payment);
+    await admin.from("payments").update({ order_id: orderId }).eq("id", payment.id);
   }
 
   if (payment.purpose === "agent_activation") {
     const userId = payment.user_id;
-    if (!userId) throw new Error("Missing user for activation payment");
-    let payloadData = payment.payload;
-    if (typeof payloadData === "string") {
-      try { payloadData = JSON.parse(payloadData); } catch(e) { payloadData = {}; }
-    }
-    await activateAgent(admin, userId, (payloadData as any)?.ref_slug || metadata?.ref_slug || null);
+    if (!userId) throw new Error("Missing user ID for activation payment");
+    await activateAgent(admin, String(userId), pLoad?.ref_slug || null);
   }
 
   if (payment.purpose === "wallet_deposit") {
     const userId = payment.user_id;
-    if (!userId) throw new Error("Missing user for deposit");
+    if (!userId) throw new Error("Missing user ID for deposit");
     
-    let payloadData = payment.payload;
-    if (typeof payloadData === "string") {
-      try { payloadData = JSON.parse(payloadData); } catch(e) { payloadData = {}; }
-    }
+    const depositAmount = Number(pLoad?.deposit_amount || payment.amount);
     
-    const depositAmount = Number(payloadData?.deposit_amount ?? metadata?.deposit_amount ?? (paidAmount / 1.03).toFixed(2));
-
-    const { error: wErr } = await admin.from("wallet_transactions").insert({
+    await admin.from("wallet_transactions").insert({
       user_id: userId,
       type: "deposit",
       amount: depositAmount,
       status: "completed",
-      description: `Wallet Deposit via Paystack (${reference})`,
+      description: `Wallet Deposit via theTeller (${reference})`,
     });
-    if (wErr) throw new Error("Wallet insert failed: " + wErr.message);
-  }
 
-  await admin
-    .from("payments")
-    .update({ status: "paid", order_id: orderId })
-    .eq("id", payment.id);
+    const { data: uProf } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
+    if (uProf?.phone) {
+      sendSMS({ to: uProf.phone, message: `Your OneGig wallet deposit of GHS ${depositAmount} was successful!` }).catch((err) => console.error("SMS Error:", err));
+    }
+  }
 
   return { ok: true, purpose: payment.purpose, order_id: orderId };
 }
@@ -857,25 +729,16 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const body = await req.json();
-    const reference = String(body?.reference ?? "").trim();
-    const checkOnly = !!body?.check_only;
-    
+    const { reference } = await req.json();
     if (!reference) return json({ error: "reference is required" }, 400);
-
-    if (checkOnly) {
-      const paystackSecret = await getPaystackSecretKey();
-      const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-        headers: { Authorization: `Bearer ${paystackSecret}` },
-      });
-      const verifyData = await verifyRes.json();
-      return json({ ok: true, status: verifyData?.data?.status ?? "failed" });
-    }
 
     const result = await verifyAndProcess(reference);
     return json(result);
   } catch (e: any) {
-    console.error("paystack-verify error", e);
-    return json({ ok: false, status: "pending", error: e?.message ?? "Internal error" }, 200);
+    console.error("theteller-verify error", e);
+    return json({
+      error: e?.message ?? "Internal error",
+      details: e?.stack ?? String(e)
+    }, 500);
   }
 });

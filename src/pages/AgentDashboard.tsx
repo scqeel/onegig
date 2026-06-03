@@ -2798,6 +2798,97 @@ export function MarketingKitSection({ agentProfile }: { agentProfile: any }) {
         </form>
       </div>
     </div>
+
+    {/* ── LIVE ORDER PROOF WIDGET ── */}
+    <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft mt-6">
+      <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
+        <h2 className="text-base font-bold text-white flex items-center gap-2">
+          <Activity className="h-4.5 w-4.5 text-indigo-400" /> Live Order Proof Widget
+        </h2>
+        <p className="mt-0.5 text-xs text-white/50">Build customer trust on your external website or blog by showing live MTN data delivery proofs.</p>
+      </div>
+
+      <div className="p-5 md:p-6 bg-card text-foreground space-y-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">How it Works</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Display real-time successful MTN data deliveries on your external site. It builds trust and increases conversion rates. Simply copy one of the embed codes below.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Method 1: JavaScript Snippet (Recommended)</h4>
+              <p className="text-[11px] text-muted-foreground">Add a container div and include our script. The widget renders inline automatically.</p>
+              <div className="relative rounded-xl bg-slate-950 p-3 font-mono text-[10px] text-slate-300">
+                <code className="block select-all whitespace-pre-wrap">
+                  {`<div id="datahub-mtn-widget"></div>\n<script src="https://user.datahubgh.com/api/widget/last-mtn-delivered?format=script&theme=green"></script>`}
+                </code>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Method 2: Iframe Embed</h4>
+              <p className="text-[11px] text-muted-foreground">Use an iframe for complete style isolation from your website's CSS.</p>
+              <div className="relative rounded-xl bg-slate-950 p-3 font-mono text-[10px] text-slate-300">
+                <code className="block select-all whitespace-pre-wrap">
+                  {`<iframe\n  src="https://user.datahubgh.com/api/widget/last-mtn-delivered?format=html&theme=green"\n  style="width: 100%; height: 60px; border: none;"\n  scrolling="no"\n></iframe>`}
+                </code>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold text-foreground">Live Widget Preview</h3>
+            <div className="rounded-2xl border border-border p-4 bg-secondary/10 flex flex-col gap-3 justify-center min-h-[140px]">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Preview (Green Theme)</p>
+              <iframe
+                src="https://user.datahubgh.com/api/widget/last-mtn-delivered?format=html&theme=green"
+                style={{ width: "100%", height: "60px", border: "none" }}
+                scrolling="no"
+              />
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">Preview (Dark Theme)</p>
+              <iframe
+                src="https://user.datahubgh.com/api/widget/last-mtn-delivered?format=html&theme=dark"
+                style={{ width: "100%", height: "60px", border: "none" }}
+                scrolling="no"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Customization parameters</h4>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-[11px] text-muted-foreground divide-y divide-border/60">
+                  <thead>
+                    <tr className="text-foreground font-bold">
+                      <th className="pb-1.5 pr-2">Param</th>
+                      <th className="pb-1.5 px-2">Options</th>
+                      <th className="pb-1.5 px-2">Default</th>
+                      <th className="pb-1.5 pl-2">Description</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    <tr>
+                      <td className="py-1.5 font-mono pr-2">theme</td>
+                      <td className="py-1.5 px-2">green, blue, dark, light</td>
+                      <td className="py-1.5 px-2 font-mono">dark</td>
+                      <td className="py-1.5 pl-2">Color style aesthetic</td>
+                    </tr>
+                    <tr>
+                      <td className="py-1.5 font-mono pr-2">icon</td>
+                      <td className="py-1.5 px-2">true, false</td>
+                      <td className="py-1.5 px-2 font-mono">true</td>
+                      <td className="py-1.5 pl-2">Toggle lightning bolt icon</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
     </>
   );
 }

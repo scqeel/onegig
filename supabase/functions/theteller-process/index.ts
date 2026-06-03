@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getPaystackSecretKey } from "../_shared/settings.ts";
+import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,15 +15,12 @@ const json = (body: unknown, status = 200) =>
 type Purpose = "order" | "agent_activation" | "wallet_deposit";
 
 interface ProcessBody {
-  action?: "submit_otp";
-  otp?: string;
-  reference?: string;
   purpose: Purpose;
   bundle_id?: string;
   recipient_phone?: string;
   agent_slug?: string | null;
   momo_number: string;
-  momo_network: string; // MTN, VDF, ATL, TGO
+  momo_network: string; // MTN, TELECEL, AT
   amount?: number;
   coupon_code?: string | null;
   subscribe?: boolean;
@@ -31,7 +28,7 @@ interface ProcessBody {
   points_redeemed?: number;
 }
 
-function toPaystackProvider(code: string) {
+function toTellerProvider(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
   if (["MTN", "M"].includes(normalized)) return "mtn";
   if (["TELECEL", "VODAFONE", "VODA", "VOD", "T", "TCL"].includes(normalized)) return "vod";
@@ -46,39 +43,12 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json()) as ProcessBody & { email?: string };
 
-    const paystackSecret = await getPaystackSecretKey();
-    if (!paystackSecret) {
+    const merchantId = await dbGetTellerMerchantId();
+    const apiKey = await dbGetTellerApiKey();
+    if (!merchantId || !apiKey) {
       return json({
-        error: "Missing Paystack secrets. Set PAYSTACK_SECRET_KEY.",
+        error: "Missing theTeller secrets. Set THETELLER_MERCHANT_ID and THETELLER_API_KEY.",
       }, 500);
-    }
-
-    if (body?.action === "submit_otp") {
-      if (!body.otp || !body.reference) return json({ error: "otp and reference are required" }, 400);
-      
-      const otpRes = await fetch("https://api.paystack.co/charge/submit_otp", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${paystackSecret}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          otp: body.otp,
-          reference: body.reference,
-        }),
-      });
-
-      const otpData = await otpRes.json().catch(() => null);
-      if (!otpRes.ok || !otpData?.status) {
-        return json({ error: otpData?.message ?? "Failed to submit OTP" }, 200);
-      }
-
-      return json({
-        ok: true,
-        reference: body.reference,
-        status: otpData?.data?.status ?? "success",
-        message: otpData?.data?.display_text || otpData?.message,
-      });
     }
 
     if (!body?.purpose) return json({ error: "purpose is required" }, 400);
@@ -188,7 +158,6 @@ Deno.serve(async (req) => {
             }
 
             if (isValidForStore) {
-              // Ensure discount does not exceed the storefront base price (prevent negative/free order checkouts)
               discountAmount = Math.min(amount, Number(coupon.discount_amount));
             }
           }
@@ -212,11 +181,10 @@ Deno.serve(async (req) => {
             .maybeSingle();
 
           const pointsAvailable = loyaltyRow?.points_balance ?? 0;
-          const maxPointsToDeduct = Math.floor(pointsAvailable / 10); // max discount in GHS
+          const maxPointsToDeduct = Math.floor(pointsAvailable / 10);
           
           if (maxPointsToDeduct > 0) {
             loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
-            // Cap discount so that the customer pays at least GHS 1.00 before transaction fee
             loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
           }
         }
@@ -224,7 +192,7 @@ Deno.serve(async (req) => {
 
       const baseAmount = Math.max(1, amount - discountAmount - loyaltyDiscount);
       const fee = baseAmount * 0.03;
-      amount = baseAmount + fee; // Add 3% payment fee
+      amount = baseAmount + fee;
 
       payload = {
         bundle_id: body.bundle_id,
@@ -258,46 +226,42 @@ Deno.serve(async (req) => {
       
       const depositAmount = Number(body.amount);
       const fee = depositAmount * 0.03;
-      amount = depositAmount + fee; // Total to charge
+      amount = depositAmount + fee;
       
       payload = { user_id: userId, deposit_amount: depositAmount, fee };
     }
 
     if (!amount || amount <= 0) return json({ error: "Invalid amount" }, 400);
 
-    let email = (body.email || userEmail || "guest@mtopup.shop").trim().toLowerCase();
-    if (email === "guest@mtopup.shop") {
-      email = `guest-${crypto.randomUUID().slice(0, 8)}@mtopup.shop`;
-    }
-    const reference = `DH-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`;
+    const provider = toTellerProvider(body.momo_network);
+    const reference = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // theTeller requires a 12-digit numeric transaction id
 
+    const authString = btoa(`${merchantId}:${apiKey}`);
+
+    // Call theTeller Process transaction API
     let processRes: Response;
     try {
-      processRes = await fetch("https://api.paystack.co/charge", {
+      processRes = await fetch("https://api.theteller.net/v1.1/transaction/process", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${paystackSecret}`,
+          "Authorization": `Basic ${authString}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
-          amount: Math.round(amount * 100),
-          reference,
-          currency: "GHS",
-          mobile_money: {
-            phone: body.momo_number.replace(/\D/g, ""),
-            provider: toPaystackProvider(body.momo_network),
-          },
-          metadata: {
-            purpose: body.purpose,
-            user_id: userId,
-            ...payload,
+          amount: Math.round(amount * 100).toString().padStart(12, "0"), // theTeller requires amount padded to 12 digits in minor units (e.g. "000000005000")
+          merchant_id: merchantId,
+          transaction_id: reference,
+          desc: `${body.purpose} payment`,
+          "r-switch": provider.toUpperCase(),
+          payment_details: {
+            number: body.momo_number.replace(/\D/g, ""),
+            network: provider,
           },
         }),
       });
     } catch (fetchErr: unknown) {
       const msg = fetchErr instanceof Error ? fetchErr.message : "Network error";
-      console.error("Paystack fetch failed:", msg);
+      console.error("theTeller fetch failed:", msg);
       return json({ error: `Could not reach payment gateway. ${msg}` }, 200);
     }
 
@@ -305,35 +269,15 @@ Deno.serve(async (req) => {
     try {
       processData = await processRes.json();
     } catch (e) {
-      console.error("Paystack API returned non-JSON:", processRes.status);
-      return json({ error: `Paystack API Error ${processRes.status}.` }, 200);
+      console.error("theTeller API returned non-JSON:", processRes.status);
+      return json({ error: `theTeller API Error ${processRes.status}.` }, 200);
     }
 
-    if (!processRes.ok || !processData?.status) {
-      console.error("Paystack Process Failed:", processData);
+    // theTeller returns status code '000' for success, '100' for pending (awaiting momo authorize PIN)
+    if (processData?.code !== "000" && processData?.code !== "100") {
+      console.error("theTeller Process Failed:", processData);
       
-      // Handle OTP requirement gracefully
-      if (processData?.data?.status === "send_otp") {
-        // Record payment early so webhook works if they authorize somehow
-        await admin.from("payments").insert({
-          reference,
-          user_id: userId,
-          purpose: body.purpose,
-          amount,
-          currency: "GHS",
-          status: "initialized",
-          payload,
-        });
-        
-        return json({
-          ok: true,
-          reference,
-          status: "send_otp",
-          message: processData?.data?.display_text || "Please enter the OTP sent to your phone."
-        });
-      }
-      // Insert a failed payment record so we can track it
-      const { error: failedPaymentErr } = await admin.from("payments").insert({
+      await admin.from("payments").insert({
         reference,
         user_id: userId,
         purpose: body.purpose,
@@ -342,50 +286,39 @@ Deno.serve(async (req) => {
         status: "failed",
         payload: {
           ...payload,
-          error_message: processData?.message ?? "Unable to initialize payment"
+          gateway: "theteller",
+          error_message: processData?.reason ?? "Unable to initialize payment"
         },
       });
-      if (failedPaymentErr) {
-        console.error("Failed to insert failed payment:", failedPaymentErr.message);
-      }
-      
-      let errorMsg = processData?.message ?? "Unable to initialize payment";
-      if (errorMsg === "Charge attempted") {
-        errorMsg = "A payment prompt is already active on your phone. Please check your phone and enter your PIN — do not tap Pay again.";
-      }
-      
-      return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 200);
+
+      return json({ error: processData?.reason ?? "Unable to initialize payment" }, 200);
     }
 
-    // Insert payment record
-    const { error: paymentInsertError } = await admin.from("payments").insert({
+    // Insert payment record as initialized
+    await admin.from("payments").insert({
       reference,
       user_id: userId,
       purpose: body.purpose,
       amount,
       currency: "GHS",
       status: "initialized",
-      payload,
+      payload: {
+        ...payload,
+        gateway: "theteller"
+      },
     });
-    
-    if (paymentInsertError) {
-      console.warn("payments insert warning", paymentInsertError.message);
-    }
 
     return json({
       ok: true,
       reference,
-      status: processData?.data?.status,
-      message: processData?.data?.display_text || processData?.message,
+      status: processData?.code === "000" ? "success" : "pending",
+      message: processData?.reason || "Please authorize the transaction on your phone.",
     });
   } catch (e: any) {
-    console.error("paystack-process error", e);
+    console.error("theteller-process error", e);
     return json({
       error: e?.message ?? "Internal error",
       details: e?.stack ?? String(e)
     }, 500);
   }
 });
-
-// Trigger redeployment
-

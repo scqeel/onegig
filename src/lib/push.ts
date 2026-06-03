@@ -13,7 +13,7 @@ export async function subscribeToPushNotifications(userId: string) {
     if (!subscription) {
       // Convert VAPID key to Uint8Array
       const padding = '='.repeat((4 - VAPID_PUBLIC_KEY.length % 4) % 4);
-      const base64 = (VAPID_PUBLIC_KEY + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const base64 = (VAPID_PUBLIC_KEY + padding).replace(/-/g, '+').replace(/_/g, '/');
       const rawData = window.atob(base64);
       const outputArray = new Uint8Array(rawData.length);
       for (let i = 0; i < rawData.length; ++i) {

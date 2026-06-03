@@ -24,7 +24,40 @@ export default function PaymentCallbackPage() {
         return;
       }
 
-      const { data, error } = await supabase.functions.invoke("paystack-verify", {
+      let gateway = "paystack";
+      try {
+        const { data: payment } = await supabase
+          .from("payments")
+          .select("payload")
+          .eq("reference", transaction_id)
+          .maybeSingle();
+
+        if (payment?.payload && typeof payment.payload === "object") {
+          const payloadObj = payment.payload as any;
+          if (payloadObj.gateway === "theteller") {
+            gateway = "theteller";
+          }
+        } else {
+          // Fallback to reference format or active_payment_gateway setting
+          if (/^\d{12}$/.test(transaction_id)) {
+            gateway = "theteller";
+          } else {
+            const { data: settingsData } = await supabase
+              .from("app_settings")
+              .select("value")
+              .eq("key", "active_payment_gateway")
+              .maybeSingle();
+            if (settingsData?.value) {
+              const val = typeof settingsData.value === "string" ? JSON.parse(settingsData.value) : settingsData.value;
+              if (val === "theteller") gateway = "theteller";
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error detecting gateway", err);
+      }
+
+      const { data, error } = await supabase.functions.invoke(`${gateway}-verify`, {
         body: { reference: transaction_id },
       });
 

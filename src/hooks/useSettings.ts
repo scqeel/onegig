@@ -19,6 +19,7 @@ export function useSettings() {
         platform_name: String(map.platform_name ?? "OneGig"),
         platform_tagline: String(map.platform_tagline ?? "Buy data in seconds ⚡"),
         home_page_bg: String(map.home_page_bg ?? "none"),
+        active_payment_gateway: String(map.active_payment_gateway ?? "paystack"),
       };
     },
     staleTime: 5 * 60 * 1000,

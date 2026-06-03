@@ -52,3 +52,8 @@ entrypoint = "./functions/paystack-process/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/paystack-reconcile/index.ts"
+
+[functions.auth-sms-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/auth-sms-webhook/index.ts"

@@ -1772,6 +1772,10 @@ function SiteSettingsSection() {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [homePageBg, setHomePageBg] = useState("/bg-ancient-1.png");
   const [notice, setNotice]             = useState("");
+  const [activePaymentGateway, setActivePaymentGateway] = useState("paystack");
+  const [paystackSecretKey, setPaystackSecretKey] = useState("");
+  const [thetellerMerchantId, setThetellerMerchantId] = useState("");
+  const [thetellerApiKey, setThetellerApiKey] = useState("");
 
   useQuery({
     queryKey: ["admin-site-settings"],
@@ -1789,6 +1793,10 @@ function SiteSettingsSection() {
       setMaintenanceMode(map.maintenance_mode === "true");
       setHomePageBg(String(map.home_page_bg || "/bg-ancient-1.png"));
       setNotice(String(map.popup_notice ?? ""));
+      setActivePaymentGateway(String(map.active_payment_gateway ?? "paystack"));
+      setPaystackSecretKey(String(map.paystack_secret_key ?? ""));
+      setThetellerMerchantId(String(map.theteller_merchant_id ?? ""));
+      setThetellerApiKey(String(map.theteller_api_key ?? ""));
       return true;
     },
     staleTime: 60_000,
@@ -1806,6 +1814,10 @@ function SiteSettingsSection() {
       { key: "home_page_bg",        value: homePageBg },
       { key: "allow_registrations", value: String(allowRegistrations) },
       { key: "maintenance_mode",    value: String(maintenanceMode) },
+      { key: "active_payment_gateway", value: activePaymentGateway },
+      { key: "paystack_secret_key", value: paystackSecretKey },
+      { key: "theteller_merchant_id", value: thetellerMerchantId },
+      { key: "theteller_api_key", value: thetellerApiKey },
     ];
     const { error } = await supabase.from("app_settings").upsert(rows as any);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
@@ -1921,6 +1933,60 @@ function SiteSettingsSection() {
               <div className="p-4 bg-secondary/10 flex justify-center">
                 <img src={homePageBg} alt="Background Preview" className="h-32 w-auto object-cover rounded-xl border border-border/50 shadow-sm opacity-80" />
               </div>
+            )}
+          </div>
+        </div>
+
+        {/* Payment Gateways Group */}
+        <div>
+          <h3 className="mb-3 text-sm font-bold text-foreground">Payment Gateways</h3>
+          <div className="overflow-hidden rounded-[20px] border border-border/50 bg-background/30 shadow-sm transition-all focus-within:shadow-md focus-within:border-border/80">
+            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Active Payment Gateway</label>
+              <select 
+                value={activePaymentGateway} 
+                onChange={(e) => setActivePaymentGateway(e.target.value)} 
+                className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none sm:text-right appearance-none cursor-pointer"
+              >
+                <option value="paystack">Paystack</option>
+                <option value="theteller">theTeller</option>
+              </select>
+            </div>
+
+            {activePaymentGateway === "paystack" ? (
+              <div className="group relative p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2">
+                <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Paystack Secret Key</label>
+                <input 
+                  type="password" 
+                  value={paystackSecretKey} 
+                  onChange={(e) => setPaystackSecretKey(e.target.value)} 
+                  placeholder="sk_live_..." 
+                  className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/40 sm:text-right" 
+                />
+              </div>
+            ) : (
+              <>
+                <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">theTeller Merchant ID</label>
+                  <input 
+                    type="text" 
+                    value={thetellerMerchantId} 
+                    onChange={(e) => setThetellerMerchantId(e.target.value)} 
+                    placeholder="e.g. merchant_id" 
+                    className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/40 sm:text-right" 
+                  />
+                </div>
+                <div className="group relative p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2">
+                  <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">theTeller API Key</label>
+                  <input 
+                    type="password" 
+                    value={thetellerApiKey} 
+                    onChange={(e) => setThetellerApiKey(e.target.value)} 
+                    placeholder="API Key" 
+                    className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/40 sm:text-right" 
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>

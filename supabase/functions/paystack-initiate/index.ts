@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getPaystackSecretKey } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,12 +23,6 @@ interface InitiateBody {
   return_url?: string;
 }
 
-const getPaystackSecret = () =>
-  Deno.env.get("PAYSTACK_SECRET_KEY") ||
-  Deno.env.get("PAYSTACK_SECRET") ||
-  Deno.env.get("PAYSTACK_LIVE_SECRET_KEY") ||
-  "";
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -39,7 +34,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
-    const paystackSecret = getPaystackSecret();
+    const paystackSecret = await getPaystackSecretKey();
     if (!paystackSecret) {
       return json({
         error: "Missing Paystack secret. Set PAYSTACK_SECRET_KEY in Supabase function secrets.",

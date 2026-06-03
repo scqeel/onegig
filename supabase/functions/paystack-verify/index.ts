@@ -782,6 +782,56 @@ async function verifyAndProcess(reference: string) {
   if (!payment) throw new Error("Payment record unavailable");
 
   if (payment.status === "paid") {
+    let pLoad = payment.payload;
+    if (typeof pLoad === "string") {
+      try { pLoad = JSON.parse(pLoad); } catch(e) { pLoad = {}; }
+    }
+    
+    // Self-healing: if the payment is paid, but it was a wallet_deposit or agent_activation, 
+    // verify if the corresponding wallet transaction or activation was actually completed.
+    if (payment.purpose === "wallet_deposit") {
+      const userId = payment.user_id;
+      if (userId) {
+        const { data: existingTx } = await admin
+          .from("wallet_transactions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("type", "deposit")
+          .ilike("description", `%${reference}%`)
+          .maybeSingle();
+        
+        if (!existingTx) {
+          console.log(`Self-healing: Payment ${reference} is marked paid but wallet transaction was missing. Creating transaction now.`);
+          const depositAmount = Number(pLoad?.deposit_amount || payment.amount);
+          const { error: wErr } = await admin.from("wallet_transactions").insert({
+            user_id: userId,
+            type: "deposit",
+            amount: depositAmount,
+            status: "completed",
+            description: `Wallet Deposit via Paystack (${reference})`,
+          });
+          if (wErr) {
+            console.error("Wallet deposit insert failed during self-healing:", wErr);
+            throw new Error("Wallet deposit insert failed: " + wErr.message);
+          }
+        }
+      }
+    } else if (payment.purpose === "agent_activation") {
+      const userId = payment.user_id;
+      if (userId) {
+        const { data: existingRole } = await admin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "agent")
+          .maybeSingle();
+        
+        if (!existingRole) {
+          console.log(`Self-healing: Payment ${reference} is marked paid but agent role was missing. Activating agent now.`);
+          await activateAgent(admin, String(userId), pLoad?.ref_slug || null);
+        }
+      }
+    }
     return { ok: true, already_processed: true, purpose: payment.purpose, order_id: payment.order_id ?? null };
   }
 

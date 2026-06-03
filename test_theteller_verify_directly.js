@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function run() {
   console.log("Invoking deployed theteller-verify function with mock reference...");
   const { data, error } = await supabase.functions.invoke('theteller-verify', {
-    body: { reference: "887857858286" }
+    body: { reference: "DEBUG_DB", debug_query: true }
   });
   
   console.log("Response Data:", data);

@@ -644,6 +644,60 @@ async function verifyAndProcess(reference: string) {
   let payment = paymentRow;
 
   if (payment.status === "paid") {
+    let pLoad = payment.payload;
+    if (typeof pLoad === "string") {
+      try { pLoad = JSON.parse(pLoad); } catch(e) { pLoad = {}; }
+    }
+    
+    // Self-healing: if the payment is paid, but it was a wallet_deposit or agent_activation, 
+    // verify if the corresponding wallet transaction or activation was actually completed.
+    if (payment.purpose === "wallet_deposit") {
+      const userId = payment.user_id;
+      if (userId) {
+        const { data: existingTx } = await admin
+          .from("wallet_transactions")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("type", "deposit")
+          .ilike("description", `%${reference}%`)
+          .maybeSingle();
+        
+        if (!existingTx) {
+          console.log(`Self-healing: Payment ${reference} is marked paid but wallet transaction was missing. Creating transaction now.`);
+          const depositAmount = Number(pLoad?.deposit_amount || payment.amount);
+          const { error: wErr } = await admin.from("wallet_transactions").insert({
+            user_id: userId,
+            type: "deposit",
+            amount: depositAmount,
+            status: "completed",
+            description: `Wallet Deposit via theTeller (${reference})`,
+          });
+          if (wErr) {
+            console.error("Wallet deposit insert failed during self-healing:", wErr);
+            throw new Error("Wallet deposit insert failed: " + wErr.message);
+          }
+          const { data: uProf } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
+          if (uProf?.phone) {
+            sendSMS({ to: uProf.phone, message: `Your OneGig wallet deposit of GHS ${depositAmount} was successful!` }).catch((err) => console.error("SMS Error:", err));
+          }
+        }
+      }
+    } else if (payment.purpose === "agent_activation") {
+      const userId = payment.user_id;
+      if (userId) {
+        const { data: existingRole } = await admin
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", userId)
+          .eq("role", "agent")
+          .maybeSingle();
+        
+        if (!existingRole) {
+          console.log(`Self-healing: Payment ${reference} is marked paid but agent role was missing. Activating agent now.`);
+          await activateAgent(admin, String(userId), pLoad?.ref_slug || null);
+        }
+      }
+    }
     return { ok: true, already_processed: true, purpose: payment.purpose, order_id: payment.order_id ?? null };
   }
 
@@ -734,19 +788,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const body = await req.json();
-    const { reference, debug_query } = body;
-    if (debug_query && reference === "DEBUG_DB") {
-      const admin = createClient(
-        Deno.env.get("SUPABASE_URL") ?? "",
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-        { auth: { persistSession: false } }
-      );
-      const { data: txs } = await admin.from("wallet_transactions").select("*").eq("user_id", "e5a7274f-ce7a-44bd-8d43-04a0e2ff0536").order("created_at", { ascending: false });
-      const { data: pmts } = await admin.from("payments").select("*").eq("user_id", "e5a7274f-ce7a-44bd-8d43-04a0e2ff0536").order("created_at", { ascending: false });
-      const { data: prof } = await admin.from("profiles").select("*").eq("id", "e5a7274f-ce7a-44bd-8d43-04a0e2ff0536").maybeSingle();
-      return json({ txs, pmts, prof });
-    }
+    const { reference } = await req.json();
     if (!reference) return json({ error: "reference is required" }, 400);
 
     const result = await verifyAndProcess(reference);

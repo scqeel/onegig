@@ -1,7 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendWebPushNotification } from "../_shared/push.ts";
 import { sendSMS } from "../_shared/sms.ts";
-import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey } from "../_shared/settings.ts";
+import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey, getTellerApiUser as dbGetTellerApiUser } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -611,11 +611,12 @@ async function verifyAndProcess(reference: string) {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const merchantId = await dbGetTellerMerchantId();
   const apiKey = await dbGetTellerApiKey();
+  const apiUser = await dbGetTellerApiUser();
   if (!merchantId || !apiKey) throw new Error("Missing theTeller configurations");
 
   const admin = createClient(supabaseUrl, serviceKey);
 
-  const authString = btoa(`${merchantId}:${apiKey}`);
+  const authString = btoa(`${apiUser}:${apiKey}`);
 
   // Call theTeller status verify API
   const verifyRes = await fetch(`https://prod.theteller.net/v1.1/users/transactions/${encodeURIComponent(reference)}/status`, {

@@ -28,6 +28,15 @@ export async function getTellerMerchantId(): Promise<string> {
   return await getAppSetting("theteller_merchant_id");
 }
 
+export async function getTellerApiUser(): Promise<string> {
+  const envVal = Deno.env.get("THETELLER_API_USER");
+  if (envVal) return envVal;
+  const dbVal = await getAppSetting("theteller_api_user");
+  if (dbVal) return dbVal;
+  return await getTellerMerchantId();
+}
+
+
 export async function getTellerApiKey(): Promise<string> {
   const envVal = Deno.env.get("THETELLER_API_KEY");
   const rawKey = envVal || (await getAppSetting("theteller_api_key"));

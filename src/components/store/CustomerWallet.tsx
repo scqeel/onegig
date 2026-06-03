@@ -85,6 +85,25 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
 
     setPhase("processing");
     try {
+      if (activeGateway === "theteller") {
+        const { data, error } = await supabase.functions.invoke("theteller-initiate", {
+          body: {
+            purpose: "wallet_deposit",
+            amount: numAmount,
+            email: "customer@mtopup.shop",
+            return_url: window.location.origin + "/payment/callback",
+          }
+        });
+        
+        if (error || !data?.ok) {
+          setErrorMsg(data?.error || error?.message || "Failed to initialize payment page");
+          return setPhase("error");
+        }
+        
+        window.location.href = data.authorization_url;
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           purpose: "wallet_deposit",

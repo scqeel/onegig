@@ -54,12 +54,38 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
       toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
       return;
     }
-    if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
-      toast({ title: "Enter mobile money number", variant: "destructive" });
-      return;
+    
+    if (activeGateway !== "theteller") {
+      if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
+        toast({ title: "Enter mobile money number", variant: "destructive" });
+        return;
+      }
     }
 
     setPhase("processing");
+    
+    if (activeGateway === "theteller") {
+      const { data, error } = await supabase.functions.invoke("theteller-initiate", {
+        body: {
+          purpose: "agent_activation",
+          email: profile?.email || "guest@mtopup.shop",
+          ref_slug: refSlug || undefined,
+          return_url: window.location.origin + "/payment/callback",
+        }
+      });
+      
+      if (error || !data?.ok) {
+        const errPayload = data?.error ?? error?.message ?? "Payment initialization failed";
+        const errMsg = typeof errPayload === "object" ? JSON.stringify(errPayload) : errPayload;
+        setErrorMsg(errMsg);
+        setPhase("error");
+        return;
+      }
+      
+      window.location.href = data.authorization_url;
+      return;
+    }
+
     const { error, data } = await supabase.functions.invoke(`${activeGateway}-process`, {
       body: {
         purpose: "agent_activation",

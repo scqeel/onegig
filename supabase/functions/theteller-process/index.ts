@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey } from "../_shared/settings.ts";
+import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey, getTellerApiUser as dbGetTellerApiUser } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -45,6 +45,7 @@ Deno.serve(async (req) => {
 
     const merchantId = await dbGetTellerMerchantId();
     const apiKey = await dbGetTellerApiKey();
+    const apiUser = await dbGetTellerApiUser();
     if (!merchantId || !apiKey) {
       return json({
         error: "Missing theTeller secrets. Set THETELLER_MERCHANT_ID and THETELLER_API_KEY.",
@@ -236,7 +237,7 @@ Deno.serve(async (req) => {
     const provider = toTellerProvider(body.momo_network);
     const reference = Math.floor(100000000000 + Math.random() * 900000000000).toString(); // theTeller requires a 12-digit numeric transaction id
 
-    const authString = btoa(`${merchantId}:${apiKey}`);
+    const authString = btoa(`${apiUser}:${apiKey}`);
 
     // Call theTeller Process transaction API
     let processRes: Response;

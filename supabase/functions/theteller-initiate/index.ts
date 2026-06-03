@@ -1,5 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey } from "../_shared/settings.ts";
+import { getTellerMerchantId as dbGetTellerMerchantId, getTellerApiKey as dbGetTellerApiKey, getTellerApiUser as dbGetTellerApiUser } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +33,7 @@ Deno.serve(async (req) => {
 
     const merchantId = await dbGetTellerMerchantId();
     const apiKey = await dbGetTellerApiKey();
+    const apiUser = await dbGetTellerApiUser();
     if (!merchantId || !apiKey) {
       return json({ error: "Missing theTeller secrets." }, 500);
     }
@@ -127,7 +128,7 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       amount = Number(feeRow?.value ?? 50);
-      payload = { user_id: userId };
+      payload = { user_id: userId, ref_slug: (body as any).ref_slug || null };
     } else if (body.purpose === "wallet_deposit") {
       if (!userId) return json({ error: "Unauthorized" }, 401);
       if (!body.amount) return json({ error: "Amount required" }, 400);
@@ -139,7 +140,7 @@ Deno.serve(async (req) => {
     }
 
     const reference = Math.floor(100000000000 + Math.random() * 900000000000).toString();
-    const authString = btoa(`${merchantId}:${apiKey}`);
+    const authString = btoa(`${apiUser}:${apiKey}`);
 
     let frontendOrigin = "https://mtopup.shop";
     const referer = req.headers.get("referer");
@@ -151,7 +152,7 @@ Deno.serve(async (req) => {
     const redirectUrl = body.return_url || `${frontendOrigin}/track`;
 
     // Call theTeller checkout initiation API
-    const initiateRes = await fetch("https://prod.theteller.net/v1.1/transaction/initiate", {
+    const initiateRes = await fetch("https://checkout.theteller.net/initiate", {
       method: "POST",
       headers: {
         "Authorization": `Basic ${authString}`,
@@ -163,6 +164,7 @@ Deno.serve(async (req) => {
         amount: Math.round(amount * 100).toString().padStart(12, "0"),
         redirect_url: redirectUrl,
         desc: `${body.purpose} redirect checkout`,
+        email: body.email || "customer@mtopup.shop", // redirect checkout requires email
       }),
     });
 

@@ -36,3 +36,8 @@ This file serves as a persistent record of critical bugs encountered and their s
 **Issue**: If an automatic webhook or verification callback failed midway (e.g. database network error, Deno timeout) after the payment status was updated to `"paid"`, subsequent retries or manual resolutions would early-return and never credit the wallet.
 **Root Cause**: The verify Edge Functions checked `if (payment.status === "paid") { return { already_processed: true }; }` at the very beginning of the logic. Once marked paid, all transaction insert code was permanently bypassed.
 **Fix/Lesson**: Avoid naive status-based early-returns in verification functions. Check if the actual side effects (such as the corresponding wallet transaction row) exist in the database, and run self-healing code if they are missing.
+
+## 8. theTeller Gateway Hostname Configuration
+**Issue**: theTeller payments were failing to initialize or verify with DNS/network errors.
+**Root Cause**: The integration code was using the hostname `api.theteller.net` which does not exist. The correct production hostname is `prod.theteller.net`.
+**Fix/Lesson**: Verify that API hostnames match production documentation exactly. If third-party integrations fail to connect, check DNS resolution using tools like `nslookup` to identify missing or invalid hostnames.

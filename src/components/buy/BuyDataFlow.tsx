@@ -269,6 +269,10 @@ export function BuyDataFlow({
   };
 
   const buy = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     if (!bundle || !phone || phone.replace(/\D/g, "").length < 9) {
       toast({ title: "Enter recipient phone", variant: "destructive" });
       return;
@@ -372,6 +376,10 @@ export function BuyDataFlow({
   };
 
   const payWithRedirect = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     if (!bundle || !phone || phone.replace(/\D/g, "").length < 9) {
       toast({ title: "Enter recipient phone", variant: "destructive" });
       return;

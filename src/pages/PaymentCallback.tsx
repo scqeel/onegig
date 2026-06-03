@@ -48,7 +48,14 @@ export default function PaymentCallbackPage() {
               .eq("key", "active_payment_gateway")
               .maybeSingle();
             if (settingsData?.value) {
-              const val = typeof settingsData.value === "string" ? JSON.parse(settingsData.value) : settingsData.value;
+              let val = settingsData.value;
+              if (typeof val === "string") {
+                try {
+                  val = JSON.parse(val);
+                } catch (_) {
+                  // val remains the raw string
+                }
+              }
               if (val === "theteller") gateway = "theteller";
             }
           }

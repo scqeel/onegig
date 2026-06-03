@@ -141,6 +141,15 @@ Deno.serve(async (req) => {
     const reference = Math.floor(100000000000 + Math.random() * 900000000000).toString();
     const authString = btoa(`${merchantId}:${apiKey}`);
 
+    let frontendOrigin = "https://mtopup.shop";
+    const referer = req.headers.get("referer");
+    if (referer) {
+      try {
+        frontendOrigin = new URL(referer).origin;
+      } catch (_) {}
+    }
+    const redirectUrl = body.return_url || `${frontendOrigin}/track`;
+
     // Call theTeller checkout initiation API
     const initiateRes = await fetch("https://api.theteller.net/v1.1/transaction/initiate", {
       method: "POST",
@@ -152,7 +161,7 @@ Deno.serve(async (req) => {
         merchant_id: merchantId,
         transaction_id: reference,
         amount: Math.round(amount * 100).toString().padStart(12, "0"),
-        redirect_url: body.return_url || `${window.location.origin}/track`,
+        redirect_url: redirectUrl,
         desc: `${body.purpose} redirect checkout`,
       }),
     });

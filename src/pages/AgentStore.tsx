@@ -876,6 +876,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   };
 
   const payWithRedirect = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     if (!selectedBundle || !phone || phone.replace(/\D/g, "").length < 9) {
       toast({ title: "Enter recipient phone", variant: "destructive" });
       return;
@@ -912,6 +916,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   };
 
   const resendPaymentOtp = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     if (otpTimer > 0) return;
     setPhase("processing");
     try {

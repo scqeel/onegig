@@ -50,6 +50,10 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const storeName = parentAgent?.store_name || "Data Platform";
 
   const activate = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
       return;

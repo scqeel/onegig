@@ -71,6 +71,10 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange }: CustomerW
   }, [userId]);
 
   const initiateDeposit = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     const numAmount = Number(amount);
     if (isNaN(numAmount) || numAmount < 1) {
       toast({ title: "Invalid amount", description: "Minimum top-up is GHS 1", variant: "destructive" });

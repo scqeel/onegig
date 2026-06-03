@@ -65,6 +65,10 @@ export const WalletManager = () => {
   }, [profile?.id]);
 
   const initiateDeposit = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
     if (!amount || Number(amount) < 1) return toast({ title: "Enter a valid amount", variant: "destructive" });
     if (momoNumber.length < 9) return toast({ title: "Enter valid mobile number", variant: "destructive" });
 

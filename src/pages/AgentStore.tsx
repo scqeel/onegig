@@ -180,6 +180,32 @@ function StorefrontNotificationsModal({ open, onOpenChange }: { open: boolean, o
   );
 }
 
+function hexToHslValues(hex: string): string {
+  hex = hex.replace(/^#/, "");
+  if (hex.length === 3) {
+    hex = hex.split("").map(c => c + c).join("");
+  }
+  const r = parseInt(hex.substring(0, 2), 16) / 255;
+  const g = parseInt(hex.substring(2, 4), 16) / 255;
+  const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0, l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
+}
+
 export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?: string }) {
   const { slug: routeSlug } = useParams<{ slug: string }>();
   const slug = customDomainSlug || routeSlug;
@@ -739,6 +765,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     : baseFinalPrice;
   const finalPrice = Math.max(1, priceAfterCoupon - pointsRedeemed);
 
+  const activeColor = agent?.store_brand_color || currentAccent.primary;
+  const brandHsl = activeColor ? hexToHslValues(activeColor) : null;
+  const inlineStyles = brandHsl ? { "--primary": brandHsl } as React.CSSProperties : {};
+
   if (isOwner && viewMode === "dashboard") {
     return <OwnerDashboard agent={agent} slug={slug || ""} onPreviewStore={() => setViewMode("storefront")} />;
   }
@@ -1007,7 +1037,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
   if (phase === "success") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
+      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-lg">
           <CheckCircle2 className="h-12 w-12 text-emerald-500" />
         </div>
@@ -1026,7 +1056,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
   if (phase === "error") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center animate-in fade-in zoom-in duration-300">
+      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center animate-in fade-in zoom-in duration-300">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 shadow-lg">
           <RefreshCcw className="h-12 w-12 text-red-500 animate-spin [animation-duration:10s]" />
         </div>
@@ -1055,7 +1085,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
   if (phase === "otp") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
+      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg">
           <Lock className="h-10 w-10 text-blue-500" />
         </div>
@@ -1132,7 +1162,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
+      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
         <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg animate-pulse">
           {phase === "delivering" ? <CheckCircle2 className="h-14 w-14 text-emerald-500" /> : <Loader2 className="h-14 w-14 text-blue-500 animate-spin" />}
         </div>
@@ -1192,7 +1222,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   };
 
   return (
-    <div className={`min-h-dvh ${getStoreBgClass()} relative overflow-hidden`}>
+    <div style={inlineStyles} className={`min-h-dvh ${getStoreBgClass()} relative overflow-hidden`}>
       <StorefrontNotificationsModal open={notificationsOpen} onOpenChange={setNotificationsOpen} />
       
       <style>{`

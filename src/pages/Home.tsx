@@ -47,6 +47,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
+import { cn } from "@/lib/utils";
 
 /* ─────────────────────────────────────────────
    Scroll-reveal hook
@@ -219,26 +220,26 @@ export default function HomePage() {
 
       {/* ── Navbar (Modern Floating Pill) ── */}
       <header className="fixed left-0 right-0 top-4 z-50 px-4 md:px-8 pointer-events-none">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-slate-200/50 bg-white/95 px-4 md:px-6 shadow-[0_8px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl pointer-events-auto transition-all">
-          <Logo size="md" className="mix-blend-multiply" />
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-slate-200/50 bg-white/80 dark:bg-slate-950/80 px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/5 pointer-events-auto transition-all">
+          <Logo size="md" className="mix-blend-multiply dark:mix-blend-normal" />
           
           <nav className="hidden items-center gap-1 md:flex">
-            <Link to="/track" className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+            <Link to="/track" className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white transition-colors">
               <Search className="h-3.5 w-3.5" /> Track Order
             </Link>
             {user ? (
-              <Link to={dashboardPath} className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+              <Link to={dashboardPath} className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white transition-colors">
                 {dashboardLabel}
               </Link>
             ) : (
-              <Link to="/auth?tab=signin" className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors">
+              <Link to="/auth?tab=signin" className="inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white transition-colors">
                 Agent Sign In
               </Link>
             )}
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full text-slate-600 hover:bg-slate-100"
+              className="h-9 w-9 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -248,87 +249,98 @@ export default function HomePage() {
             </Button>
           </nav>
 
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden h-10 w-10 rounded-full text-slate-900 hover:bg-slate-100" aria-label="Menu">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="right" className="w-72 border-l-0 bg-white/60 backdrop-blur-2xl dark:bg-[#05080f]/60 dark:border-white/10 p-6 shadow-2xl">
-              <SheetHeader className="mb-8 text-left">
-                <SheetTitle><Logo size="sm" className="mix-blend-multiply dark:mix-blend-normal" /></SheetTitle>
-                <SheetDescription className="sr-only">Navigation</SheetDescription>
-              </SheetHeader>
-              <div className="flex flex-col gap-3">
-                <SheetClose asChild>
-                  <Link to="/buy" className="group flex items-center justify-between rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 p-4 shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)] active:scale-[0.98]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
-                        <Zap className="h-4 w-4 text-white" />
-                      </div>
-                      <span className="font-bold text-white">Buy Data Now</span>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
-                  </Link>
-                </SheetClose>
-
-                <SheetClose asChild>
-                  <Link to="/track" className="group flex items-center justify-between rounded-2xl border border-white/40 bg-white/40 dark:bg-white/5 dark:border-white/10 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-white/10 active:scale-[0.98]">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500/10">
-                        <Search className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
-                      </div>
-                      <span className="font-semibold text-slate-700 dark:text-slate-200">Track Order</span>
-                    </div>
-                    <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
-                  </Link>
-                </SheetClose>
-
-                {user ? (
-                  <>
-                    <SheetClose asChild>
-                      <Link to={dashboardPath} className="group flex items-center justify-between rounded-2xl border border-white/40 bg-white/40 dark:bg-white/5 dark:border-white/10 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-white/10 active:scale-[0.98]">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-fuchsia-500/10">
-                            <BriefcaseBusiness className="h-4 w-4 text-fuchsia-500 dark:text-fuchsia-400" />
-                          </div>
-                          <span className="font-semibold text-slate-700 dark:text-slate-200">{dashboardLabel}</span>
-                        </div>
-                        <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
-                      </Link>
-                    </SheetClose>
-                    <SheetClose asChild>
-                      <button onClick={signOut} className="group w-full flex items-center justify-between rounded-2xl border border-red-500/10 bg-red-50/50 dark:bg-red-500/5 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-red-50 dark:hover:bg-red-500/10 active:scale-[0.98]">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
-                            <User className="h-4 w-4 text-red-500" />
-                          </div>
-                          <span className="font-semibold text-red-600 dark:text-red-400">Log Out</span>
-                        </div>
-                      </button>
-                    </SheetClose>
-                  </>
-                ) : (
+          <div className="flex items-center gap-2 md:hidden">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              aria-label="Toggle theme"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-900" aria-label="Menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 border-l border-slate-100 dark:border-slate-900 bg-white/95 backdrop-blur-2xl dark:bg-slate-950/95 p-6 shadow-2xl">
+                <SheetHeader className="mb-8 text-left">
+                  <SheetTitle><Logo size="sm" className="mix-blend-multiply dark:mix-blend-normal" /></SheetTitle>
+                  <SheetDescription className="sr-only">Navigation</SheetDescription>
+                </SheetHeader>
+                <div className="flex flex-col gap-3">
                   <SheetClose asChild>
-                    <Link to="/auth?tab=signin" className="group flex items-center justify-between rounded-2xl border border-white/40 bg-white/40 dark:bg-white/5 dark:border-white/10 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-white/60 dark:hover:bg-white/10 active:scale-[0.98]">
+                    <Link to="/buy" className="group flex items-center justify-between rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 p-4 shadow-[0_4px_14px_rgba(139,92,246,0.3)] transition-all hover:shadow-[0_6px_20px_rgba(139,92,246,0.4)] active:scale-[0.98]">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-500/10">
-                          <User className="h-4 w-4 text-pink-500 dark:text-pink-400" />
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20">
+                          <Zap className="h-4 w-4 text-white" />
                         </div>
-                        <span className="font-semibold text-slate-700 dark:text-slate-200">Agent Sign In</span>
+                        <span className="font-bold text-white">Buy Data Now</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-white/70 group-hover:text-white transition-colors" />
+                    </Link>
+                  </SheetClose>
+
+                  <SheetClose asChild>
+                    <Link to="/track" className="group flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-500/10">
+                          <Search className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
+                        </div>
+                        <span className="font-semibold text-slate-700 dark:text-slate-200">Track Order</span>
                       </div>
                       <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
                     </Link>
                   </SheetClose>
-                )}
-              </div>
-            </SheetContent>
-          </Sheet>
+
+                  {user ? (
+                    <>
+                      <SheetClose asChild>
+                        <Link to={dashboardPath} className="group flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98]">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-fuchsia-500/10">
+                              <BriefcaseBusiness className="h-4 w-4 text-fuchsia-500 dark:text-fuchsia-400" />
+                            </div>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">{dashboardLabel}</span>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <button onClick={signOut} className="group w-full flex items-center justify-between rounded-2xl border border-red-500/10 bg-red-50/50 dark:bg-red-500/5 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-red-100 dark:hover:bg-red-950/20 active:scale-[0.98]">
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-red-500/10">
+                              <User className="h-4 w-4 text-red-500" />
+                            </div>
+                            <span className="font-semibold text-red-600 dark:text-red-400">Log Out</span>
+                          </div>
+                        </button>
+                      </SheetClose>
+                    </>
+                  ) : (
+                    <SheetClose asChild>
+                      <Link to="/auth?tab=signin" className="group flex items-center justify-between rounded-2xl border border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 p-4 shadow-sm backdrop-blur-md transition-all hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.98]">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-pink-500/10">
+                            <User className="h-4 w-4 text-pink-500 dark:text-pink-400" />
+                          </div>
+                          <span className="font-semibold text-slate-700 dark:text-slate-200">Agent Sign In</span>
+                        </div>
+                        <ChevronRight className="h-5 w-5 text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300 transition-colors" />
+                      </Link>
+                    </SheetClose>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-[#05080f]" style={bgStyle}>
+      <section className="relative overflow-hidden bg-[#05080f] min-h-[92dvh] flex items-center pt-24 pb-16 lg:pt-32 lg:pb-28" style={bgStyle}>
         {/* Background video rendering */}
         {homeBgVideo && (
           <video
@@ -344,16 +356,16 @@ export default function HomePage() {
         {/* Ambient glows when no image or video is configured */}
         {(!homeBg || homeBg === "none") && !homeBgVideo && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -top-40 left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px]" />
-            <div className="absolute top-1/3 right-0 h-[450px] w-[450px] rounded-full bg-fuchsia-600/15 blur-[120px]" />
-            <div className="absolute -bottom-20 left-0 h-[300px] w-[600px] rounded-full bg-indigo-700/10 blur-[130px]" />
+            <div className="absolute -top-40 left-1/4 h-[700px] w-[700px] -translate-x-1/2 rounded-full bg-violet-600/20 blur-[140px] animate-float-pulse" />
+            <div className="absolute top-1/3 right-0 h-[450px] w-[450px] rounded-full bg-fuchsia-600/15 blur-[120px] animate-float-pulse [animation-delay:1s]" />
+            <div className="absolute -bottom-20 left-0 h-[300px] w-[600px] rounded-full bg-indigo-700/10 blur-[130px] animate-float-pulse [animation-delay:2s]" />
             <div className="absolute inset-0 grid-pattern-dark opacity-60" />
           </div>
         )}
         
         {/* Dark overlay to ensure text is readable on patterned backgrounds (images/videos) */}
         {((homeBg && homeBg !== "none") || homeBgVideo) && (
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[1px] z-10" />
+          <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px] z-10" />
         )}
 
         {/* Floating Mute/Unmute toggle button */}
@@ -372,144 +384,166 @@ export default function HomePage() {
           </button>
         )}
 
-        <div className="relative z-20 mx-auto max-w-6xl px-5 pb-28 pt-16 md:px-8 md:pt-24 lg:pb-36 lg:pt-28">
+        <div className="relative z-20 mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-12 lg:gap-16">
+            
+            {/* Left Content Column */}
+            <div className="w-full text-center lg:col-span-6 lg:text-left flex flex-col items-center lg:items-start">
+              {/* Badge */}
+              <div className={`mb-6 sm:mb-8 animate-hero-badge ${HD.badge} w-fit`}>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/80 backdrop-blur-md">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
+                  </span>
+                  Ghana's #1 wholesale data platform
+                  <span className="rounded-full bg-primary/25 px-2 py-0.5 text-[9px] font-black tracking-wider text-white">LIVE</span>
+                </span>
+              </div>
 
-          {/* Badge */}
-          <div className={`mb-8 animate-hero-badge ${HD.badge}`}>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-xs font-semibold text-white/70 backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
-              </span>
-              Live · Ghana's #1 wholesale data platform
-              <span className="rounded-full bg-primary/30 px-2 py-0.5 text-[10px] font-bold text-white/80">NEW</span>
-            </span>
-          </div>
-
-          <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-
-            {/* Left — staggered headline */}
-            <div>
-              <h1 className="text-5xl font-black leading-[1.04] tracking-tight md:text-6xl lg:text-[4.5rem]">
-                <span className={`block text-white animate-fade-up ${HD.l1}`}>Buy data.</span>
+              <h1 className="text-4xl sm:text-5xl font-black leading-[1.05] tracking-tight md:text-6xl lg:text-[4.25rem] text-white">
+                <span className={`block animate-fade-up ${HD.l1}`}>Buy data.</span>
                 <span className={`block hero-gradient-text animate-fade-up ${HD.l2}`}>Save more.</span>
-                <span className={`block text-white/25 font-bold animate-fade-up ${HD.l3}`}>Deliver instantly.</span>
+                <span className={`block text-white/30 font-bold animate-fade-up ${HD.l3}`}>Deliver instantly.</span>
               </h1>
 
-              <p className={`mt-6 max-w-md text-lg leading-relaxed text-white/50 animate-fade-up ${HD.para}`}>
-                Ghana's fastest mobile data platform — MTN, Telecel & AirtelTigo bundles at wholesale prices. No account needed, ever.
+              <p className={`mt-5 max-w-md text-base sm:text-lg leading-relaxed text-white/50 animate-fade-up ${HD.para}`}>
+                Ghana's fastest mobile data platform — MTN, Telecel & AirtelTigo bundles at wholesale rates. No signup, no wait times.
               </p>
 
-              <div className={`mt-10 flex flex-wrap gap-3 animate-fade-up ${HD.btns}`}>
-                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold bg-white text-[#05080f] hover:bg-white/92 shadow-[0_8px_32px_rgba(139,92,246,0.4)] transition-all hover:shadow-[0_12px_40px_rgba(139,92,246,0.5)] hover:-translate-y-0.5">
+              <div className={`mt-8 flex flex-col sm:flex-row gap-3 w-full sm:w-auto animate-fade-up ${HD.btns}`}>
+                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold bg-white text-slate-950 hover:bg-slate-100 hover:scale-[1.01] shadow-[0_12px_30px_-6px_rgba(139,92,246,0.3)] transition-all">
                   <Link to="/buy">Buy Data Now <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
-                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-semibold border border-white/12 text-white/75 bg-white/[0.06] hover:bg-white/10 hover:text-white backdrop-blur-sm transition-all">
+                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-semibold border border-white/10 text-white/80 bg-white/[0.04] hover:bg-white/10 hover:text-white backdrop-blur-md transition-all hover:scale-[1.01]">
                   <Link to="/auth?intent=agent">Become an Agent <ChevronRight className="ml-1 h-5 w-5" /></Link>
                 </Button>
               </div>
 
-              <div className={`mt-8 flex flex-wrap gap-x-6 gap-y-2.5 animate-fade-up ${HD.pips}`}>
+              <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2.5 animate-fade-up ${HD.pips}`}>
                 {[
                   { icon: CheckCircle, text: "No account needed" },
                   { icon: Zap,         text: "Under 60s delivery" },
                   { icon: ShieldCheck, text: "Secured payments" },
                 ].map(({ icon: Icon, text }) => (
-                  <span key={text} className="inline-flex items-center gap-2 text-sm text-white/35">
-                    <Icon className="h-4 w-4 text-green-400/70" /> {text}
+                  <span key={text} className="inline-flex items-center gap-2 text-xs sm:text-sm text-white/40">
+                    <Icon className="h-4 w-4 text-green-400/80" /> {text}
                   </span>
                 ))}
               </div>
             </div>
 
-            {/* Right — pricing card */}
-            <div className={`relative animate-slide-right ${HD.card}`}>
-              <div className="pointer-events-none absolute inset-0 -m-6 rounded-3xl bg-primary/15 blur-3xl" />
+            {/* Right Interactive Cockpit Column */}
+            <div className={`w-full max-w-md lg:col-span-6 lg:max-w-none relative animate-slide-right ${HD.card}`}>
+              <div className="pointer-events-none absolute inset-0 -m-6 rounded-3xl bg-primary/10 blur-3xl animate-float-pulse" />
 
-              <div className="relative overflow-hidden rounded-3xl border border-white/[0.08] bg-white/[0.04] p-1.5 shadow-[0_32px_80px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl">
-                <div className="rounded-[20px] bg-white p-5 shadow-inner">
+              <div className="relative overflow-hidden rounded-[2.25rem] border border-white/[0.08] bg-white/[0.02] p-2 sm:p-2.5 shadow-[0_24px_64px_rgba(0,0,0,0.6)] backdrop-blur-3xl">
+                <div className="rounded-[1.75rem] bg-white/95 dark:bg-slate-900/95 p-5 sm:p-6 shadow-inner backdrop-blur-md">
 
-                  <div className="mb-5 flex gap-2">
-                    {NETWORKS.map((n) => (
-                      <button
-                        type="button"
-                        key={n.id}
-                        onClick={() => setActiveNetwork(n.id)}
-                        className={`flex-1 rounded-xl border py-2.5 text-xs font-bold transition-all duration-200 ${
-                          activeNetwork === n.id
-                            ? n.activeClass
-                            : "border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-900 bg-white"
-                        }`}
-                      >
-                        {n.emoji} {n.name}
-                      </button>
-                    ))}
+                  {/* Network selection tabs */}
+                  <div className="mb-6 flex gap-1.5 rounded-2xl bg-slate-100/80 dark:bg-slate-950/50 p-1">
+                    {NETWORKS.map((n) => {
+                      const active = activeNetwork === n.id;
+                      return (
+                        <button
+                          type="button"
+                          key={n.id}
+                          onClick={() => setActiveNetwork(n.id)}
+                          className={cn(
+                            "flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-black tracking-tight transition-all duration-300",
+                            active
+                              ? n.activeClass
+                              : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                          )}
+                        >
+                          <span className="text-sm shrink-0">{n.emoji}</span>
+                          <span className="truncate">{n.name}</span>
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="mb-3 flex items-center justify-between">
+                  <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`h-2.5 w-2.5 rounded-full ${network.dotColor} transition-colors duration-300`} />
-                      <p className="text-sm font-bold text-slate-900">{network.name} Bundles</p>
+                      <div className={`h-2.5 w-2.5 rounded-full ${network.dotColor} animate-pulse`} />
+                      <p className="text-sm font-black text-slate-900 dark:text-white">{network.name} Active Bundles</p>
                     </div>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition-colors duration-300 ${network.tagColor}`}>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-tight uppercase ${network.tagColor}`}>
                       {network.tag}
                     </span>
                   </div>
 
-                  <div className="space-y-1.5">
-                    {network.bundles.map((b, i) => (
-                      <div
-                        key={b.label}
-                        className={`group flex items-center justify-between rounded-xl border px-3.5 py-2.5 transition-all cursor-pointer ${
-                          i === 0 ? network.rowHighlight : "border-slate-100 bg-white hover:bg-slate-50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${i === 0 ? "bg-primary/12" : "bg-slate-100"}`}>
-                            <Smartphone className={`h-3 w-3 ${i === 0 ? "text-primary" : "text-slate-500"}`} />
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    {network.bundles.map((b, i) => {
+                      const isBest = i === 0;
+                      return (
+                        <div
+                          key={b.label}
+                          className={cn(
+                            "group flex items-center justify-between rounded-2xl border px-4 py-3.5 transition-all duration-200 cursor-pointer active:scale-[0.99]",
+                            isBest
+                              ? `${network.rowHighlight} border-primary/20 dark:border-primary/30 shadow-[0_4px_12px_rgba(139,92,246,0.04)]`
+                              : "border-slate-100 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-950/60"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={cn(
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors",
+                              isBest ? "bg-primary/10 text-primary" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                            )}>
+                              <Smartphone className="h-4 w-4" />
+                            </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-sm font-black text-slate-900 dark:text-white leading-tight">{b.label}</span>
+                              {isBest && (
+                                <span className="text-[9px] font-black uppercase tracking-wider text-primary leading-none"> reseller choice </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-sm font-bold text-slate-900">{b.label}</span>
-                            {i === 0 && <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-primary">Best</span>}
-                          </div>
+                          <span className={cn(
+                            "text-sm font-black tracking-tight",
+                            isBest ? network.priceColor : "text-slate-900 dark:text-white"
+                          )}>{b.price}</span>
                         </div>
-                        <span className={`text-sm font-bold ${i === 0 ? network.priceColor : "text-slate-900"}`}>{b.price}</span>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
-                  <Button asChild className="mt-4 h-11 w-full rounded-xl gradient-primary font-bold shadow-float text-sm">
+                  <Button asChild className="mt-5 h-12 w-full rounded-2xl gradient-primary font-bold shadow-[0_8px_20px_rgba(139,92,246,0.25)] hover:shadow-[0_12px_28px_rgba(139,92,246,0.35)] text-sm transition-all active:scale-[0.98]">
                     <Link to="/buy">Order Now <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
                   </Button>
 
-                  <div className="mt-3 flex items-center justify-center gap-1.5">
-                    <ShieldCheck className="h-3 w-3 text-green-500" />
-                    <p className="text-center text-[11px] font-medium text-slate-500">
-                      Secured Payments · PCI-DSS Certified
-                    </p>
+                  <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                    <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
+                    <span>Secure processing by PCI-DSS platform</span>
                   </div>
                 </div>
               </div>
 
-              {/* Floating badges */}
-              <div className={`absolute -right-3 -top-4 flex items-center gap-1.5 rounded-full border border-yellow-200/80 bg-white px-3 py-1.5 shadow-float animate-in zoom-in-75 duration-500 ${HD.fb1}`}>
+              {/* Floating badges with glassmorphic backing & hover effects */}
+              <div className={`absolute -right-2 -top-4 flex items-center gap-1.5 rounded-full border border-slate-200/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-lg backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb1} hover:scale-105 transition-transform`}>
                 <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-black text-slate-900">4.8</span>
-                <span className="text-[10px] font-medium text-slate-500">· 3.2k+</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white">4.8</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">· 3.2k reviews</span>
               </div>
-              <div className={`absolute -left-3 bottom-16 flex items-center gap-2 rounded-full border border-green-200/70 bg-white px-3 py-2 shadow-float animate-in zoom-in-75 duration-500 ${HD.fb2}`}>
-                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs font-semibold text-slate-900">⚡ Instant Delivery</span>
+              <div className={`absolute -left-2 bottom-16 flex items-center gap-2 rounded-full border border-slate-200/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-lg backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb2} hover:scale-105 transition-transform`}>
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+                </span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">Instant Fulfillment</span>
               </div>
             </div>
+            
           </div>
         </div>
 
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent dark:from-[#05080f] dark:via-[#05080f]/40 dark:to-transparent" />
       </section>
 
+
       {/* ── Trust strip — auto-scrolling marquee ── */}
-      <div className="overflow-hidden border-b border-border/40 bg-white py-4">
+      <div className="overflow-hidden border-b border-slate-100 dark:border-white/5 bg-white dark:bg-slate-950 py-4">
         <div className="animate-marquee flex w-max items-center gap-3 px-3">
           {[...TRUST_ITEMS, ...TRUST_ITEMS].map((b, i) => (
             <div key={i} className="flex shrink-0 items-center gap-1.5 rounded-full border border-border/50 bg-secondary/40 px-3 py-1.5">
@@ -522,59 +556,72 @@ export default function HomePage() {
 
       {/* ── Stats ── */}
       <section className="bg-[#05080f] py-20">
-        <div ref={statsRef} className="mx-auto max-w-6xl px-5 md:px-8">
-          <p className={`mb-10 text-center text-[11px] font-bold uppercase tracking-[0.18em] text-white/20 transition-all duration-700 ${statsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
-            Trusted by thousands across Ghana
-          </p>
-          <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {[
-              { value: "10K+",   label: "Active Resellers", sub: "and growing daily",        from: "from-violet-400", to: "to-purple-400" },
-              { value: "< 60s",  label: "Avg. Delivery",    sub: "guaranteed speed",          from: "from-green-400",  to: "to-emerald-400" },
-              { value: "4.8★",   label: "Customer Rating",  sub: "3,200+ verified reviews",   from: "from-yellow-400", to: "to-orange-400" },
-              { value: "GH₵M+", label: "Monthly Volume",   sub: "trusted scale",             from: "from-pink-400",   to: "to-rose-400" },
-            ].map(({ value, label, sub, from, to }, i) => (
-              <div
-                key={label}
-                className={`text-center transition-all duration-700 ${SD.stats[i]} ${statsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
-              >
-                <p className={`text-4xl font-black bg-gradient-to-r ${from} ${to} bg-clip-text text-transparent md:text-5xl`}>{value}</p>
-                <p className="mt-3 text-sm font-semibold text-white/55">{label}</p>
-                <p className="mt-0.5 text-xs text-white/22">{sub}</p>
-              </div>
-            ))}
+        <div ref={statsRef} className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className={cn(
+            "rounded-[2.5rem] border border-white/[0.06] bg-white/[0.02] p-8 sm:p-10 backdrop-blur-xl shadow-2xl transition-all duration-1000",
+            statsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          )}>
+            <p className="mb-10 text-center text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+              Trusted by resellers across Ghana
+            </p>
+            <div className="grid grid-cols-2 gap-y-10 gap-x-4 md:grid-cols-4 divide-y divide-white/[0.05] md:divide-y-0 md:divide-x divide-solid">
+              {[
+                { value: "10K+",   label: "Active Resellers", sub: "growing daily",        from: "from-violet-400", to: "to-purple-400" },
+                { value: "< 60s",  label: "Avg. Delivery",    sub: "guaranteed speed",     from: "from-green-400",  to: "to-emerald-400" },
+                { value: "4.8★",   label: "Customer Rating",  sub: "verified reviews",      from: "from-yellow-400", to: "to-orange-400" },
+                { value: "GH₵M+", label: "Monthly Volume",   sub: "trusted scale",        from: "from-pink-400",   to: "to-rose-400" },
+              ].map(({ value, label, sub, from, to }, i) => (
+                <div
+                  key={label}
+                  className={cn(
+                    "text-center transition-all duration-700 px-2",
+                    i >= 2 ? "pt-10 md:pt-0" : "",
+                    SD.stats[i]
+                  )}
+                >
+                  <p className={`text-4xl font-black bg-gradient-to-r ${from} ${to} bg-clip-text text-transparent md:text-5xl`}>{value}</p>
+                  <p className="mt-3 text-sm font-semibold text-white/80">{label}</p>
+                  <p className="mt-0.5 text-xs text-white/30">{sub}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── Features ── */}
-      <section className="py-24">
-        <div ref={featuresRef} className="mx-auto max-w-6xl px-5 md:px-8">
-          <div className={`mb-14 text-center ${featuresInView ? "animate-in fade-in slide-in-from-bottom-6 duration-700" : "opacity-0"}`}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary">
-              <Sparkles className="h-3 w-3" /> Why OneGig
+      <section className="py-24 bg-slate-50/30 dark:bg-[#05080f]/20">
+        <div ref={featuresRef} className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className={`mb-16 text-center transition-all duration-1000 ${featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary">
+              <Sparkles className="h-3 w-3 animate-pulse" /> Why OneGig
             </span>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl lg:text-[2.75rem]">
               Built for resellers.<br className="hidden sm:block" />
               <span className="gradient-text"> Loved by everyone.</span>
             </h2>
-            <p className="mt-4 mx-auto max-w-lg text-muted-foreground">
+            <p className="mt-4 mx-auto max-w-lg text-sm sm:text-base text-muted-foreground leading-relaxed">
               Whether you're topping up your own line or running a full data business, we have exactly what you need.
             </p>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map(({ icon: Icon, title, desc, badge, from, to, glow }, i) => (
               <div
                 key={title}
-                className={`group relative overflow-hidden rounded-2xl border border-border/60 bg-white p-6 transition-all duration-300 hover:border-transparent hover:shadow-[0_8px_40px_rgba(0,0,0,0.09)] hover:-translate-y-0.5 ${SD.feats[i]} ${featuresInView ? "animate-in fade-in slide-in-from-bottom-6 duration-700" : "opacity-0"}`}
+                className={cn(
+                  "group relative overflow-hidden rounded-3xl border border-slate-200/60 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40 p-6 backdrop-blur-md transition-all duration-300 hover:border-transparent hover:shadow-[0_12px_40px_rgba(139,92,246,0.06)] hover:-translate-y-1",
+                  SD.feats[i],
+                  featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                )}
               >
                 <div className={`absolute inset-0 opacity-0 ${glow} transition-opacity duration-300`} />
-                <div className="relative">
-                  <div className="mb-4 flex items-start justify-between">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${from} ${to} shadow-sm`}>
+                <div className="relative z-10">
+                  <div className="mb-5 flex items-start justify-between">
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${from} ${to} shadow-[0_4px_20px_-4px_rgba(139,92,246,0.4)]`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <span className="rounded-full border border-border/50 bg-secondary/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{badge}</span>
+                    <span className="rounded-full border border-primary/10 bg-primary/5 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-primary">{badge}</span>
                   </div>
                   <h3 className="mb-2 text-base font-bold text-foreground">{title}</h3>
                   <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p>
@@ -586,39 +633,52 @@ export default function HomePage() {
       </section>
 
       {/* ── How it works ── */}
-      <section className="bg-[#05080f] py-24">
-        <div ref={stepsRef} className="mx-auto max-w-6xl px-5 md:px-8">
-          <div className={`mb-14 text-center ${stepsInView ? "animate-in fade-in slide-in-from-bottom-6 duration-700" : "opacity-0"}`}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-semibold text-white/55">
+      <section className="bg-[#05080f] py-24 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-violet-950/10 blur-[130px] pointer-events-none" />
+        <div ref={stepsRef} className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          <div className={`mb-16 text-center transition-all duration-1000 ${stepsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-semibold text-white/60">
               Simple process
             </span>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-white md:text-4xl">Buy data in under a minute</h2>
-            <p className="mt-3 mx-auto max-w-sm text-white/38 text-sm">No technical knowledge required. Three steps and you're done.</p>
+            <p className="mt-3 mx-auto max-w-sm text-white/45 text-sm">No technical knowledge required. Three steps and you're done.</p>
           </div>
 
-          <div className="relative grid gap-5 md:grid-cols-3 md:gap-6">
-            {/* Connector line — draws left-to-right on scroll */}
+          <div className="relative grid gap-6 md:grid-cols-3">
+            {/* Horizontal Connector line (desktop) */}
             <div
-              className={`absolute left-[calc(16.7%+1.5rem)] right-[calc(16.7%+1.5rem)] top-9 hidden h-px origin-left bg-gradient-to-r from-primary/30 via-fuchsia-500/50 to-primary/30 transition-transform duration-1000 ease-out [transition-delay:400ms] md:block ${stepsInView ? "scale-x-100" : "scale-x-0"}`}
+              className={`absolute left-[calc(16.7%+2rem)] right-[calc(16.7%+2rem)] top-12 hidden h-[2px] origin-left bg-gradient-to-r from-primary/40 via-fuchsia-500/50 to-primary/40 transition-transform duration-1000 ease-out [transition-delay:400ms] md:block ${stepsInView ? "scale-x-100" : "scale-x-0"}`}
             />
+            {/* Vertical Connector line (mobile) */}
+            <div className="absolute left-[32px] top-12 bottom-12 w-[2px] bg-gradient-to-b from-primary/30 via-fuchsia-500/40 to-primary/30 md:hidden pointer-events-none" />
 
             {STEPS.map(({ icon: Icon, step, title, desc, from, to }, i) => (
               <div
                 key={step}
-                className={`group relative rounded-2xl border border-white/[0.07] bg-white/[0.03] p-7 backdrop-blur-sm transition-all hover:bg-white/[0.06] hover:border-white/10 ${SD.steps[i]} ${stepsInView ? "animate-in fade-in slide-in-from-bottom-8 duration-700" : "opacity-0"}`}
+                className={cn(
+                  "group relative flex gap-5 items-start md:flex-col md:items-start rounded-3xl border border-white/[0.05] bg-white/[0.01] p-6 backdrop-blur-md transition-all duration-300 hover:bg-white/[0.03] hover:border-white/10",
+                  SD.steps[i],
+                  stepsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                )}
               >
-                <div className={`mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br ${from} ${to} shadow-lg`}>
-                  <Icon className="h-6 w-6 text-white" />
+                <div className={cn(
+                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg relative z-10 transition-transform duration-300 group-hover:scale-105",
+                  from, to
+                )}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <div className="absolute right-6 top-5 text-5xl font-black text-white/[0.04] select-none tabular-nums">{step}</div>
-                <h3 className="text-base font-bold text-white">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/38">{desc}</p>
+                <div className="flex-1 md:mt-3">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary/70">Step {step}</span>
+                  <h3 className="text-base font-bold text-white mt-1 leading-tight">{title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/50">{desc}</p>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className={`mt-12 text-center [animation-delay:580ms] ${stepsInView ? "animate-in fade-in slide-in-from-bottom-4 duration-500" : "opacity-0"}`}>
-            <Button asChild size="lg" className="h-12 rounded-xl px-10 font-bold gradient-primary shadow-[0_8px_30px_rgba(139,92,246,0.38)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.5)] hover:-translate-y-0.5 transition-all">
+          <div className={`mt-12 text-center transition-all duration-700 [transition-delay:500ms] ${stepsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}>
+            <Button asChild size="lg" className="h-12 rounded-xl px-10 font-bold gradient-primary shadow-[0_8px_30px_rgba(139,92,246,0.25)] hover:shadow-[0_12px_40px_rgba(139,92,246,0.35)] hover:-translate-y-0.5 transition-all">
               <Link to="/buy">Get Started Free <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
             </Button>
           </div>
@@ -626,37 +686,43 @@ export default function HomePage() {
       </section>
 
       {/* ── Testimonials ── */}
-      <section className="py-24">
-        <div ref={testimonialsRef} className="mx-auto max-w-6xl px-5 md:px-8">
-          <div className={`mb-14 text-center ${testimonialsInView ? "animate-in fade-in slide-in-from-bottom-6 duration-700" : "opacity-0"}`}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary">
-              <BadgeCheck className="h-3.5 w-3.5" /> Trusted by thousands
+      <section className="py-24 bg-slate-50/20 dark:bg-slate-950/10">
+        <div ref={testimonialsRef} className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          
+          <div className={`mb-16 text-center transition-all duration-1000 ${testimonialsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-bold text-primary">
+              <BadgeCheck className="h-3.5 w-3.5 animate-pulse" /> Verified Reseller Reviews
             </span>
             <h2 className="mt-4 text-3xl font-black tracking-tight text-foreground md:text-4xl">Real people. Real results.</h2>
-            <div className="mt-4 flex items-center justify-center gap-1">
+            <div className="mt-4 flex items-center justify-center gap-1 text-slate-900 dark:text-white">
               {[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />)}
-              <span className="ml-2 text-sm font-bold text-foreground">4.8 out of 5</span>
+              <span className="ml-2 text-sm font-black">4.8 out of 5</span>
               <span className="ml-1 text-sm text-muted-foreground">· 3,200+ reviews</span>
             </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-3">
             {TESTIMONIALS.map((t, i) => (
               <div
                 key={t.name}
-                className={`group relative flex flex-col rounded-2xl border border-border/60 bg-white p-6 shadow-soft transition-all hover:shadow-float hover:-translate-y-0.5 ${SD.tests[i]} ${testimonialsInView ? "animate-in fade-in slide-in-from-bottom-8 duration-700" : "opacity-0"}`}
+                className={cn(
+                  "group relative flex flex-col rounded-3xl border border-slate-200/50 dark:border-slate-800/80 bg-white/60 dark:bg-slate-900/40 p-6 shadow-soft transition-all duration-500 hover:shadow-float hover:-translate-y-1",
+                  SD.tests[i],
+                  testimonialsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                )}
               >
-                <div className="mb-3 flex gap-0.5">
+                <div className="mb-4 flex gap-0.5">
                   {Array.from({ length: t.stars }).map((_, j) => <Star key={j} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />)}
                 </div>
-                <p className="flex-1 text-sm leading-relaxed text-foreground">"{t.text}"</p>
-                <div className="mt-5 flex items-center gap-3 border-t border-border/50 pt-4">
-                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${t.gradient} text-sm font-bold text-white shadow-sm`}>
+                <p className="flex-1 text-sm leading-relaxed text-foreground dark:text-slate-200">"{t.text}"</p>
+                
+                <div className="mt-6 flex items-center gap-3 border-t border-slate-100 dark:border-slate-800/60 pt-4">
+                  <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${t.gradient} text-sm font-black text-white shadow-inner`}>
                     {t.initials}
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-foreground">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.role} · {t.location}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{t.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{t.role} · {t.location}</p>
                   </div>
                   <CheckCircle className="ml-auto h-4 w-4 shrink-0 text-green-500" />
                 </div>
@@ -667,64 +733,75 @@ export default function HomePage() {
       </section>
 
       {/* ── Agent CTA ── */}
-      <section className="mx-auto max-w-6xl px-5 pb-24 md:px-8">
-        <div ref={ctaRef} className="relative overflow-hidden rounded-3xl bg-[#05080f] p-8 md:p-14">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pb-24">
+        <div ref={ctaRef} className="relative overflow-hidden rounded-[2.5rem] bg-[#05080f] p-8 sm:p-12 md:p-16 border border-white/[0.05] shadow-3xl">
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/30 blur-3xl" />
-            <div className="absolute -bottom-24 left-0 h-72 w-[500px] rounded-full bg-fuchsia-600/18 blur-3xl" />
-            <div className="absolute inset-0 grid-pattern-dark opacity-40" />
+            <div className="absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/20 blur-3xl" />
+            <div className="absolute -bottom-24 left-0 h-72 w-[500px] rounded-full bg-fuchsia-600/10 blur-3xl" />
+            <div className="absolute inset-0 grid-pattern-dark opacity-30" />
           </div>
 
-          <div className="relative grid items-center gap-12 md:grid-cols-2">
-            {/* Left — slides in from left */}
-            <div className={`[animation-delay:100ms] ${ctaInView ? "animate-slide-left" : "opacity-0"}`}>
-              <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-xs font-semibold text-white/60">
-                <BriefcaseBusiness className="h-3.5 w-3.5" /> For Resellers
+          <div className="relative flex flex-col gap-12 lg:grid lg:grid-cols-12 lg:gap-16 items-center">
+            {/* Left Content Column */}
+            <div className={cn(
+              "w-full text-center lg:text-left lg:col-span-7 flex flex-col items-center lg:items-start transition-all duration-1000",
+              ctaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+            )}>
+              <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs font-semibold text-white/70">
+                <BriefcaseBusiness className="h-3.5 w-3.5" /> For Wholesale Resellers
               </span>
-              <h2 className="text-3xl font-black leading-tight tracking-tight text-white md:text-4xl lg:text-5xl">
+              <h2 className="text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl lg:text-5xl">
                 Turn data into<br />
-                <span className="gradient-text">income.</span>
+                <span className="gradient-text">residual income.</span>
               </h2>
-              <p className="mt-4 max-w-sm text-base leading-relaxed text-white/45">
-                Join 10,000+ agents earning on every sale. Open your store in minutes, set your prices, and let orders roll in automatically.
+              <p className="mt-4 max-w-md text-sm sm:text-base leading-relaxed text-white/50">
+                Join over 10,000+ resellers earning on every sale. Open your customized storefront in minutes, configure bundle markups, and let auto-fulfillment do the rest.
               </p>
 
-              <div className="mt-7 space-y-3">
+              <div className="mt-8 space-y-3.5 w-fit">
                 {AGENT_CHECKLIST.map((item, i) => (
                   <div
                     key={item}
-                    className={`flex items-center gap-3 ${SD.clist[i]} ${ctaInView ? "animate-in fade-in slide-in-from-left-4 duration-500" : "opacity-0"}`}
+                    className={cn(
+                      "flex items-center gap-3 transition-all duration-700",
+                      SD.clist[i],
+                      ctaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+                    )}
                   >
                     <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-500/20">
-                      <CheckCircle className="h-3 w-3 text-green-400" />
+                      <CheckCircle className="h-3.5 w-3.5 text-green-400" />
                     </div>
-                    <span className="text-sm text-white/55">{item}</span>
+                    <span className="text-xs sm:text-sm font-semibold text-white/70">{item}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-9 flex flex-wrap gap-3">
-                <Button asChild className="h-12 rounded-xl bg-white px-8 font-bold text-[#05080f] hover:bg-white/92 shadow-[0_8px_24px_rgba(255,255,255,0.15)] transition-all hover:-translate-y-0.5">
+              <div className="mt-9 flex flex-wrap justify-center lg:justify-start gap-3 w-full sm:w-auto">
+                <Button asChild className="h-12 rounded-xl bg-white text-slate-950 hover:bg-slate-100 px-8 font-bold shadow-[0_8px_24px_rgba(255,255,255,0.1)] transition-all hover:scale-[1.01]">
                   <Link to="/auth?intent=agent"><BriefcaseBusiness className="mr-2 h-4 w-4" /> Become an Agent</Link>
                 </Button>
-                <Button asChild variant="ghost" className="h-12 rounded-xl px-6 font-semibold text-white/45 hover:bg-white/[0.07] hover:text-white">
+                <Button asChild variant="ghost" className="h-12 rounded-xl px-6 font-semibold text-white/50 hover:bg-white/[0.05] hover:text-white">
                   <Link to="/auth?tab=signin">Sign In →</Link>
                 </Button>
               </div>
             </div>
 
-            {/* Right — cards zoom in with stagger */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Right Features Column */}
+            <div className="w-full lg:col-span-5 grid grid-cols-2 gap-4">
               {AGENT_FEATURES.map(({ icon: Icon, title, desc }, i) => (
                 <div
                   key={title}
-                  className={`group rounded-2xl border border-white/[0.07] bg-white/[0.04] p-4 transition-all hover:bg-white/[0.08] hover:border-white/12 ${SD.ccards[i]} ${ctaInView ? "animate-in zoom-in-90 fade-in duration-500" : "opacity-0"}`}
+                  className={cn(
+                    "group rounded-3xl border border-white/[0.05] bg-white/[0.02] p-5 transition-all duration-500 hover:bg-white/[0.05] hover:border-white/10 hover:-translate-y-0.5",
+                    SD.ccards[i],
+                    ctaInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+                  )}
                 >
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl gradient-primary shadow-sm">
-                    <Icon className="h-4 w-4 text-white" />
+                  <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl gradient-primary shadow-lg shadow-primary/20">
+                    <Icon className="h-5 w-5 text-white" />
                   </div>
                   <p className="text-sm font-bold text-white">{title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-white/38">{desc}</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-white/40">{desc}</p>
                 </div>
               ))}
             </div>
@@ -746,7 +823,11 @@ export default function HomePage() {
               <AccordionItem
                 key={i}
                 value={`faq-${i}`}
-                className={`rounded-2xl border border-border/60 bg-white px-5 shadow-soft transition-all data-[state=open]:border-primary/20 data-[state=open]:shadow-float ${SD.faq[i]} ${faqInView ? "animate-in fade-in slide-in-from-bottom-4 duration-500" : "opacity-0"}`}
+                className={cn(
+                  "rounded-2xl border border-slate-200/60 dark:border-slate-800/80 bg-white dark:bg-slate-900/50 px-5 shadow-soft backdrop-blur-md transition-all data-[state=open]:border-primary/20 dark:data-[state=open]:border-primary/30 data-[state=open]:shadow-float",
+                  SD.faq[i],
+                  faqInView ? "animate-in fade-in slide-in-from-bottom-4 duration-500" : "opacity-0"
+                )}
               >
                 <AccordionTrigger className="py-4 text-sm font-semibold text-foreground hover:no-underline">{faq.q}</AccordionTrigger>
                 <AccordionContent className="pb-4 text-sm leading-relaxed text-muted-foreground">{faq.a}</AccordionContent>

@@ -233,21 +233,27 @@ function PaymentsSection() {
   });
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-card/50 p-4 rounded-2xl border border-border/40">
-        <h2 className="text-lg font-bold">Payments Monitor</h2>
-        <div className="flex flex-wrap gap-2">
-          <Input 
-            placeholder="Search reference, phone, error..." 
-            value={search} onChange={e => setSearch(e.target.value)}
-            className="w-56 h-9 text-xs" 
-          />
-          <div className="flex bg-secondary/50 p-1 rounded-lg">
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/40 backdrop-blur-md p-5 rounded-[2rem] border border-border/40 shadow-soft">
+        <div>
+          <h2 className="text-lg font-black tracking-tight text-foreground">Payments Monitor</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Track and force-resolve incoming platform payments.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
+            <Input 
+              placeholder="Search reference, phone, error..." 
+              value={search} onChange={e => setSearch(e.target.value)}
+              className="w-56 h-10 rounded-xl bg-background/50 pl-9 pr-3 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/20 border-border/60 hover:border-border/80 transition-all text-foreground" 
+            />
+          </div>
+          <div className="flex bg-secondary/40 p-1 rounded-xl border border-border/40">
             {["all", "paid", "failed", "initialized"].map(s => (
               <button 
                 key={s} 
                 onClick={() => setStatusFilter(s)}
-                className={cn("px-3 py-1 text-xs font-semibold rounded-md transition-colors", statusFilter === s ? "bg-background shadow-sm" : "text-muted-foreground")}
+                className={cn("px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all", statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
@@ -256,24 +262,24 @@ function PaymentsSection() {
         </div>
       </div>
       
-      <div className="bg-card/30 rounded-3xl border border-border/40 divide-y divide-border/30">
+      <div className="bg-card/25 rounded-[2rem] border border-border/45 backdrop-blur-md divide-y divide-border/30 overflow-hidden shadow-soft">
         {filtered.length === 0 ? (
-          <p className="p-10 text-center text-sm text-muted-foreground">No payments found.</p>
+          <div className="p-16 text-center text-sm font-semibold text-muted-foreground">No transactions match your filters.</div>
         ) : (
           filtered.map((p: any) => (
-            <div key={p.id} className="p-5 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-accent/10 transition-colors">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold">{formatGHS(p.amount)}</span>
+            <div key={p.id} className="p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-primary/[0.01] transition-colors">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-base font-black tracking-tight text-foreground">{formatGHS(p.amount)}</span>
                   <StatusBadge status={p.status} />
-                  <span className="text-xs font-mono bg-secondary/50 px-2 py-0.5 rounded text-muted-foreground">{p.reference}</span>
-                  <span className="text-xs uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">{p.purpose}</span>
+                  <span className="text-[10px] font-mono bg-secondary/60 border border-border/40 px-2.5 py-0.5 rounded-md text-muted-foreground">{p.reference}</span>
+                  <span className="text-[9px] uppercase font-black text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">{p.purpose}</span>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {p.customer?.full_name || "Guest"} • {p.customer?.phone || p.payload?.recipient_phone || "N/A"} • {timeAgo(p.created_at)}
+                <div className="text-xs font-semibold text-muted-foreground/90">
+                  {p.customer?.full_name || "Guest"} • <span className="text-foreground">{p.customer?.phone || p.payload?.recipient_phone || "N/A"}</span> • {timeAgo(p.created_at)}
                 </div>
                 {p.payload?.error_message && (
-                  <div className="mt-2 text-xs font-semibold text-rose-500 bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20 max-w-xl">
+                  <div className="mt-2 text-xs font-semibold text-rose-500 bg-rose-500/10 px-3.5 py-2 rounded-xl border border-rose-500/20 max-w-2xl">
                     🚨 {p.payload.error_message}
                   </div>
                 )}
@@ -284,11 +290,12 @@ function PaymentsSection() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="h-8 text-xs font-semibold border-emerald-500/30 text-emerald-600 hover:bg-emerald-500 hover:text-white"
+                    className="h-9 rounded-xl text-xs font-bold border-emerald-500/30 text-emerald-600 bg-background/50 hover:bg-emerald-500 hover:text-white transition-all"
                     disabled={!!busyId}
                     onClick={() => forceResolve(p)}
                   >
-                    {busyId === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Force Resolve"}
+                    {busyId === p.id ? <Loader2 className="h-3 w-3 animate-spin mr-1.5" /> : null}
+                    Force Resolve
                   </Button>
                 )}
               </div>
@@ -408,43 +415,43 @@ function OverviewSection() {
   return (
     <div className="space-y-6">
       {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-[2rem] border border-primary/20 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent p-5 sm:p-7">
+      <div className="relative overflow-hidden rounded-[2rem] border border-border/40 bg-gradient-to-br from-card/60 via-card/30 to-transparent p-6 sm:p-8 backdrop-blur-md shadow-soft">
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.03]"
+          className="pointer-events-none absolute inset-0 opacity-[0.015] dark:opacity-[0.03]"
           style={{
             backgroundImage:
               "repeating-linear-gradient(0deg,transparent,transparent 22px,currentColor 22px,currentColor 23px)," +
               "repeating-linear-gradient(90deg,transparent,transparent 22px,currentColor 22px,currentColor 23px)",
           }}
         />
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between z-10">
           <div>
-            <div className="mb-2.5 inline-flex items-center gap-2 rounded-lg bg-primary/15 px-3 py-1">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1">
               <Shield className="h-3.5 w-3.5 text-primary" />
               <span className="text-[10px] font-black uppercase tracking-widest text-primary">Admin Console</span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-foreground">Platform Overview</h2>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">Platform Overview</h2>
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Real-time metrics across the OneGig ecosystem.</p>
           </div>
-          <div className="flex flex-col gap-3 sm:items-end">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-4 sm:items-end">
+            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full self-start sm:self-auto">
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-              <span className="text-xs font-bold text-emerald-500">All Systems Operational</span>
+              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">All Systems Operational</span>
             </div>
-            <div className="flex gap-4 sm:gap-5">
+            <div className="flex gap-6 sm:gap-8">
               <div className="text-left sm:text-right">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Today's Orders</p>
-                <p className="text-base sm:text-lg font-black text-foreground">{data?.todayOrders ?? 0}</p>
+                <p className="text-lg sm:text-xl font-black text-foreground tabular-nums">{data?.todayOrders ?? 0}</p>
               </div>
               <div className="text-left sm:text-right">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Today's Revenue</p>
-                <p className="text-base sm:text-lg font-black text-foreground">{formatGHS(data?.todayRevenue ?? 0)}</p>
+                <p className="text-lg sm:text-xl font-black text-foreground tabular-nums">{formatGHS(data?.todayRevenue ?? 0)}</p>
               </div>
             </div>
           </div>
         </div>
-        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute bottom-0 right-24 h-20 w-20 rounded-full bg-primary/5 blur-2xl" />
+        <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/20 blur-3xl opacity-60 dark:opacity-40" />
+        <div className="absolute bottom-0 right-24 h-20 w-20 rounded-full bg-primary/10 blur-2xl opacity-40" />
       </div>
 
       {/* Metric cards */}
@@ -523,45 +530,45 @@ function OverviewSection() {
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/40 p-5 shadow-soft">
+          <div className="flex flex-1 flex-col gap-4 rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md p-6 shadow-soft hover:shadow-lg transition-all duration-300">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold">Revenue (Last 7 Days)</h3>
+              <TrendingUp className="h-4.5 w-4.5 text-primary" />
+              <h3 className="text-sm font-bold text-foreground">Revenue (Last 7 Days)</h3>
             </div>
-            <div className="h-48 w-full">
+            <div className="h-48 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data?.chartData ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} tickFormatter={(val) => `₵${val}`} />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="currentColor" className="opacity-[0.06]" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.5, fontWeight: 600 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.5, fontWeight: 600 }} tickFormatter={(val) => `₵${val}`} />
                   <RechartsTooltip
-                    contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                    contentStyle={{ borderRadius: '16px', border: '1px solid border-border/40', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '11px', fontWeight: '600', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)', padding: '10px 14px' }}
                     itemStyle={{ color: 'hsl(var(--primary))' }}
                     formatter={(value: number) => [formatGHS(value), "Revenue"]}
                   />
-                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 4, fill: "hsl(var(--background))", strokeWidth: 2 }} activeDot={{ r: 6, strokeWidth: 0 }} />
+                  <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={3.5} dot={{ r: 4, fill: "hsl(var(--background))", strokeWidth: 2.5, stroke: "hsl(var(--primary))" }} activeDot={{ r: 6, strokeWidth: 0, fill: "hsl(var(--primary))" }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
           
-          <div className="flex flex-1 flex-col gap-4 rounded-3xl border border-border/60 bg-card/40 p-5 shadow-soft mt-4">
+          <div className="flex flex-1 flex-col gap-4 rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md p-6 shadow-soft hover:shadow-lg transition-all duration-300 mt-4">
             <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-emerald-500" />
-              <h3 className="text-sm font-bold">Top Networks (All Time)</h3>
+              <Activity className="h-4.5 w-4.5 text-emerald-500" />
+              <h3 className="text-sm font-bold text-foreground">Top Networks (All Time)</h3>
             </div>
-            <div className="h-40 w-full">
+            <div className="h-40 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data?.networkChartData ?? []} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} dy={10} />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.6 }} />
+                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="currentColor" className="opacity-[0.06]" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.5, fontWeight: 600 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'currentColor', opacity: 0.5, fontWeight: 600 }} />
                   <RechartsTooltip
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '12px' }}
+                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                    contentStyle={{ borderRadius: '16px', border: '1px solid border-border/40', backgroundColor: 'hsl(var(--card))', color: 'hsl(var(--foreground))', fontSize: '11px', fontWeight: '600', padding: '10px 14px' }}
                     formatter={(value: number) => [value, "Orders"]}
                   />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                  <Bar dataKey="count" radius={[6, 6, 0, 0]} maxBarSize={32}>
                     {(data?.networkChartData ?? []).map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
@@ -603,6 +610,46 @@ function UsersSection() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [verifyingUserId, setVerifyingUserId] = useState<string | null>(null);
+  const [verifiedUserNames, setVerifiedUserNames] = useState<Record<string, string>>({});
+
+  const detectNetwork = (phone: string) => {
+    let num = phone.replace(/\D/g, "");
+    if (num.startsWith("233")) {
+      num = "0" + num.substring(3);
+    }
+    const pfx = num.substring(0, 3);
+    if (["024", "054", "055", "059", "025", "053"].includes(pfx)) return "MTN";
+    if (["020", "050"].includes(pfx)) return "TELECEL";
+    if (["027", "057", "026", "056"].includes(pfx)) return "AIRTELTIGO";
+    return "MTN";
+  };
+
+  const verifyUserMomoName = async (userId: string, phone: string) => {
+    setVerifyingUserId(userId);
+    let num = phone.replace(/\D/g, "");
+    if (num.startsWith("233")) {
+      num = "0" + num.substring(3);
+    }
+    const network = detectNetwork(num);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-resolve", {
+        body: { momo_number: num, momo_network: network }
+      });
+      if (data?.ok && data?.account_name) {
+        setVerifiedUserNames(prev => ({ ...prev, [userId]: data.account_name }));
+        toast({ title: "Name Verified", description: `${data.account_name}` });
+      } else {
+        setVerifiedUserNames(prev => ({ ...prev, [userId]: "Not Found" }));
+        toast({ title: "Verification Failed", description: data?.error || "Could not resolve name", variant: "destructive" });
+      }
+    } catch (err: any) {
+      setVerifiedUserNames(prev => ({ ...prev, [userId]: "Error" }));
+      toast({ title: "Verification Error", description: err.message, variant: "destructive" });
+    } finally {
+      setVerifyingUserId(null);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -704,55 +751,84 @@ function UsersSection() {
   };
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/30 backdrop-blur-md shadow-soft">
+    <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
       <div className="flex flex-col gap-4 border-b border-border/40 bg-card/50 p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight">Platform Users</h2>
-          <p className="text-sm text-muted-foreground">Manage accounts and permissions across the system.</p>
+          <h2 className="text-xl font-black tracking-tight text-foreground">Platform Users</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage accounts and permissions across the system.</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
             <input
               type="text"
               placeholder="Search users…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-52 rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              className="h-10 w-56 rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all text-foreground placeholder:text-muted-foreground/50"
             />
           </div>
-          <div className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+          <div className="shrink-0 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-black text-primary">
             {filtered.length}{search ? ` of ${data?.length ?? 0}` : " registered"}
           </div>
         </div>
       </div>
 
-      <div className="divide-y divide-border/40">
+      <div className="divide-y divide-border/30">
         {filtered.map((u: any) => {
           const name = u.full_name || u.username || "Anonymous User";
           return (
-            <div key={u.id} className="group flex flex-col gap-4 p-5 transition-colors hover:bg-accent/20 md:flex-row md:items-center md:justify-between">
+            <div key={u.id} className="group flex flex-col gap-4 p-6 transition-all hover:bg-primary/[0.015] md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4">
                 <UserAvatar name={name} />
                 <div>
-                  <p className="text-sm font-bold leading-tight text-foreground">{name}</p>
-                  <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                  <p className="text-sm font-bold leading-tight text-foreground transition-colors group-hover:text-primary">{name}</p>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs font-semibold text-muted-foreground/80 items-center">
                     {u.email && <span>{u.email}</span>}
                     {u.phone && <><span className="hidden sm:inline opacity-40">·</span><span>{u.phone}</span></>}
+                    {u.phone && (
+                      <>
+                        <span className="hidden sm:inline opacity-40">·</span>
+                        {verifyingUserId === u.id ? (
+                          <span className="flex items-center gap-1 text-[10px] text-primary">
+                            <Loader2 className="h-3 w-3 animate-spin" /> Verifying...
+                          </span>
+                        ) : verifiedUserNames[u.id] ? (
+                          <span className={cn(
+                            "rounded-full px-2 py-0.5 border text-[9px] font-black leading-none",
+                            verifiedUserNames[u.id] === "Not Found" || verifiedUserNames[u.id] === "Error"
+                              ? "border-rose-500/20 bg-rose-500/10 text-rose-500"
+                              : "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                          )}>
+                            {verifiedUserNames[u.id] === "Not Found" || verifiedUserNames[u.id] === "Error"
+                              ? `MoMo Name: ${verifiedUserNames[u.id]}`
+                              : `Verified: ${verifiedUserNames[u.id]}`
+                            }
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => verifyUserMomoName(u.id, u.phone)}
+                            className="text-[10px] text-primary hover:underline hover:text-primary/80 transition-colors font-bold"
+                          >
+                            Verify Paystack Name
+                          </button>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <div className="mt-1.5 flex flex-wrap gap-1">
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r: string) => (
-                      <span key={r} className={cn("rounded-md border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider", roleStyle[r] ?? roleStyle.user)}>
+                      <span key={r} className={cn("rounded-full border px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider", roleStyle[r] ?? roleStyle.user)}>
                         {r}
                       </span>
                     ))}
                     {u.roles.includes("agent") && (
                       u.agentProfile?.activation_paid ? (
-                        <span className="rounded-md border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
                           Active Store
                         </span>
                       ) : (
-                        <span className="rounded-md border border-rose-500/30 bg-rose-500/10 text-rose-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider">
+                        <span className="rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
                           Store Inactive
                         </span>
                       )
@@ -760,10 +836,10 @@ function UsersSection() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:flex items-center gap-2 pt-3 md:pt-0 border-t border-border/30 md:border-0">
+              <div className="grid grid-cols-2 md:flex items-center gap-2.5 pt-3.5 md:pt-0 border-t border-border/30 md:border-0">
                 <Button
                   variant="outline" size="sm"
-                  className="col-span-full md:col-auto h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-primary hover:bg-primary hover:text-primary-foreground"
+                  className="col-span-full md:col-auto h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-bold hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                   onClick={() => setSelectedUser(u)}
                 >
                   View Details
@@ -771,48 +847,48 @@ function UsersSection() {
                 {!u.roles.includes("agent") && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-amber-500 hover:bg-amber-500 hover:text-white"
+                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-bold hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-600"
                     disabled={busyId === u.id}
                     onClick={() => makeAgent(u.id)}
                   >
                     {busyId === u.id
                       ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
-                      : <><UserCog className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Agent</>}
+                      : <><UserCog className="mr-1.5 h-3.5 w-3.5 md:h-3 md:w-3" />Agent</>}
                   </Button>
                 )}
                 {u.roles.includes("agent") && !u.agentProfile?.activation_paid && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 md:h-8 rounded-xl border-emerald-500/30 bg-background/50 text-xs font-semibold text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
+                    className="h-9 md:h-8 rounded-xl border-emerald-500/30 bg-background/50 text-xs font-bold text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
                     disabled={busyId === u.id}
                     onClick={() => makeAgent(u.id)}
                   >
                     {busyId === u.id
                       ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
-                      : <><CheckCircle2 className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Verify Account</>}
+                      : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5 md:h-3 md:w-3" />Verify Account</>}
                   </Button>
                 )}
                 {!u.roles.includes("admin") && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-semibold hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
+                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-bold hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:text-emerald-600"
                     disabled={busyId === u.id}
                     onClick={() => makeAdmin(u.id)}
                   >
                     {busyId === u.id
                       ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
-                      : <><ShieldCheck className="mr-1.5 h-4 w-4 md:h-3 md:w-3" />Admin</>}
+                      : <><ShieldCheck className="mr-1.5 h-3.5 w-3.5 md:h-3 md:w-3" />Admin</>}
                   </Button>
                 )}
                 <Button
                   variant="ghost" size="sm"
-                  className="col-span-full md:col-auto h-9 md:h-8 md:w-8 rounded-xl text-muted-foreground/50 hover:bg-destructive/10 hover:text-destructive border border-border/60 bg-background/50 md:border-0 md:bg-transparent"
+                  className="col-span-full md:col-auto h-9 md:h-8 md:w-8 rounded-xl text-muted-foreground/45 hover:bg-destructive/10 hover:text-destructive border border-border/60 bg-background/50 md:border-0 md:bg-transparent"
                   disabled={busyId === u.id}
                   onClick={() => removeUser(u.id)}
                 >
                   {busyId === u.id
                     ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
-                    : <><Trash2 className="md:mr-0 mr-1.5 h-4 w-4 md:h-3.5 md:w-3.5" /><span className="md:hidden font-semibold text-xs text-foreground">Delete User</span></>}
+                    : <><Trash2 className="md:mr-0 mr-1.5 h-3.5 w-3.5" /><span className="md:hidden font-bold text-xs">Delete User</span></>}
                 </Button>
               </div>
             </div>
@@ -986,43 +1062,43 @@ function OrdersSection() {
   ];
 
   return (
-    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Stats cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-5">
         {[
-          { label: "Total Orders",  value: orders.length,     icon: ShoppingCart, iconBg: "bg-primary/10",     iconCl: "text-primary",    valCl: "text-foreground"  },
-          { label: "Delivered",     value: delivered,          icon: CheckCircle2, iconBg: "bg-emerald-500/10", iconCl: "text-emerald-500", valCl: "text-emerald-600" },
-          { label: "In Progress",   value: inProgress,         icon: Clock,        iconBg: "bg-amber-500/10",   iconCl: "text-amber-500",  valCl: "text-amber-600"   },
-          { label: "Failed",        value: failed,             icon: XCircle,      iconBg: "bg-rose-500/10",    iconCl: "text-rose-500",   valCl: "text-rose-600"    },
-          { label: "Total Revenue", value: formatGHS(revenue), icon: TrendingUp,   iconBg: "bg-violet-500/10",  iconCl: "text-violet-500", valCl: "text-violet-700 dark:text-violet-400" },
-        ].map(({ label, value, icon: Icon, iconBg, iconCl, valCl }) => (
-          <div key={label} className="relative overflow-hidden rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
-            <div className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${iconBg}`}>
-              <Icon className={`h-4 w-4 ${iconCl}`} />
+          { label: "Total Orders",  value: orders.length,     icon: ShoppingCart, iconBg: "bg-primary/10 text-primary border-primary/20", valCl: "text-foreground" },
+          { label: "Delivered",     value: delivered,          icon: CheckCircle2, iconBg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", valCl: "text-emerald-600 dark:text-emerald-400" },
+          { label: "In Progress",   value: inProgress,         icon: Clock,        iconBg: "bg-amber-500/10 text-amber-500 border-amber-500/20", valCl: "text-amber-600 dark:text-amber-400" },
+          { label: "Failed",        value: failed,             icon: XCircle,      iconBg: "bg-rose-500/10 text-rose-500 border-rose-500/20", valCl: "text-rose-600 dark:text-rose-400" },
+          { label: "Total Revenue", value: formatGHS(revenue), icon: TrendingUp,   iconBg: "bg-violet-500/10 text-violet-500 border-violet-500/20", valCl: "text-violet-600 dark:text-violet-400" },
+        ].map(({ label, value, icon: Icon, iconBg, valCl }) => (
+          <div key={label} className="relative overflow-hidden rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+            <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl border ${iconBg}`}>
+              <Icon className="h-4 w-4" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{label}</p>
-            <p className={`mt-1 text-2xl font-black tabular-nums ${valCl}`}>{value}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">{label}</p>
+            <p className={`mt-1.5 text-xl sm:text-2xl font-black tracking-tight tabular-nums ${valCl}`}>{value}</p>
           </div>
         ))}
       </div>
 
       {/* Search + filter */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
           <input
             type="text"
             placeholder="Search phone, name, ref…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/60 outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            className="h-10 w-full rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all"
           />
         </div>
         <div className="flex flex-wrap shrink-0 items-center gap-3">
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="h-10 rounded-xl border border-border/60 bg-secondary/40 px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30 transition-all cursor-pointer"
+            className="h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
           >
             <option value="today">Today</option>
             <option value="7d">Last 7 Days</option>
@@ -1036,16 +1112,16 @@ function OrdersSection() {
               key={value}
               type="button"
               onClick={() => setStatusFilter(value)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
                 statusFilter === value
-                  ? "gradient-primary text-white shadow-sm"
+                  ? "bg-background text-foreground shadow-sm font-black"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {label}
               {count > 0 && (
-                <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${
-                  statusFilter === value ? "bg-white/20 text-white" : "bg-secondary text-muted-foreground"
+                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-black tabular-nums ${
+                  statusFilter === value ? "bg-primary/20 text-primary border border-primary/30" : "bg-secondary text-muted-foreground"
                 }`}>
                   {count}
                 </span>
@@ -1057,11 +1133,11 @@ function OrdersSection() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/25 backdrop-blur-md shadow-soft">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/60">
-              <Package className="h-7 w-7 text-muted-foreground/30" />
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-secondary/40 border border-border/30">
+              <Package className="h-6 w-6 text-muted-foreground/50" />
             </div>
             <p className="text-sm font-bold text-muted-foreground">No orders found</p>
             <p className="mt-1 text-xs text-muted-foreground/60">Try adjusting your search or filter.</p>
@@ -1069,86 +1145,86 @@ function OrdersSection() {
         ) : (
           <div className="overflow-x-auto">
             {/* Desktop Table */}
-            <table className="hidden w-full text-left md:table">
+            <table className="hidden w-full text-left md:table text-xs">
               <thead>
-                <tr className="border-b border-border/40 bg-secondary/30">
+                <tr className="border-b border-border/40 bg-secondary/20 text-muted-foreground/75">
                   {["Bundle", "Recipient", "Customer", "Revenue", "Status", "When", ""].map((h) => (
-                    <th key={h} className="px-5 py-3.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
                 {filtered.map((o: any, i: number) => (
-                  <tr key={o.id} className={`group transition-colors hover:bg-primary/[0.025] ${i % 2 !== 0 ? "bg-secondary/[0.04]" : ""}`}>
-                    <td className="px-5 py-4">
+                  <tr key={o.id} className={`group transition-colors hover:bg-primary/[0.01] ${i % 2 !== 0 ? "bg-secondary/[0.02]" : ""}`}>
+                    <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary/70 text-lg leading-none">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 text-lg leading-none border border-border/30">
                           {o.network?.logo_emoji ?? "📦"}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground leading-tight">{o.bundle?.size_label ?? "—"}</p>
-                          <p className="text-[11px] text-muted-foreground">{o.network?.name}</p>
+                          <p className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{o.bundle?.size_label ?? "—"}</p>
+                          <p className="text-[10px] text-muted-foreground/90 font-medium">{o.network?.name}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <code className="rounded-lg bg-secondary/70 px-2 py-1 text-[11px] font-mono font-semibold text-foreground tracking-tight">
+                    <td className="px-6 py-4">
+                      <code className="rounded-lg bg-secondary/70 border border-border/30 px-2 py-1 text-[11px] font-mono font-semibold text-foreground tracking-tight">
                         {o.recipient_phone}
                       </code>
                     </td>
-                    <td className="px-5 py-4">
-                      <p className="max-w-[150px] truncate text-sm font-semibold text-foreground">
+                    <td className="px-6 py-4">
+                      <p className="max-w-[150px] truncate text-sm font-bold text-foreground">
                         {o.customer?.full_name || o.customer?.email || (
-                          <span className="font-normal italic text-muted-foreground">Guest</span>
+                          <span className="font-normal italic text-muted-foreground/70">Guest</span>
                         )}
                       </p>
                       {o.source && (
-                        <span className="mt-0.5 inline-block rounded bg-secondary/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span className="mt-1 inline-block rounded-md bg-secondary/80 border border-border/35 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/80">
                           {o.source.replace("_", " ")}
                         </span>
                       )}
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <p className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-col gap-1">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-1 items-start">
                         <StatusBadge status={o.status} />
                         {o.status === "failed" && o.notes && (
-                          <span className="max-w-[120px] truncate text-[9px] font-medium text-rose-500/80" title={o.notes}>
+                          <span className="max-w-[120px] truncate text-[9px] font-semibold text-rose-500/80 bg-rose-500/10 px-1.5 py-0.5 rounded" title={o.notes}>
                             {o.notes}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <p className="whitespace-nowrap text-xs font-semibold text-foreground">
+                    <td className="px-6 py-4">
+                      <p className="whitespace-nowrap text-xs font-bold text-foreground">
                         {new Intl.DateTimeFormat("en-GH", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(o.created_at))}
                       </p>
-                      <p className="whitespace-nowrap text-[10px] text-muted-foreground">{timeAgo(o.created_at)}</p>
+                      <p className="whitespace-nowrap text-[10px] text-muted-foreground/80 font-medium">{timeAgo(o.created_at)}</p>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-6 py-4 text-right">
                       {o.status === "failed" && (
                         <div className="flex justify-end gap-2">
                           <Button
                             size="sm" variant="outline"
                             disabled={retryId === o.id}
                             onClick={() => retryOrder(o, true)}
-                            className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all"
+                            className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all shadow-sm"
                           >
                             {retryId === o.id
                               ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <><CheckCircle2 className="h-3 w-3" /> Manual Fulfill</>}
+                              : <><CheckCircle2 className="h-3.5 w-3.5" /> Manual Fulfill</>}
                           </Button>
                           <Button
                             size="sm" variant="outline"
                             disabled={retryId === o.id}
                             onClick={() => retryOrder(o, false)}
-                            className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all"
+                            className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
                           >
                             {retryId === o.id
                               ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <><RotateCcw className="h-3 w-3" /> Retry API</>}
+                              : <><RotateCcw className="h-3.5 w-3.5" /> Retry API</>}
                           </Button>
                         </div>
                       )}
@@ -1159,53 +1235,53 @@ function OrdersSection() {
             </table>
 
             {/* Mobile Cards */}
-            <div className="grid gap-3 p-4 md:hidden">
+            <div className="grid gap-4 p-5 md:hidden">
               {filtered.map((o: any) => (
-                <div key={o.id} className="flex flex-col gap-3 rounded-3xl border border-border/50 bg-card/40 p-5 shadow-soft transition-all hover:bg-accent/10">
-                  <div className="flex items-center justify-between border-b border-border/30 pb-4">
+                <div key={o.id} className="flex flex-col gap-4 rounded-2xl border border-border/40 bg-card/45 p-5 shadow-soft transition-all hover:bg-primary/[0.01]">
+                  <div className="flex items-center justify-between border-b border-border/30 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary/70 text-xl leading-none">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/70 border border-border/30 text-lg leading-none">
                         {o.network?.logo_emoji ?? "📦"}
                       </div>
                       <div>
                         <p className="text-sm font-bold text-foreground leading-tight">{o.bundle?.size_label ?? "—"}</p>
-                        <p className="text-[11px] text-muted-foreground">{o.network?.name}</p>
+                        <p className="text-[10px] text-muted-foreground/80 font-medium">{o.network?.name}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
-                      <p className="text-[10px] text-muted-foreground">{timeAgo(o.created_at)}</p>
+                      <p className="text-[10px] text-muted-foreground/85 font-medium">{timeAgo(o.created_at)}</p>
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Recipient</span>
-                      <code className="rounded-lg bg-secondary/70 px-2 py-1 text-xs font-mono font-bold text-foreground tracking-tight">
+                      <span className="font-semibold text-muted-foreground/80">Recipient</span>
+                      <code className="rounded-lg bg-secondary/70 border border-border/30 px-2 py-0.5 font-mono font-bold text-foreground tracking-tight">
                         {o.recipient_phone}
                       </code>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Customer</span>
+                      <span className="font-semibold text-muted-foreground/80">Customer</span>
                       <div className="text-right">
-                        <p className="max-w-[150px] truncate text-sm font-semibold text-foreground">
+                        <p className="max-w-[150px] truncate font-bold text-foreground">
                           {o.customer?.full_name || o.customer?.email || (
-                            <span className="font-normal italic text-muted-foreground">Guest</span>
+                            <span className="font-normal italic text-muted-foreground/60">Guest</span>
                           )}
                         </p>
                         {o.source && (
-                          <span className="mt-0.5 inline-block rounded bg-secondary/80 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                          <span className="mt-0.5 inline-block rounded-md bg-secondary/80 border border-border/35 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/75">
                             {o.source.replace("_", " ")}
                           </span>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-muted-foreground">Status</span>
+                      <span className="font-semibold text-muted-foreground/80">Status</span>
                       <div className="flex flex-col items-end gap-1">
                         <StatusBadge status={o.status} />
                         {o.status === "failed" && o.notes && (
-                          <span className="max-w-[120px] truncate text-[9px] font-medium text-rose-500/80" title={o.notes}>
+                          <span className="max-w-[120px] truncate text-[9px] font-semibold text-rose-500/80 bg-rose-500/10 px-1.5 py-0.5 rounded" title={o.notes}>
                             {o.notes}
                           </span>
                         )}
@@ -1214,7 +1290,7 @@ function OrdersSection() {
                   </div>
 
                   {o.status === "failed" && (
-                    <div className="mt-2 grid grid-cols-2 gap-2 pt-4 border-t border-border/30">
+                    <div className="grid grid-cols-2 gap-2.5 pt-4 border-t border-border/30">
                       <Button
                         size="sm" variant="outline"
                         disabled={retryId === o.id}
@@ -1240,14 +1316,14 @@ function OrdersSection() {
         )}
 
         {filtered.length > 0 && (
-          <div className="flex items-center justify-between border-t border-border/30 bg-secondary/20 px-5 py-3">
-            <p className="text-xs text-muted-foreground">
-              Showing <span className="font-bold text-foreground">{filtered.length}</span> of <span className="font-bold">{orders.length}</span> orders
+          <div className="flex items-center justify-between border-t border-border/30 bg-secondary/10 px-6 py-4">
+            <p className="text-xs font-semibold text-muted-foreground/80">
+              Showing <span className="font-black text-foreground">{filtered.length}</span> of <span className="font-black">{orders.length}</span> orders
             </p>
             <button
               type="button"
               onClick={() => qc.invalidateQueries({ queryKey: ["admin-orders"] })}
-              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all"
+              className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all border border-transparent hover:border-border/30"
             >
               <RefreshCw className="h-3 w-3" /> Refresh
             </button>
@@ -1264,6 +1340,33 @@ function WithdrawalsSection() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [verifiedNames, setVerifiedNames] = useState<Record<string, string>>({});
+
+  const verifyMomoAccount = async (withdrawalId: string, momoNumber: string, momoNetwork: string) => {
+    setVerifyingId(withdrawalId);
+    let num = momoNumber.replace(/\D/g, "");
+    if (num.startsWith("233")) {
+      num = "0" + num.substring(3);
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-resolve", {
+        body: { momo_number: num, momo_network: momoNetwork }
+      });
+      if (data?.ok && data?.account_name) {
+        setVerifiedNames(prev => ({ ...prev, [withdrawalId]: data.account_name }));
+        toast({ title: "Account Verified Successfully", description: `Registered Name: ${data.account_name}` });
+      } else {
+        setVerifiedNames(prev => ({ ...prev, [withdrawalId]: "Not Found" }));
+        toast({ title: "Verification Failed", description: data?.error || "Could not resolve name", variant: "destructive" });
+      }
+    } catch (err: any) {
+      setVerifiedNames(prev => ({ ...prev, [withdrawalId]: "Error" }));
+      toast({ title: "Verification Error", description: err.message, variant: "destructive" });
+    } finally {
+      setVerifyingId(null);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-withdrawals"],
@@ -1340,66 +1443,91 @@ function WithdrawalsSection() {
   const pendingTotal = pending.reduce((s, w: any) => s + Number(w.amount ?? 0), 0);
 
   return (
-    <div className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Pending banner */}
       {pending.length > 0 && (
-        <div className="flex items-center justify-between rounded-2xl border border-amber-500/25 bg-amber-500/10 px-6 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/15">
-              <Wallet className="h-5 w-5 text-amber-500" />
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between rounded-[2rem] border border-amber-500/25 bg-amber-500/10 px-6 py-5 backdrop-blur-md">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/20">
+              <Wallet className="h-5 w-5 text-amber-500 animate-pulse" />
             </div>
             <div>
-              <p className="text-sm font-bold text-amber-600">
+              <p className="text-sm font-black text-amber-600 dark:text-amber-400">
                 {pending.length} pending withdrawal{pending.length > 1 ? "s" : ""} awaiting approval
               </p>
-              <p className="text-xs text-amber-500/70">Review and mark each as paid once transferred.</p>
+              <p className="text-xs font-semibold text-amber-500/80 mt-0.5">Review and mark each as paid once transferred.</p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-amber-500/70">Total Pending</p>
-            <p className="text-xl font-black tabular-nums text-amber-600">{formatGHS(pendingTotal)}</p>
+          <div className="text-left sm:text-right">
+            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/80">Total Pending</p>
+            <p className="text-2xl font-black tabular-nums text-amber-600 dark:text-amber-400 mt-0.5">{formatGHS(pendingTotal)}</p>
           </div>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/30 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
         <div className="border-b border-border/40 bg-card/50 p-6">
-          <h2 className="text-xl font-bold tracking-tight">Withdrawal Requests</h2>
-          <p className="text-sm text-muted-foreground">Manage and process agent payout requests.</p>
+          <h2 className="text-xl font-black tracking-tight text-foreground">Withdrawal Requests</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Manage and process agent payout requests.</p>
         </div>
-        <div className="divide-y divide-border/40">
+        <div className="divide-y divide-border/30">
           {(data ?? []).map((w: any) => (
-            <div key={w.id} className="group p-6 transition-colors hover:bg-accent/20">
+            <div key={w.id} className="group p-6 transition-all hover:bg-primary/[0.015]">
               <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
-                    <DollarSign className="h-6 w-6" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:scale-105 transition-transform duration-300">
+                    <DollarSign className="h-5.5 w-5.5" />
                   </div>
                   <div>
-                    <p className="text-base font-bold leading-tight">{w.profile?.full_name || w.profile?.email || "Unknown Agent"}</p>
-                    <p className="mt-1 text-xs font-medium text-muted-foreground">
-                      Available: <span className="text-foreground">{formatGHS(w.balance)}</span>{" "}
-                      · Requested: <span className="text-foreground">{timeAgo(w.created_at)}</span>
+                    <p className="text-base font-bold leading-tight text-foreground group-hover:text-primary transition-colors">{w.profile?.full_name || w.profile?.email || "Unknown Agent"}</p>
+                    <p className="mt-1.5 text-xs font-semibold text-muted-foreground/80">
+                      Available: <span className="text-foreground font-bold">{formatGHS(w.balance)}</span>{" "}
+                      · Requested: <span className="text-foreground/90 font-medium">{timeAgo(w.created_at)}</span>
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1">
-                  <p className="text-2xl font-black tracking-tighter text-foreground">{formatGHS(w.amount)}</p>
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                    <span className="rounded bg-accent/50 px-1.5 py-0.5">{w.momo_network}</span>
-                    <span>{w.momo_number}</span>
+                <div className="flex flex-col items-start md:items-end gap-1.5">
+                  <p className="text-2xl font-black tracking-tighter text-foreground tabular-nums">{formatGHS(w.amount)}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
+                    <span className="rounded-md bg-secondary/80 border border-border/40 px-2 py-0.5">{w.momo_network}</span>
+                    <span className="font-mono">{w.momo_number}</span>
                     <span className="hidden opacity-30 md:inline">|</span>
                     <span className="max-w-[120px] truncate">{w.momo_name}</span>
+                    <span className="hidden opacity-30 md:inline">|</span>
+                    {verifyingId === w.id ? (
+                      <span className="flex items-center gap-1 text-[9px] text-primary lowercase tracking-normal">
+                        <Loader2 className="h-3 w-3 animate-spin" /> verifying...
+                      </span>
+                    ) : verifiedNames[w.id] ? (
+                      <span className={cn(
+                        "rounded-full px-2 py-0.5 border text-[9px] font-black leading-none",
+                        verifiedNames[w.id] === "Not Found" || verifiedNames[w.id] === "Error"
+                          ? "border-rose-500/20 bg-rose-500/10 text-rose-500"
+                          : "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                      )}>
+                        {verifiedNames[w.id] === "Not Found" || verifiedNames[w.id] === "Error"
+                          ? `MoMo Name: ${verifiedNames[w.id]}`
+                          : `Verified: ${verifiedNames[w.id]}`
+                        }
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => verifyMomoAccount(w.id, w.momo_number, w.momo_network)}
+                        className="text-[10px] text-primary hover:underline hover:text-primary/80 transition-colors font-bold lowercase tracking-normal"
+                      >
+                        verify momo name
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <div className={`rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest ${w.status === "paid" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-amber-500/20 bg-amber-500/10 text-amber-500"}`}>
+                <div className="flex items-center gap-3 pt-4 md:pt-0 border-t border-border/30 md:border-0 justify-between md:justify-start w-full md:w-auto">
+                  <div className={`rounded-xl border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${w.status === "paid" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-amber-500/20 bg-amber-500/10 text-amber-500"}`}>
                     {w.status}
                   </div>
                   <Button
-                    className="h-10 rounded-xl bg-primary px-6 font-bold shadow-soft transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                    className="h-10 rounded-xl bg-primary px-6 font-bold shadow-soft transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs"
                     disabled={busyId === w.id || w.status === "paid"}
                     onClick={() => confirmWithdrawal(w.id)}
                   >
@@ -1492,33 +1620,32 @@ function PricingSection() {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
         <div className="border-b border-border/40 bg-card/50 p-6">
-          <h2 className="text-xl font-bold tracking-tight">{editingId ? "Edit Package" : "Create New Package"}</h2>
-          <p className="text-sm text-muted-foreground">Configure data bundle pricing and network availability.</p>
+          <h2 className="text-xl font-black tracking-tight text-foreground">{editingId ? "Edit Package" : "Create New Package"}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Configure data bundle pricing and network availability.</p>
         </div>
         <div className="p-6 md:p-8">
-          <div className="overflow-hidden rounded-[20px] border border-border/50 bg-background/30 shadow-sm transition-all focus-within:shadow-md focus-within:border-border/80">
-            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30">
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Network Provider</label>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Network Provider</label>
               <select
                 value={form.network_id}
                 onChange={(e) => setForm((p) => ({ ...p, network_id: e.target.value }))}
-                className="w-full appearance-none bg-transparent text-sm font-semibold text-foreground outline-none"
+                className="w-full appearance-none bg-transparent text-sm font-semibold text-foreground outline-none cursor-pointer"
               >
                 <option value="">Select Network…</option>
                 {payload?.networks.map((n: any) => <option key={n.id} value={n.id}>{n.name}</option>)}
               </select>
             </div>
             
-            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30">
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Bundle Label</label>
+            <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Bundle Label</label>
               <select 
                 value={form.size_label} 
                 onChange={(e) => {
                   const val = e.target.value;
                   let gb = form.size_gb;
-                  // Auto-infer GB when label is selected
                   if (val.includes("500MB")) gb = "0.5";
                   else if (val.includes("GB")) {
                     const match = val.match(/([\d.]+)GB/);
@@ -1526,7 +1653,7 @@ function PricingSection() {
                   }
                   setForm((p) => ({ ...p, size_label: val, size_gb: gb }));
                 }} 
-                className="w-full appearance-none bg-transparent text-sm font-semibold text-foreground outline-none" 
+                className="w-full appearance-none bg-transparent text-sm font-semibold text-foreground outline-none cursor-pointer" 
               >
                 <option value="">Select Bundle Label…</option>
                 <option value="500MB Non-Expiry">500MB Non-Expiry</option>
@@ -1552,12 +1679,12 @@ function PricingSection() {
               </select>
             </div>
             
-            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30">
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Data Size (GB)</label>
+            <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Data Size (GB)</label>
               <select 
                 value={form.size_gb} 
                 onChange={(e) => setForm((p) => ({ ...p, size_gb: e.target.value }))} 
-                className="w-full appearance-none bg-transparent text-sm font-semibold text-foreground outline-none" 
+                className="w-full appearance-none bg-transparent text-sm font-semibold text-foreground outline-none cursor-pointer" 
               >
                 <option value="">Select Data Size…</option>
                 <option value="0.5">0.5 GB (500MB)</option>
@@ -1583,37 +1710,37 @@ function PricingSection() {
               </select>
             </div>
             
-            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30">
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Regular User Price (GHS)</label>
+            <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Regular User Price (GHS)</label>
               <input 
                 placeholder="e.g. 5.50" 
                 type="number" 
                 step="0.01" 
                 value={form.user_price} 
                 onChange={(e) => setForm((p) => ({ ...p, user_price: e.target.value }))} 
-                className="w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/40" 
+                className="w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/30" 
               />
             </div>
             
-            <div className="group relative bg-primary/5 p-4 transition-colors hover:bg-primary/10 focus-within:bg-primary/10">
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-primary">Agent Wholesale Price (GHS)</label>
+            <div className="group relative border border-primary/30 rounded-2xl p-4 bg-primary/5 transition-all focus-within:ring-2 focus-within:ring-primary/25 hover:bg-primary/10">
+              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-primary">Agent Wholesale Price (GHS)</label>
               <input 
                 placeholder="e.g. 4.50" 
                 type="number" 
                 step="0.01" 
                 value={form.base_price} 
                 onChange={(e) => setForm((p) => ({ ...p, base_price: e.target.value }))} 
-                className="w-full bg-transparent text-sm font-semibold text-primary outline-none placeholder:text-primary/40" 
+                className="w-full bg-transparent text-sm font-semibold text-primary outline-none placeholder:text-primary/30" 
               />
             </div>
           </div>
           
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button className="h-12 w-full rounded-xl bg-primary font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98] sm:w-auto sm:px-10" onClick={saveBundle}>
+            <Button className="h-11 w-full rounded-xl bg-primary font-bold shadow-soft transition-all hover:scale-[1.02] active:scale-[0.98] sm:w-auto sm:px-10 text-xs" onClick={saveBundle}>
               {editingId ? "Update Configuration" : "Add Package"}
             </Button>
             {editingId && (
-              <Button variant="ghost" className="h-12 w-full rounded-xl font-medium sm:w-auto sm:px-8" onClick={() => { setEditingId(null); setForm({ network_id: "", size_label: "", size_gb: "", user_price: "", base_price: "" }); }}>
+              <Button variant="ghost" className="h-11 w-full rounded-xl font-bold sm:w-auto sm:px-8 text-xs hover:bg-secondary/40" onClick={() => { setEditingId(null); setForm({ network_id: "", size_label: "", size_gb: "", user_price: "", base_price: "" }); }}>
                 Cancel Edit
               </Button>
             )}
@@ -1622,40 +1749,40 @@ function PricingSection() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft">
+        <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
           <div className="border-b border-border/40 bg-card/50 p-6">
-            <h3 className="text-lg font-bold">Active Inventory</h3>
-            <p className="text-xs text-muted-foreground">All currently active data packages.</p>
+            <h3 className="text-lg font-black tracking-tight text-foreground">Active Inventory</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">All currently active data packages.</p>
           </div>
-          <div className="max-h-[600px] space-y-4 overflow-y-auto p-4 no-scrollbar">
+          <div className="max-h-[600px] space-y-4 overflow-y-auto p-5 no-scrollbar">
             {(payload?.networks ?? []).map((n: any) => {
               const items = (payload?.bundles ?? []).filter((b: any) => b.network_id === n.id && b.active);
               if (!items.length) return null;
               return (
-                <div key={n.id} className="rounded-[1.5rem] border border-border/40 bg-background/20 p-4">
-                  <h4 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground/80">
-                    <span className="h-2 w-2 rounded-full bg-primary" />
+                <div key={n.id} className="rounded-2xl border border-border/40 bg-background/20 p-4">
+                  <h4 className="mb-3.5 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground/80">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     {n.name}
                   </h4>
                   <div className="grid gap-2">
                     {items.map((b: any) => (
-                      <div key={b.id} className="group flex items-center justify-between rounded-xl border border-border/40 bg-background/40 p-3 transition-colors hover:bg-accent/30">
+                      <div key={b.id} className="group flex items-center justify-between rounded-xl border border-border/40 bg-background/40 p-3 transition-colors hover:bg-secondary/20">
                         <div>
-                          <p className="text-sm font-bold">{b.size_label}</p>
-                          <p className="text-[10px] font-medium uppercase tracking-tight text-muted-foreground">
-                            User: <span className="text-foreground">{formatGHS(Number(b.user_price ?? b.base_price))}</span>{" "}
-                            · Agent: <span className="font-bold text-primary">{formatGHS(Number(b.base_price))}</span>
+                          <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{b.size_label}</p>
+                          <p className="text-[10px] font-semibold uppercase tracking-tight text-muted-foreground/95 mt-0.5">
+                            User: <span className="text-foreground font-bold">{formatGHS(Number(b.user_price ?? b.base_price))}</span>{" "}
+                            · Agent: <span className="font-black text-primary">{formatGHS(Number(b.base_price))}</span>
                           </p>
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1.5">
                           <Button
                             variant="ghost" size="sm"
-                            className="h-8 w-8 rounded-lg p-0 hover:bg-primary hover:text-white"
+                            className="h-8 w-8 rounded-lg p-0 border border-border/30 hover:bg-primary hover:text-white transition-all"
                             onClick={() => { setEditingId(b.id); setForm({ network_id: b.network_id, size_label: b.size_label, size_gb: String(b.size_mb / 1000), user_price: String(b.user_price ?? b.base_price), base_price: String(b.base_price) }); }}
                           >
                             <Cog className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg p-0 text-destructive hover:bg-destructive/10" onClick={() => removeBundle(b.id)}>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 rounded-lg p-0 text-destructive border border-border/30 hover:bg-destructive/10 hover:border-destructive/20 transition-all" onClick={() => removeBundle(b.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -1669,16 +1796,16 @@ function PricingSection() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft">
+          <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
             <div className="border-b border-border/40 bg-card/50 p-6">
-              <h3 className="text-lg font-bold tracking-tight">Onboarding Settings</h3>
-              <p className="text-xs text-muted-foreground">Configure costs for new agent registrations.</p>
+              <h3 className="text-lg font-black tracking-tight text-foreground">Onboarding Settings</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Configure costs for new agent registrations.</p>
             </div>
-            <div className="p-6">
+            <div className="p-6 space-y-4">
               <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activation Fee (GHS)</label>
-              <div className="mt-2 flex gap-3">
-                <Input value={activationFee} onChange={(e) => setActivationFee(e.target.value)} className="h-12 rounded-2xl bg-background/50 font-bold" />
-                <Button className="h-12 rounded-2xl bg-foreground px-8 font-bold text-background transition-all hover:opacity-90 active:scale-95" onClick={saveActivationFee}>
+              <div className="flex gap-3">
+                <Input value={activationFee} onChange={(e) => setActivationFee(e.target.value)} className="h-11 rounded-xl bg-background/50 font-bold text-sm text-foreground focus-visible:ring-2 focus-visible:ring-primary/20 border-border/60" />
+                <Button className="h-11 rounded-xl bg-foreground px-6 font-bold text-background transition-all hover:opacity-90 active:scale-95 text-xs" onClick={saveActivationFee}>
                   Update Fee
                 </Button>
               </div>
@@ -2229,30 +2356,30 @@ function MarketingSection() {
 
   return (
     <>
-    <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="border-b border-border/40 bg-card/50 p-6">
         <div className="flex items-center gap-2 mb-2">
           <Megaphone className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-bold tracking-tight">SMS Marketing</h2>
+          <h2 className="text-xl font-black tracking-tight text-foreground">SMS Marketing</h2>
         </div>
-        <p className="text-sm text-muted-foreground">Send bulk SMS messages to users or agents.</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Send bulk SMS messages to users or agents.</p>
       </div>
 
       <div className="p-6 space-y-6 max-w-2xl">
-        <div className="space-y-3">
-          <label className="text-sm font-semibold">Select Audience</label>
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Audience</label>
           <select 
             value={audience} 
             onChange={(e) => setAudience(e.target.value)}
-            className="w-full rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            className="w-full rounded-xl border border-border/65 bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground cursor-pointer"
           >
             <option value="all">All Users</option>
             <option value="agents">All Agents</option>
           </select>
         </div>
 
-        <div className="space-y-3 pb-2 border-b border-border/40">
-          <label className="text-sm font-semibold">Load SMS Template (Optional)</label>
+        <div className="space-y-2 pb-4 border-b border-border/30">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Load SMS Template (Optional)</label>
           <select 
             onChange={(e) => {
               const tmpl = SMS_TEMPLATES[Number(e.target.value)];
@@ -2260,7 +2387,7 @@ function MarketingSection() {
                 setMessage(tmpl.message);
               }
             }}
-            className="w-full rounded-2xl border border-border/60 bg-primary/5 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all font-semibold"
+            className="w-full rounded-xl border border-border/60 bg-primary/5 px-4 py-3 text-sm font-black outline-none focus:ring-2 focus:ring-primary/25 transition-all text-primary cursor-pointer"
           >
             {SMS_TEMPLATES.map((t, idx) => (
               <option key={idx} value={idx}>{t.label}</option>
@@ -2268,21 +2395,21 @@ function MarketingSection() {
           </select>
         </div>
 
-        <div className="space-y-3">
-          <label className="text-sm font-semibold">Message</label>
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Message</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder="Type your SMS campaign message here..."
-            className="w-full min-h-[120px] rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+            className="w-full min-h-[120px] rounded-xl border border-border/60 bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-foreground placeholder:text-muted-foreground/40"
           />
-          <p className="text-xs text-muted-foreground text-right">{message.length} characters</p>
+          <p className="text-[10px] font-black text-muted-foreground/80 text-right uppercase tracking-wider">{message.length} characters</p>
         </div>
 
         <Button 
           onClick={handleSend} 
           disabled={sending || !message.trim()}
-          className="w-full sm:w-auto h-12 rounded-2xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95"
+          className="w-full sm:w-auto h-11 rounded-xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95 text-xs"
         >
           {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Megaphone className="mr-2 h-4 w-4" />}
           Send Campaign
@@ -2290,18 +2417,18 @@ function MarketingSection() {
       </div>
     </div>
     
-    <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
+    <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in slide-in-from-bottom-4 duration-500 mt-6">
       <div className="border-b border-border/40 bg-card/50 p-6">
         <div className="flex items-center gap-2 mb-2">
           <BellRing className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-bold tracking-tight">In-App Push Notifications</h2>
+          <h2 className="text-xl font-black tracking-tight text-foreground">In-App Push Notifications</h2>
         </div>
-        <p className="text-sm text-muted-foreground">Send real-time alerts with sound to all users currently online.</p>
+        <p className="text-xs text-muted-foreground mt-0.5">Send real-time alerts with sound to all users currently online.</p>
       </div>
 
       <div className="p-6 space-y-6 max-w-2xl">
-        <div className="space-y-3 pb-2 border-b border-border/40">
-          <label className="text-sm font-semibold">Load Template (Optional)</label>
+        <div className="space-y-2 pb-4 border-b border-border/30">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Load Template (Optional)</label>
           <select 
             onChange={(e) => {
               const tmpl = PUSH_TEMPLATES[Number(e.target.value)];
@@ -2312,7 +2439,7 @@ function MarketingSection() {
                 setPushSound(tmpl.sound);
               }
             }}
-            className="w-full rounded-2xl border border-border/60 bg-primary/5 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all font-semibold"
+            className="w-full rounded-xl border border-border/60 bg-primary/5 px-4 py-3 text-sm font-black outline-none focus:ring-2 focus:ring-primary/25 transition-all text-primary cursor-pointer"
           >
             {PUSH_TEMPLATES.map((t, idx) => (
               <option key={idx} value={idx}>{t.label}</option>
@@ -2320,33 +2447,33 @@ function MarketingSection() {
           </select>
         </div>
 
-        <div className="space-y-3">
-          <label className="text-sm font-semibold">Title</label>
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Title</label>
           <Input 
             value={pushTitle} 
             onChange={(e) => setPushTitle(e.target.value)} 
             placeholder="e.g. System Maintenance" 
-            className="h-12 rounded-2xl bg-background/50" 
+            className="h-11 rounded-xl bg-background/50 font-semibold text-sm border-border/60" 
           />
         </div>
 
-        <div className="space-y-3">
-          <label className="text-sm font-semibold">Message</label>
+        <div className="space-y-2">
+          <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Message</label>
           <textarea
             value={pushMessage}
             onChange={(e) => setPushMessage(e.target.value)}
             placeholder="Your notification message..."
-            className="w-full min-h-[100px] rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all resize-none"
+            className="w-full min-h-[100px] rounded-xl border border-border/60 bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-foreground placeholder:text-muted-foreground/45"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <label className="text-sm font-semibold">Type</label>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Type</label>
             <select 
               value={pushType} 
               onChange={(e) => setPushType(e.target.value)}
-              className="w-full rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              className="w-full rounded-xl border border-border/60 bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground cursor-pointer"
             >
               <option value="info">Info (Default)</option>
               <option value="success">Success</option>
@@ -2354,8 +2481,8 @@ function MarketingSection() {
             </select>
           </div>
 
-          <div className="space-y-3">
-            <label className="text-sm font-semibold">Sound</label>
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Sound</label>
             <select 
               value={pushSound} 
               onChange={(e) => {
@@ -2366,7 +2493,7 @@ function MarketingSection() {
                 audio.volume = 0.8;
                 audio.play().catch(() => {});
               }}
-              className="w-full rounded-2xl border border-border/60 bg-background/50 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              className="w-full rounded-xl border border-border/60 bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all text-foreground cursor-pointer"
             >
               <option value="default">Pop (Default)</option>
               <option value="success">Chime (Success)</option>
@@ -2397,7 +2524,7 @@ function MarketingSection() {
             }
           }} 
           disabled={pushing || !pushTitle.trim() || !pushMessage.trim()}
-          className="w-full sm:w-auto h-12 rounded-2xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95"
+          className="w-full sm:w-auto h-11 rounded-xl bg-primary px-8 font-bold shadow-soft transition-all hover:scale-105 active:scale-95 text-xs"
         >
           {pushing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4" />}
           Send Push Notification
@@ -2539,31 +2666,31 @@ function CouponsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[2rem] border border-border/40 bg-card/40 p-6 md:p-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[2rem] border border-border/45 bg-card/40 p-6 md:p-8 backdrop-blur-md shadow-soft">
         <div>
-          <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
-            <Gift className="h-5.5 w-5.5 text-rose-500" /> Promo Coupons & Gift Vouchers
+          <h2 className="text-xl font-black flex items-center gap-2 text-foreground">
+            <Gift className="h-5.5 w-5.5 text-rose-500" /> Promo Coupons & Vouchers
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">Manage global platform-wide vouchers and track agent-sponsored discount codes.</p>
         </div>
 
         <Button 
           onClick={() => setCreateOpen(true)}
-          className="h-11 rounded-2xl bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-5 flex items-center gap-1.5 shadow-soft transition-all hover:scale-105 active:scale-95 shrink-0 self-start sm:self-auto"
+          className="h-10.5 rounded-xl bg-primary hover:bg-primary/95 text-primary-foreground font-bold px-5 flex items-center gap-1.5 shadow-soft transition-all hover:scale-105 active:scale-95 shrink-0 self-start sm:self-auto text-xs"
         >
-          <Gift className="h-4.5 w-4.5" /> Create Platform Coupon
+          <Gift className="h-4 w-4" /> Create Platform Coupon
         </Button>
       </div>
 
       {/* Search Filter */}
-      <div className="flex items-center gap-3 rounded-2xl border border-border/40 bg-card/30 px-4 py-2.5">
-        <Search className="h-4 w-4 text-muted-foreground" />
+      <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-2.5 shadow-sm focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+        <Search className="h-4 w-4 text-muted-foreground/60" />
         <input
           type="text"
           placeholder="Search by code, sponsor..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground text-foreground"
+          className="w-full bg-transparent text-xs font-semibold outline-none placeholder:text-muted-foreground/50 text-foreground"
         />
       </div>
 
@@ -2573,19 +2700,19 @@ function CouponsSection() {
           <Loader2 className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : filteredCoupons.length === 0 ? (
-        <div className="text-center py-16 border border-border/40 rounded-3xl bg-card/20 space-y-4">
-          <Gift className="mx-auto h-12 w-12 text-muted-foreground/30" />
+        <div className="text-center py-16 border border-border/40 rounded-[2rem] bg-card/25 space-y-4 shadow-soft">
+          <Gift className="mx-auto h-12 w-12 text-muted-foreground/30 animate-bounce" />
           <div>
-            <p className="font-bold text-foreground">No promo coupons found</p>
-            <p className="text-xs text-muted-foreground mt-1">Get started by creating a platform-wide coupon.</p>
+            <p className="font-bold text-foreground text-sm">No promo coupons found</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">Get started by creating a platform-wide coupon.</p>
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/25 shadow-soft">
+        <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/25 shadow-soft backdrop-blur-md">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-border/40 bg-secondary/30 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <tr className="border-b border-border/40 bg-secondary/30 text-muted-foreground/80 font-black uppercase tracking-widest">
                   <th className="px-6 py-4">Promo Code</th>
                   <th className="px-6 py-4">Discount</th>
                   <th className="px-6 py-4">Sponsor / Store</th>
@@ -2594,31 +2721,31 @@ function CouponsSection() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border/30">
                 {filteredCoupons.map((c: any) => {
                   const isExhausted = Number(c.current_uses) >= Number(c.max_uses);
                   const isActive = c.active && !isExhausted;
                   return (
-                    <tr key={c.id} className="border-b border-border/30 last:border-0 hover:bg-secondary/20 transition-colors">
-                      <td className="px-6 py-4 font-mono font-black uppercase text-foreground text-sm tracking-wide">{c.code}</td>
-                      <td className="px-6 py-4 font-extrabold text-rose-500">{formatGHS(c.discount_amount)}</td>
+                    <tr key={c.id} className="group hover:bg-primary/[0.01] transition-colors">
+                      <td className="px-6 py-4 font-mono font-black uppercase text-foreground text-sm tracking-wider group-hover:text-primary transition-colors">{c.code}</td>
+                      <td className="px-6 py-4 font-extrabold text-rose-500 text-sm">{formatGHS(c.discount_amount)}</td>
                       <td className="px-6 py-4">
                         {c.agent_profiles ? (
                           <div className="flex flex-col">
                             <span className="font-bold text-foreground">{c.agent_profiles.store_name}</span>
-                            <span className="text-[10px] text-muted-foreground font-mono">Store: /store/{c.agent_profiles.store_slug}</span>
+                            <span className="text-[9px] text-muted-foreground/85 font-mono">Store: /store/{c.agent_profiles.store_slug}</span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-primary/10 text-primary border border-primary/20">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20 shadow-sm">
                             Global Platform
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 font-semibold text-muted-foreground tabular-nums">
+                      <td className="px-6 py-4 font-semibold text-muted-foreground/90 tabular-nums">
                         {c.current_uses} / {c.max_uses}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}`}>
                           {isActive ? "Active" : isExhausted ? "Exhausted" : "Inactive"}
                         </span>
                       </td>
@@ -2627,7 +2754,7 @@ function CouponsSection() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className={`h-8 rounded-lg text-xs font-bold ${c.active ? "text-amber-500 border-amber-500/20 hover:bg-amber-500/10" : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10"}`}
+                            className={`h-8 rounded-xl text-xs font-bold bg-background/50 transition-all ${c.active ? "text-amber-500 border-amber-500/20 hover:bg-amber-500/10 hover:border-amber-500/30" : "text-emerald-500 border-emerald-500/20 hover:bg-emerald-500/10 hover:border-emerald-500/30"}`}
                             onClick={() => toggleCouponActive(c.id, c.active)}
                           >
                             {c.active ? "Deactivate" : "Activate"}
@@ -2635,10 +2762,10 @@ function CouponsSection() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 rounded-lg text-xs font-semibold text-destructive hover:bg-destructive/10"
+                            className="h-8 w-8 rounded-xl p-0 text-destructive border border-border/30 hover:bg-destructive/10 hover:border-destructive/20 transition-all"
                             onClick={() => deleteCoupon(c.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </td>
@@ -2653,62 +2780,62 @@ function CouponsSection() {
 
       {/* Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="w-[94vw] max-w-md rounded-[2.5rem] border-border p-6 md:p-8 bg-card">
+        <DialogContent className="w-[94vw] max-w-md rounded-[2rem] border border-border/50 p-6 md:p-8 bg-card backdrop-blur-xl shadow-float">
           <DialogHeader>
             <DialogTitle className="text-left text-lg font-black text-foreground flex items-center gap-2">
               <Gift className="h-5.5 w-5.5 text-rose-500" /> Create Platform Coupon
             </DialogTitle>
-            <DialogDescription className="text-left text-xs text-muted-foreground">
+            <DialogDescription className="text-left text-xs text-muted-foreground/80 mt-1 leading-relaxed">
               Add a new promo discount code. It can be a global admin coupon or assigned to a specific store.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateCoupon} className="space-y-5 pt-4">
+          <form onSubmit={handleCreateCoupon} className="space-y-4 pt-3">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase text-muted-foreground">Promo Code</label>
+              <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Promo Code</label>
               <Input
                 placeholder="e.g. WELCOME10"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="h-11 rounded-2xl border-border font-semibold uppercase focus-visible:ring-primary text-foreground"
+                className="h-10.5 rounded-xl border-border/60 bg-background/50 font-semibold uppercase focus-visible:ring-primary/20 text-foreground placeholder:text-muted-foreground/30 text-xs"
                 required
               />
-              <p className="text-[10px] text-muted-foreground">Case-insensitive alphanumeric string.</p>
+              <p className="text-[9px] text-muted-foreground/75 font-medium">Case-insensitive alphanumeric string.</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-black uppercase text-muted-foreground">Discount (GHS)</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Discount (GHS)</label>
                 <Input
                   type="number"
                   step="0.1"
                   placeholder="e.g. 10.00"
                   value={discountAmount}
                   onChange={(e) => setDiscountAmount(e.target.value)}
-                  className="h-11 rounded-2xl border-border font-semibold focus-visible:ring-primary text-foreground"
+                  className="h-10.5 rounded-xl border-border/60 bg-background/50 font-semibold focus-visible:ring-primary/20 text-foreground text-xs placeholder:text-muted-foreground/30"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-black uppercase text-muted-foreground">Max Uses</label>
+                <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Max Uses</label>
                 <Input
                   type="number"
                   placeholder="e.g. 500"
                   value={maxUses}
                   onChange={(e) => setMaxUses(e.target.value)}
-                  className="h-11 rounded-2xl border-border font-semibold focus-visible:ring-primary text-foreground"
+                  className="h-10.5 rounded-xl border-border/60 bg-background/50 font-semibold focus-visible:ring-primary/20 text-foreground text-xs placeholder:text-muted-foreground/30"
                   required
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase text-muted-foreground">Assign to Store (Optional)</label>
+              <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Assign to Store (Optional)</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}
-                className="w-full h-11 rounded-2xl border border-border bg-background px-4 text-sm font-semibold focus:ring-primary focus:outline-none text-foreground"
+                className="w-full h-10.5 rounded-xl border border-border/60 bg-background/50 px-4 text-xs font-semibold focus:ring-2 focus:ring-primary/20 focus:outline-none text-foreground cursor-pointer"
               >
                 <option value="">Global Coupon (Platform Sponsored)</option>
                 {agents.map((ag: any) => (
@@ -2717,14 +2844,14 @@ function CouponsSection() {
                   </option>
                 ))}
               </select>
-              <p className="text-[10px] text-muted-foreground">Leave as Global if the coupon is sponsored by the platform for all stores.</p>
+              <p className="text-[9px] text-muted-foreground/75 font-medium">Leave as Global if the coupon is sponsored by the platform for all stores.</p>
             </div>
 
-            <div className="pt-2">
+            <div className="pt-3">
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full h-12 rounded-2xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground transition-all hover:scale-105 active:scale-95"
+                className="w-full h-11 rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] text-xs shadow-soft"
               >
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gift className="mr-2 h-4 w-4" />}
                 Generate Coupon Code
@@ -2748,23 +2875,48 @@ function Metric({
   helper?: string;
   variant?: "indigo" | "amber" | "emerald" | "rose" | "sky";
 }) {
-  const variants = {
-    indigo:  "from-indigo-500/20 to-indigo-500/5 text-indigo-500 border-indigo-500/20",
-    amber:   "from-amber-500/20 to-amber-500/5 text-amber-500 border-amber-500/20",
-    emerald: "from-emerald-500/20 to-emerald-500/5 text-emerald-500 border-emerald-500/20",
-    rose:    "from-rose-500/20 to-rose-500/5 text-rose-500 border-rose-500/20",
-    sky:     "from-sky-500/20 to-sky-500/5 text-sky-500 border-sky-500/20",
+  const config = {
+    indigo: {
+      card: "hover:border-indigo-500/30 hover:shadow-[0_12px_30px_rgba(99,102,241,0.08)]",
+      icon: "bg-indigo-500/10 text-indigo-500 border-indigo-500/20",
+      glow: "from-indigo-500/20 to-indigo-500/5",
+    },
+    amber: {
+      card: "hover:border-amber-500/30 hover:shadow-[0_12px_30px_rgba(245,158,11,0.08)]",
+      icon: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+      glow: "from-amber-500/20 to-amber-500/5",
+    },
+    emerald: {
+      card: "hover:border-emerald-500/30 hover:shadow-[0_12px_30px_rgba(16,185,129,0.08)]",
+      icon: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
+      glow: "from-emerald-500/20 to-emerald-500/5",
+    },
+    rose: {
+      card: "hover:border-rose-500/30 hover:shadow-[0_12px_30px_rgba(244,63,94,0.08)]",
+      icon: "bg-rose-500/10 text-rose-500 border-rose-500/20",
+      glow: "from-rose-500/20 to-rose-500/5",
+    },
+    sky: {
+      card: "hover:border-sky-500/30 hover:shadow-[0_12px_30px_rgba(14,165,233,0.08)]",
+      icon: "bg-sky-500/10 text-sky-500 border-sky-500/20",
+      glow: "from-sky-500/20 to-sky-500/5",
+    },
   };
 
+  const cfg = config[variant];
+
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-border/40 bg-card/40 p-6 shadow-soft transition-all hover:-translate-y-1 hover:shadow-lg">
-      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${variants[variant]}`}>
+    <div className={cn(
+      "relative overflow-hidden rounded-[2rem] border border-border/40 bg-card/40 backdrop-blur-md p-6 shadow-soft transition-all duration-300 hover:-translate-y-1.5 hover:shadow-lg",
+      cfg.card
+    )}>
+      <div className={cn("mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border bg-gradient-to-br", cfg.icon)}>
         {icon}
       </div>
       <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{title}</p>
-      <p className="mt-0.5 text-2xl md:text-3xl font-bold tracking-tight text-foreground">{value}</p>
-      {helper && <p className="mt-1.5 md:mt-2 text-[10px] md:text-xs font-medium text-muted-foreground/80">{helper}</p>}
-      <div className={`absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br ${variants[variant]} opacity-10 blur-2xl`} />
+      <p className="mt-1 text-2xl md:text-3xl font-black tracking-tight text-foreground">{value}</p>
+      {helper && <p className="mt-1.5 md:mt-2 text-[10px] md:text-xs font-semibold text-muted-foreground/60">{helper}</p>}
+      <div className={cn("absolute -right-4 -top-4 h-24 w-24 rounded-full blur-2xl opacity-20 pointer-events-none bg-gradient-to-br", cfg.glow)} />
     </div>
   );
 }
@@ -2853,49 +3005,49 @@ function SubscriptionsSection() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
-            <RefreshCw className="h-4 w-4" />
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+          <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-500">
+            <RefreshCw className="h-4.5 w-4.5 animate-spin-slow" />
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Total Subscriptions</p>
-          <p className="mt-1 text-xl font-black text-foreground tabular-nums">{subs.length}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Total Subscriptions</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-foreground tabular-nums">{subs.length}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
-            <CheckCircle2 className="h-4 w-4" />
+        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+          <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
+            <CheckCircle2 className="h-4.5 w-4.5" />
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Active Subscriptions</p>
-          <p className="mt-1 text-xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{activeSubs.length}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Active Subscriptions</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{activeSubs.length}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
-            <TrendingUp className="h-4 w-4" />
+        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+          <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500">
+            <TrendingUp className="h-4.5 w-4.5" />
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Monthly Recurring Rate</p>
-          <p className="mt-1 text-xl font-black text-amber-600 dark:text-amber-500 tabular-nums">{formatGHS(recurringVolume)}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Monthly Volume</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 tabular-nums">{formatGHS(recurringVolume)}</p>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">
-          <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-rose-500/10 text-rose-500">
-            <Clock className="h-4 w-4" />
+        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+          <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-500">
+            <Clock className="h-4.5 w-4.5" />
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">Plans (Weekly / Monthly)</p>
-          <p className="mt-1 text-xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{weeklyCount} / {monthlyCount}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Plans (Wk / Mo)</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{weeklyCount} / {monthlyCount}</p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:w-64">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full sm:w-72">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
           <input
             type="text"
             placeholder="Search subscriber, phone, store…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-xl border border-border/60 bg-secondary/40 pl-9 pr-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/30"
+            className="h-10 w-full rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all"
           />
         </div>
 
@@ -2910,9 +3062,9 @@ function SubscriptionsSection() {
               type="button"
               onClick={() => setFilterFreq(value)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap",
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap",
                 filterFreq === value
-                  ? "gradient-primary text-white shadow-sm"
+                  ? "bg-background text-foreground shadow-sm font-black"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -2922,7 +3074,7 @@ function SubscriptionsSection() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border/50 bg-card shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/25 shadow-soft backdrop-blur-md">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
             <RefreshCw className="h-10 w-10 text-muted-foreground/30 mb-4 animate-spin" />
@@ -2932,41 +3084,41 @@ function SubscriptionsSection() {
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-border/40 bg-secondary/30 text-muted-foreground">
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Subscriber Details</th>
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Storefront Origin</th>
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Bundle Plan</th>
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Frequency</th>
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Next Billing</th>
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider">Status</th>
-                  <th className="px-5 py-3 font-bold uppercase tracking-wider text-right">Actions</th>
+                <tr className="border-b border-border/40 bg-secondary/20 text-muted-foreground/80 font-black uppercase tracking-widest">
+                  <th className="px-6 py-4">Subscriber Details</th>
+                  <th className="px-6 py-4">Storefront Origin</th>
+                  <th className="px-6 py-4">Bundle Plan</th>
+                  <th className="px-6 py-4">Frequency</th>
+                  <th className="px-6 py-4">Next Billing</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/30">
                 {filtered.map((s) => {
                   const net = s.bundle?.networks?.logo_emoji ?? "📶";
                   return (
-                    <tr key={s.id} className="hover:bg-primary/[0.02] transition-colors">
-                      <td className="px-5 py-4">
-                        <div className="font-bold text-foreground">{s.user?.full_name || "Guest Customer"}</div>
-                        <div className="text-[10px] text-muted-foreground">{s.user?.email || "No email"} · {s.recipient_phone}</div>
+                    <tr key={s.id} className="group hover:bg-primary/[0.01] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.user?.full_name || "Guest Customer"}</div>
+                        <div className="text-[10px] text-muted-foreground/85 mt-0.5">{s.user?.email || "No email"} · {s.recipient_phone}</div>
                       </td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4">
                         <span className="font-semibold text-foreground">{s.agent?.store_name || "Direct Store"}</span>
-                        <div className="text-[9px] font-mono text-muted-foreground">/store/{s.agent?.store_slug}</div>
+                        <div className="text-[9px] font-mono text-muted-foreground/80 mt-0.5">/store/{s.agent?.store_slug}</div>
                       </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center gap-1.5">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
                           <span className="text-base shrink-0">{net}</span>
                           <div>
                             <span className="font-bold text-foreground">{s.bundle?.size_label}</span>
-                            <span className="block text-[9px] text-muted-foreground font-mono">{formatGHS(s.bundle?.base_price)} base</span>
+                            <span className="block text-[9px] text-muted-foreground/80 font-mono mt-0.5">{formatGHS(s.bundle?.base_price)} base</span>
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-4 font-semibold uppercase tracking-wider text-[10px] text-primary">{s.frequency}</td>
-                      <td className="px-5 py-4 font-semibold text-foreground">{new Date(s.next_billing_at).toLocaleDateString()}</td>
-                      <td className="px-5 py-4">
+                      <td className="px-6 py-4 font-black uppercase tracking-wider text-[9px] text-primary">{s.frequency}</td>
+                      <td className="px-6 py-4 font-bold text-foreground">{new Date(s.next_billing_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
                           s.status === "active" 
                             ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
@@ -2975,14 +3127,14 @@ function SubscriptionsSection() {
                           {s.status}
                         </span>
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {s.status === "active" && (
                             <>
                               <Button
-                                variant="ghost"
+                                variant="outline"
                                 size="sm"
-                                className="h-7 rounded-lg text-[10px] font-bold text-amber-500 hover:bg-amber-500/10"
+                                className="h-8 rounded-xl text-xs font-bold text-amber-500 border border-amber-500/20 bg-background/50 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
                                 onClick={() => triggerRebill(s.id)}
                               >
                                 Trigger Rebill
@@ -2990,7 +3142,7 @@ function SubscriptionsSection() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 rounded-lg text-[10px] font-bold text-destructive hover:bg-destructive/10"
+                                className="h-8 rounded-xl text-xs font-bold text-destructive hover:bg-destructive/10 transition-all"
                                 onClick={() => cancelSubscription(s.id)}
                               >
                                 Cancel Plan

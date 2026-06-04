@@ -29,7 +29,7 @@ async function test() {
     email,
     password,
     options: {
-      data: { full_name: "Sub Agent Tester", phone: "0500000000" }
+      data: { full_name: "Sub Agent Tester", phone: "050" + Math.floor(Math.random() * 100000000) }
     }
   });
 

@@ -9,7 +9,7 @@ import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import { Confetti } from "@/components/Confetti";
-import { ArrowRight, CheckCircle2, Lock, RefreshCcw, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, Lock, RefreshCcw, Zap, ChevronDown, Smartphone, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -881,130 +881,137 @@ export function BuyDataFlow({
 
       {/* ── Checkout Dialog ── */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[94vw] max-w-md rounded-[2rem] border-0 bg-background p-0 overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.25)]">
+        <DialogContent className="w-[92vw] max-w-[370px] rounded-[2.5rem] border border-white/25 dark:border-white/[0.08] bg-white/70 dark:bg-slate-950/70 p-0 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.22)] backdrop-blur-3xl transition-all duration-300">
           {/* Header */}
-          <div className="flex flex-col items-center justify-center pt-8 pb-4 px-6 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 shadow-inner">
-              {network ? (
-                <span className={cn("text-2xl font-black", netStyle.cardActive.replace("border-black", "").replace("shadow-float", "").replace("ring-2", ""))}>
-                  {network.name[0]}
-                </span>
-              ) : (
-                <Zap className="h-8 w-8 text-primary" />
-              )}
+          <div className="flex flex-col items-center justify-center pt-7 pb-3 px-5 text-center">
+            <div className="mb-3 relative flex h-16 w-16 items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-violet-500 via-fuchsia-500 to-indigo-500 animate-spin [animation-duration:5s] opacity-40 blur-md" />
+              <div className="absolute inset-1 rounded-full bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-inner" />
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-950 shadow-md animate-float-pulse">
+                {network ? (
+                  <span className="text-2xl filter drop-shadow-sm transition-transform duration-300 hover:scale-110">{network.logo_emoji}</span>
+                ) : (
+                  <Zap className="h-5 w-5 text-primary animate-pulse" />
+                )}
+              </div>
             </div>
-            <DialogTitle className="text-2xl font-black tracking-tight text-foreground">
+            <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
               Confirm Payment
             </DialogTitle>
-            <DialogDescription className="text-sm font-medium text-muted-foreground mt-1">
-              You are purchasing data for a {network?.name} number.
+            <DialogDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
+              You are purchasing data for a <span className="text-primary font-bold">{network?.name}</span> number.
             </DialogDescription>
           </div>
 
-          <div className="px-6 space-y-5 pb-8">
+          <div className="px-5 space-y-4 pb-7">
             {/* Order summary */}
             {bundle && network && (
-              <div className="flex flex-col rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">{network.name} Bundle</span>
-                    <span className="text-xl font-black leading-none text-foreground">{bundle.size_label}</span>
+              <div className="flex flex-col rounded-[1.75rem] bg-white/40 dark:bg-slate-900/20 border border-slate-200/50 dark:border-white/[0.03] p-5 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">{network.name} Bundle</span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white leading-tight">{bundle.size_label}</span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Total</span>
-                    <span className="text-xl font-black leading-none text-primary">{formatGHS(finalPrice)}</span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</span>
+                    <span className="text-xl font-black text-primary leading-none">{formatGHS(finalPrice)}</span>
                   </div>
                 </div>
                 
-                <div className="flex justify-between items-center text-xs font-medium border-t border-slate-200 dark:border-slate-800 pt-3">
-                  <span className="text-muted-foreground">Price</span>
-                  <span className="text-foreground">{formatGHS(basePrice)}</span>
+                <div className="flex justify-between items-center text-xs font-semibold border-t border-slate-200/50 dark:border-white/[0.05] pt-2.5">
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">Price</span>
+                  <span className="text-slate-900 dark:text-white text-[11px] font-black">{formatGHS(basePrice)}</span>
                 </div>
                 {!payWithWallet && (
-                  <div className="flex justify-between items-center text-xs font-medium pt-2">
-                    <span className="text-muted-foreground">Processing Fee (3%)</span>
-                    <span className="text-foreground">{formatGHS(paymentFee)}</span>
+                  <div className="flex justify-between items-center text-xs font-semibold pt-1.5">
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">Processing Fee (3%)</span>
+                    <span className="text-slate-900 dark:text-white text-[11px] font-black">{formatGHS(paymentFee)}</span>
                   </div>
                 )}
               </div>
             )}
 
             {/* Form */}
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               {/* Recipient Input */}
-              <div>
-                <label className="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <div className="space-y-1.5">
+                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                   Data Recipient
                 </label>
-                <div className="relative">
+                <div className="relative group">
+                  <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
                   <Input
                     inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g. 024 123 4567"
                     className={cn(
-                      "h-14 w-full rounded-2xl border-0 bg-slate-50 dark:bg-slate-900 px-4 text-lg font-semibold shadow-inner transition-all focus-visible:bg-white focus-visible:ring-2",
-                      recipientNetworkError ? "ring-2 ring-destructive/50" : "focus-visible:ring-primary/30"
+                      "h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-inner transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0",
+                      recipientNetworkError ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10" : ""
                     )}
                   />
                   {isVerifyingRecipient && (
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <span className="block h-5 w-5 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                      <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
                     </div>
                   )}
                 </div>
                 
                 {recipientNetworkError ? (
-                  <p className="mt-2 text-xs font-bold text-destructive flex items-center gap-1.5 px-1">
+                  <p className="mt-1 text-[11px] font-bold text-destructive flex items-center gap-1 px-1 animate-in slide-in-from-top-1 duration-200">
                     <RefreshCcw className="h-3.5 w-3.5" />
                     {recipientNetworkError}
                   </p>
                 ) : null}
                 
                 {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
-                  <div className="mt-2 text-xs font-bold px-4 py-2.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-xl flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4" />
-                    {recipientAccountName}
+                  <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <span className="truncate">{recipientAccountName}</span>
                   </div>
                 )}
               </div>
 
               {/* Momo inputs are hidden if paying with wallet */}
               {!payWithWallet && (
-                <div className="pt-2">
-                  <label className="mb-2 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                <div className="space-y-1.5 pt-0.5 animate-in fade-in duration-300">
+                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
                     Payment Number (MoMo)
                   </label>
-                  <div className="flex gap-2.5">
-                    <select 
-                      className="w-[110px] h-14 rounded-2xl border-0 text-base font-semibold bg-slate-50 dark:bg-slate-900 px-4 shadow-inner outline-none focus:ring-2 focus:ring-primary/30 transition-all cursor-pointer"
-                      value={momoNetwork}
-                      onChange={(e) => setMomoNetwork(e.target.value)}
-                    >
-                      <option value="MTN">MTN</option>
-                      <option value="TELECEL">Telecel</option>
-                      <option value="AIRTELTIGO">AT</option>
-                    </select>
-                    <div className="relative flex-1">
+                  <div className="flex gap-2">
+                    <div className="relative w-[95px] shrink-0">
+                      <select 
+                        className="w-full h-12 rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-3.5 pr-7 text-xs font-semibold shadow-inner outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white/80 dark:focus:bg-slate-950/80 transition-all cursor-pointer appearance-none"
+                        value={momoNetwork}
+                        onChange={(e) => setMomoNetwork(e.target.value)}
+                      >
+                        <option value="MTN">MTN</option>
+                        <option value="TELECEL">Telecel</option>
+                        <option value="AIRTELTIGO">AT</option>
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                    </div>
+                    <div className="relative flex-1 group">
+                      <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
                       <Input
                         inputMode="tel"
                         value={momoNumber}
                         onChange={(e) => setMomoNumber(e.target.value)}
                         placeholder="e.g. 024 123 4567"
-                        className="h-14 w-full rounded-2xl border-0 bg-slate-50 dark:bg-slate-900 px-4 text-lg font-semibold shadow-inner transition-colors focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-primary/30"
+                        className="h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-sm transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                       {isVerifying && (
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                          <span className="block h-5 w-5 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                          <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
                         </div>
                       )}
                     </div>
                   </div>
                   
                   {accountName && !isVerifying && (
-                    <div className="mt-2 text-xs font-bold px-4 py-2.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400 rounded-xl flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4" />
-                      {accountName}
+                    <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <span className="truncate">{accountName}</span>
                     </div>
                   )}
                 </div>
@@ -1013,10 +1020,10 @@ export function BuyDataFlow({
               {profile && bundle && (
                 <div 
                   className={cn(
-                    "mt-4 cursor-pointer rounded-2xl border-2 p-4 transition-all",
+                    "mt-2 cursor-pointer rounded-[1.5rem] border border-white/20 dark:border-white/[0.05] p-4 transition-all duration-300 active:scale-[0.98]",
                     payWithWallet 
-                      ? "border-primary bg-primary/5 shadow-sm" 
-                      : "border-slate-100 dark:border-slate-800 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-900",
+                      ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-[0_0_12px_rgba(139,92,246,0.06)]" 
+                      : "bg-white/20 dark:bg-slate-950/10 hover:bg-white/40 dark:hover:bg-slate-900/30",
                     walletBalance < finalPrice && "opacity-50 cursor-not-allowed border-dashed"
                   )}
                   onClick={() => {
@@ -1026,33 +1033,33 @@ export function BuyDataFlow({
                   }}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2.5">
                       <div className={cn(
-                        "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all",
-                        payWithWallet ? "border-primary bg-primary" : "border-slate-300 dark:border-slate-600"
+                        "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all shrink-0 duration-300",
+                        payWithWallet ? "border-primary bg-primary text-white scale-110" : "border-slate-300 dark:border-slate-700"
                       )}>
-                        {payWithWallet && <CheckCircle2 className="h-3 w-3 text-white" />}
+                        {payWithWallet && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
                       </div>
-                      <div className="flex flex-col">
-                        <span className={cn("text-sm font-bold", payWithWallet ? "text-primary" : "text-foreground")}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className={cn("text-xs font-bold", payWithWallet ? "text-primary" : "text-slate-900 dark:text-white")}>
                           Pay with Wallet
                         </span>
                         {agentSlug && finalPrice > Number(bundle.base_price) ? (
-                          <span className="text-[10px] font-semibold text-muted-foreground mt-0.5 flex flex-col gap-0.5">
-                            <span>Available Balance: <span className="text-primary font-bold">{formatGHS(walletBalance)}</span></span>
-                            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-1.5 py-0.5 rounded inline-block w-fit mt-1 font-bold">
-                              Pay {formatGHS(finalPrice)} upfront, instantly earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
+                          <div className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 flex flex-col gap-1 mt-1">
+                            <span>Balance: <span className="text-primary font-black">{formatGHS(walletBalance)}</span></span>
+                            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-md border border-emerald-100/50 dark:border-emerald-900/20 inline-block w-fit font-bold animate-pulse">
+                              Earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
                             </span>
-                          </span>
+                          </div>
                         ) : (
-                          <span className="text-[10px] font-semibold text-muted-foreground mt-0.5">
-                            Available Balance: <span className="text-foreground font-bold">{formatGHS(walletBalance)}</span>
+                          <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                            Balance: <span className="text-slate-700 dark:text-slate-300 font-bold">{formatGHS(walletBalance)}</span>
                           </span>
                         )}
                       </div>
                     </div>
                     {walletBalance < finalPrice && (
-                      <span className="text-[10px] font-bold text-destructive bg-destructive/10 px-2 py-1 rounded-md">
+                      <span className="text-[9px] font-black text-destructive bg-destructive/10 px-2 py-0.5 rounded-md shrink-0">
                         Insufficient
                       </span>
                     )}
@@ -1060,7 +1067,7 @@ export function BuyDataFlow({
                 </div>
               )}
 
-              <div className="pt-4">
+              <div className="pt-2">
                 <Button
                   onClick={buy}
                   disabled={
@@ -1070,32 +1077,34 @@ export function BuyDataFlow({
                     (!payWithWallet && (momoNumber.replace(/\D/g, "").length < 9 || isVerifying || accountName === "Unknown Account" || accountName === "Account not found"))
                   }
                   className={cn(
-                    "h-14 w-full rounded-2xl text-base font-black tracking-wide shadow-lg transition-all active:scale-[0.98]",
-                    payWithWallet ? "bg-foreground text-background hover:bg-foreground/90" : "bg-primary text-primary-foreground hover:opacity-90"
+                    "h-12 w-full rounded-[1.25rem] text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg transition-all active:scale-[0.97] hover:scale-[1.01] duration-300 flex items-center justify-center gap-1.5",
+                    payWithWallet 
+                      ? "bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100" 
+                      : "gradient-primary text-white"
                   )}
                 >
                   {payWithWallet ? (
                     <>
-                      <Lock className="mr-2 h-4 w-4" />
+                      <Lock className="h-4 w-4" />
                       Pay {formatGHS(finalPrice)} Securely
                     </>
                   ) : (
                     <>
-                      <Zap className="mr-2 h-5 w-5" />
+                      <Zap className="h-4 w-4" />
                       Pay {formatGHS(finalPrice)}
-                      <ArrowRight className="ml-2 h-5 w-5" />
+                      <ArrowRight className="h-4 w-4" />
                     </>
                   )}
                 </Button>
               </div>
 
               {!payWithWallet && (
-                <div className="text-center pt-1.5 animate-in fade-in duration-300">
-                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Issues with phone prompts? </span>
+                <div className="text-center pt-0.5 animate-in fade-in duration-300">
+                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Issues with prompts? </span>
                   <button 
                     type="button"
                     onClick={payWithRedirect}
-                    className="text-[11px] font-extrabold text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                    className="text-[10px] font-black text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                   >
                     Pay via Web Page instead
                   </button>
@@ -1103,8 +1112,8 @@ export function BuyDataFlow({
               )}
 
               {/* Trust strip */}
-              <div className="flex items-center justify-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest pt-3">
-                <Lock className="h-3 w-3" />
+              <div className="flex items-center justify-center gap-1 text-[9px] font-black text-slate-400/80 dark:text-slate-500 uppercase tracking-widest pt-3.5 border-t border-slate-100/50 dark:border-white/[0.04]">
+                <Lock className="h-3 w-3 text-green-500/70" />
                 Secured Payments · PCI-DSS
               </div>
             </div>

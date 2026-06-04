@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronRight, Loader2, LogOut, Moon, Sun, User, Store, Gift, Bell } from "lucide-react";
+import { ArrowLeft, ChevronRight, Loader2, LogOut, Moon, Sun, User, Store, Gift, Bell, Signal, Wallet, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,10 +9,19 @@ import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { CustomerCRM } from "@/components/agent/CustomerCRM";
 import { useUnreadNotifications } from "@/hooks/useNotifications";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerDescription
+} from "@/components/ui/drawer";
 import { BuySection, StoreSection, MarketingKitSection, LeaderboardSection, TransactionsSection, WithdrawalsSection, SubAgentsSection, SettingsSection, ALL_TABS, AgentTab } from "./AgentDashboard";
 
 export default function SubAgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
+  const [menuOpen, setMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const nav = useNavigate();
   const location = useLocation();
@@ -247,33 +256,85 @@ export default function SubAgentDashboard() {
         </div>
       </div>
 
-      {/* ── Mobile bottom bar ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/60 bg-white/95 backdrop-blur-sm dark:bg-card/95 lg:hidden">
-        <div className="flex">
-          {ALL_TABS.map((t) => {
+      {/* ── Mobile bottom bar (Modern Floating Pill) ── */}
+      <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
+        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-slate-200/50 bg-white/95 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90 pointer-events-auto transition-all">
+          {[
+            { value: "buy", label: "Buy Data", icon: <Signal className="h-5 w-5" /> },
+            { value: "store", label: "My Store", icon: <Store className="h-5 w-5" /> },
+            { value: "withdrawals", label: "Wallet", icon: <Wallet className="h-5 w-5" /> },
+          ].map((t) => {
             const active = tab === t.value;
             return (
               <button
                 type="button"
                 key={t.value}
-                onClick={() => setTab(t.value)}
+                onClick={() => setTab(t.value as AgentTab)}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-semibold transition-colors",
-                  active ? "" : "text-muted-foreground"
+                  "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300",
+                  active ? "font-bold" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 )}
                 style={active ? { color: brandColor } : {}}
               >
-                <span className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-lg transition-all [&_svg]:h-4 [&_svg]:w-4",
+                {active && (
+                  <span className="absolute -top-3 h-1 w-8 rounded-full animate-in zoom-in" style={{ backgroundColor: brandColor, boxShadow: `0 0 10px ${brandColor}` }} />
                 )}
-                style={active ? { backgroundColor: `${brandColor}1A` } : {}}
-                >
-                  {t.icon}
-                </span>
-                {t.label}
+                <span className="transition-transform duration-300">{t.icon}</span>
+                <span className="text-[10px] font-semibold">{t.label}</span>
               </button>
             );
           })}
+
+          <Drawer open={menuOpen} onOpenChange={setMenuOpen}>
+            <DrawerTrigger asChild>
+              <button
+                type="button"
+                onClick={(e) => e.currentTarget.blur()}
+                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all duration-300"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="text-[10px] font-semibold">Menu</span>
+              </button>
+            </DrawerTrigger>
+            <DrawerContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-t-[32px]">
+              <DrawerHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
+                <DrawerTitle className="text-left text-lg font-black tracking-tight">All Tools</DrawerTitle>
+                <DrawerDescription className="sr-only">Access all dashboard tools and settings</DrawerDescription>
+              </DrawerHeader>
+              <div className="p-4 grid grid-cols-3 gap-4 pb-12">
+                {ALL_TABS.map((t) => {
+                  const active = tab === t.value;
+                  return (
+                    <button
+                      type="button"
+                      key={t.value}
+                      onClick={() => {
+                        setTab(t.value);
+                        setMenuOpen(false);
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-2 rounded-2xl p-4 transition-all duration-300",
+                        active 
+                          ? "text-white shadow-lg" 
+                          : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      )}
+                      style={active ? { backgroundColor: brandColor, boxShadow: `0 8px 16px ${brandColor}40` } : {}}
+                    >
+                      <span className={cn(
+                        "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
+                        active ? "bg-white/20" : "bg-white dark:bg-slate-950"
+                      )}>
+                        {t.icon}
+                      </span>
+                      <span className="text-[10px] font-bold tracking-tight text-center leading-tight">
+                        {t.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </DrawerContent>
+          </Drawer>
         </div>
       </nav>
     </div>

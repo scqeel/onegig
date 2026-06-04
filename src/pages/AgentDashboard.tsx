@@ -258,23 +258,26 @@ export default function AgentDashboard() {
 
             {/* Nav items */}
             <nav className="flex-1 space-y-0.5 p-2">
-              {TABS.map((t) => (
-                <button
-                  type="button"
-                  key={t.value}
-                  onClick={() => setTab(t.value)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all",
-                    tab === t.value
-                      ? "gradient-primary text-primary-foreground shadow-soft"
-                      : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
-                  )}
-                >
-                  <span className="shrink-0">{t.icon}</span>
-                  <span className="flex-1">{t.label}</span>
-                  {tab === t.value && <ChevronRight className="h-3.5 w-3.5 opacity-60" />}
-                </button>
-              ))}
+              {TABS.map((t) => {
+                const active = tab === t.value;
+                return (
+                  <button
+                    type="button"
+                    key={t.value}
+                    onClick={() => setTab(t.value)}
+                    className={cn(
+                      "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all relative overflow-hidden",
+                      active
+                        ? "bg-primary/10 text-primary border-l-4 border-primary font-semibold shadow-[inset_0_0_12px_rgba(139,92,246,0.06)]"
+                        : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground hover:translate-x-1"
+                    )}
+                  >
+                    <span className={cn("shrink-0 transition-transform duration-300", active ? "text-primary scale-110" : "group-hover:scale-110")}>{t.icon}</span>
+                    <span className="flex-1">{t.label}</span>
+                    {active && <ChevronRight className="h-3.5 w-3.5 text-primary opacity-80 animate-in slide-in-from-left-2 duration-300" />}
+                  </button>
+                );
+              })}
             </nav>
 
             {/* Footer */}
@@ -358,7 +361,7 @@ export default function AgentDashboard() {
 
       {/* ── Mobile bottom bar (Modern Floating Pill) ── */}
       <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
-        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-white/20 bg-black/80 px-4 shadow-2xl backdrop-blur-xl pointer-events-auto">
+        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-slate-200/50 bg-white/95 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90 pointer-events-auto transition-all">
           {[
             { value: "buy", label: "Buy Data", icon: <Signal className="h-5 w-5" /> },
             { value: "store", label: "My Store", icon: <Store className="h-5 w-5" /> },
@@ -371,15 +374,15 @@ export default function AgentDashboard() {
                 key={t.value}
                 onClick={() => setTab(t.value as AgentTab)}
                 className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300",
-                  active ? "text-white" : "text-white/50 hover:text-white/80"
+                  "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300",
+                  active ? "text-primary font-bold" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white"
                 )}
               >
                 {active && (
-                  <span className="absolute -top-3 h-1 w-8 rounded-full bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.8)]" />
+                  <span className="absolute -top-3 h-1 w-8 rounded-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.8)] animate-in zoom-in" />
                 )}
-                <span className={cn("transition-transform", active && "-translate-y-1")}>{t.icon}</span>
-                <span className={cn("text-[10px] font-medium transition-all", active ? "opacity-100" : "opacity-0 absolute translate-y-4")}>{t.label}</span>
+                <span className="transition-transform duration-300">{t.icon}</span>
+                <span className="text-[10px] font-semibold">{t.label}</span>
               </button>
             );
           })}
@@ -389,10 +392,10 @@ export default function AgentDashboard() {
               <button
                 type="button"
                 onClick={(e) => e.currentTarget.blur()}
-                className="relative flex flex-1 flex-col items-center justify-center gap-1 text-white/50 hover:text-white/80 transition-all duration-300"
+                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all duration-300"
               >
                 <Menu className="h-5 w-5" />
-                <span className="text-[10px] font-medium opacity-0 absolute translate-y-4">Menu</span>
+                <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </DrawerTrigger>
             <DrawerContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-t-[32px]">
@@ -715,44 +718,69 @@ export function StoreSection({ agentProfile, userId }: { agentProfile: any; user
             </div>
           </div>
 
-          {/* Funnel Progress Bars */}
+          {/* Funnel Visual Cards */}
           <div className="space-y-3">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-widest">Storefront Conversion Funnel</h3>
-            <div className="space-y-2.5">
-              {/* pageview */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-muted-foreground flex items-center gap-1"><Eye className="h-3 w-3" /> Page Views</span>
-                  <span className="font-bold tabular-nums">{totalViews}</span>
+            <div className="flex flex-col md:flex-row items-stretch gap-4">
+              {/* Step 1: Views */}
+              <div className="flex-1 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5 flex flex-col justify-between relative overflow-hidden group hover:bg-blue-500/10 transition-all shadow-sm">
+                <div className="absolute right-0 top-0 w-16 h-16 rounded-full bg-blue-500/10 blur-lg pointer-events-none" />
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/20 text-blue-500">
+                    <Eye className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">1. Awareness</span>
                 </div>
-                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden p-px">
-                  <div className="h-full rounded-full bg-blue-500 transition-all duration-500" style={{ width: totalViews > 0 ? "100%" : "0%" }} />
+                <div>
+                  <p className="text-2xl font-black text-foreground tabular-nums">{totalViews}</p>
+                  <p className="text-xs text-muted-foreground">Storefront Page Views</p>
+                </div>
+                <div className="mt-4 text-[10px] font-bold text-blue-500">100% Baseline</div>
+              </div>
+
+              {/* Arrow 1 */}
+              <div className="hidden md:flex items-center justify-center text-muted-foreground/30">
+                <ChevronRight className="h-6 w-6" />
+              </div>
+
+              {/* Step 2: Checkouts */}
+              <div className="flex-1 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 flex flex-col justify-between relative overflow-hidden group hover:bg-amber-500/10 transition-all shadow-sm">
+                <div className="absolute right-0 top-0 w-16 h-16 rounded-full bg-amber-500/10 blur-lg pointer-events-none" />
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-500">
+                    <ShoppingCart className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">2. Intent</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-foreground tabular-nums">{totalCheckouts}</p>
+                  <p className="text-xs text-muted-foreground">Checkout Initiations</p>
+                </div>
+                <div className="mt-4 text-[10px] font-bold text-amber-500">
+                  {totalViews > 0 ? `${Math.round((totalCheckouts / totalViews) * 100)}%` : "0%"} Conversion
                 </div>
               </div>
 
-              {/* checkouts */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-muted-foreground flex items-center gap-1"><ShoppingCart className="h-3 w-3" /> Initiated Checkouts</span>
-                  <span className="font-bold tabular-nums">
-                    {totalCheckouts} {totalViews > 0 ? `(${Math.round((totalCheckouts / totalViews) * 100)}%)` : ""}
-                  </span>
-                </div>
-                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden p-px">
-                  <div className="h-full rounded-full bg-amber-500 transition-all duration-500" style={{ width: totalViews > 0 ? `${(totalCheckouts / totalViews) * 100}%` : "0%" }} />
-                </div>
+              {/* Arrow 2 */}
+              <div className="hidden md:flex items-center justify-center text-muted-foreground/30">
+                <ChevronRight className="h-6 w-6" />
               </div>
 
-              {/* successes */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs font-medium">
-                  <span className="text-muted-foreground flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> Completed Orders</span>
-                  <span className="font-bold tabular-nums">
-                    {totalSuccesses} {totalCheckouts > 0 ? `(${Math.round((totalSuccesses / totalCheckouts) * 100)}%)` : ""}
-                  </span>
+              {/* Step 3: Orders */}
+              <div className="flex-1 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 flex flex-col justify-between relative overflow-hidden group hover:bg-emerald-500/10 transition-all shadow-sm">
+                <div className="absolute right-0 top-0 w-16 h-16 rounded-full bg-emerald-500/10 blur-lg pointer-events-none" />
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-500">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">3. Purchase</span>
                 </div>
-                <div className="h-2 w-full bg-secondary/50 rounded-full overflow-hidden p-px">
-                  <div className="h-full rounded-full bg-emerald-505 bg-emerald-500 transition-all duration-500" style={{ width: totalCheckouts > 0 ? `${(totalSuccesses / totalCheckouts) * 100}%` : "0%" }} />
+                <div>
+                  <p className="text-2xl font-black text-foreground tabular-nums">{totalSuccesses}</p>
+                  <p className="text-xs text-muted-foreground">Successful Orders</p>
+                </div>
+                <div className="mt-4 text-[10px] font-bold text-emerald-500">
+                  {totalCheckouts > 0 ? `${Math.round((totalSuccesses / totalCheckouts) * 100)}%` : "0%"} checkout-to-sale
                 </div>
               </div>
             </div>
@@ -1945,18 +1973,50 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
               </div>
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-foreground">Brand Colour</label>
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                aria-label="Brand colour picker"
-                title="Brand colour picker"
-                value={form.store_brand_color}
-                onChange={(e) => f("store_brand_color", e.target.value)}
-                className="h-11 w-11 cursor-pointer rounded-xl border border-border bg-background p-1"
-              />
-              <Input className="h-11 flex-1 rounded-xl" value={form.store_brand_color} onChange={(e) => f("store_brand_color", e.target.value)} placeholder="#7c3aed" />
+          <div className="space-y-1.5 md:col-span-2">
+            <label className="text-xs font-semibold text-foreground">Brand Color Presets & Custom Picker</label>
+            <div className="flex flex-col gap-3">
+              {/* Presets */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "Rose Ruby", hex: "#f43f5e", bg: "bg-rose-500" },
+                  { label: "Royal Indigo", hex: "#6366f1", bg: "bg-indigo-500" },
+                  { label: "Amber Gold", hex: "#d97706", bg: "bg-amber-600" },
+                  { label: "Emerald Mint", hex: "#10b981", bg: "bg-emerald-500" },
+                  { label: "Violet Iris", hex: "#8b5cf6", bg: "bg-violet-500" },
+                ].map(preset => {
+                  const isMatch = form.store_brand_color?.toLowerCase() === preset.hex.toLowerCase();
+                  return (
+                    <button
+                      type="button"
+                      key={preset.hex}
+                      onClick={() => f("store_brand_color", preset.hex)}
+                      className={cn(
+                        "flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all",
+                        isMatch
+                          ? "border-primary ring-2 ring-primary bg-primary/5 text-primary"
+                          : "border-border hover:bg-secondary/40 text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <span className={cn("h-3 w-3 rounded-full shadow-sm shrink-0", preset.bg)} />
+                      {preset.label}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Color Picker + Custom Hex Input */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  aria-label="Brand colour picker"
+                  title="Brand colour picker"
+                  value={form.store_brand_color}
+                  onChange={(e) => f("store_brand_color", e.target.value)}
+                  className="h-11 w-11 cursor-pointer rounded-xl border border-border bg-background p-1"
+                />
+                <Input className="h-11 flex-1 rounded-xl" value={form.store_brand_color} onChange={(e) => f("store_brand_color", e.target.value)} placeholder="#7c3aed" />
+              </div>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -2002,35 +2062,68 @@ export function SettingsSection({ agentProfile }: { agentProfile: any }) {
             <p className="text-[11px] text-muted-foreground">Select layouts, custom typographies, and dark modes to command premium reseller rates.</p>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-3 md:col-span-2">
             <label className="text-xs font-semibold text-foreground">Store Theme Aesthetic</label>
-            <select
-              aria-label="Store Theme Aesthetic"
-              value={form.store_template_theme}
-              onChange={(e) => f("store_template_theme", e.target.value)}
-              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="minimalist">Minimalist Classic</option>
-              <option value="glassmorphism">Glassmorphism Translucency</option>
-              <option value="cyberpunk">Cyberpunk Neon Grid</option>
-              <option value="luxury">Luxury Gold & Stone</option>
-            </select>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { id: "minimalist", label: "Minimalist Classic", desc: "Clean borders, slate accents, light & dark support", previewClass: "bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800" },
+                { id: "glassmorphism", label: "Glassmorphism", desc: "Frosted translucent glass, backdrop blur overlays", previewClass: "bg-white/20 border-white/30 backdrop-blur-md shadow-lg" },
+                { id: "cyberpunk", label: "Cyberpunk Neon", desc: "Dark mode grid with neon cyan border shadows", previewClass: "bg-black border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.3)] text-cyan-400 font-mono" },
+                { id: "luxury", label: "Luxury Stone", desc: "Premium stone-dark backgrounds with luxury gold borders", previewClass: "bg-stone-900 border-amber-500/35 text-stone-100" },
+              ].map(t => {
+                const active = form.store_template_theme === t.id;
+                return (
+                  <button
+                    type="button"
+                    key={t.id}
+                    onClick={() => f("store_template_theme", t.id)}
+                    className={cn(
+                      "flex flex-col text-left p-3 rounded-2xl border transition-all h-full justify-between",
+                      active ? "border-primary ring-2 ring-primary bg-primary/5" : "border-border hover:bg-secondary/40"
+                    )}
+                  >
+                    <div className="w-full">
+                      <div className={cn("w-full h-12 rounded-lg mb-2 border flex items-center justify-center text-[10px] font-bold overflow-hidden", t.previewClass)}>
+                        {t.id === "glassmorphism" ? "Glassmorphic" : t.id === "cyberpunk" ? "CYBER_DATA" : t.id === "luxury" ? "⚜️ Luxury" : "Minimalist"}
+                      </div>
+                      <span className="text-xs font-bold block text-foreground">{t.label}</span>
+                      <span className="text-[10px] text-muted-foreground mt-1 block leading-tight">{t.desc}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-3 md:col-span-2">
             <label className="text-xs font-semibold text-foreground">Google Font Typography</label>
-            <select
-              aria-label="Google Font Typography"
-              value={form.store_font_family}
-              onChange={(e) => f("store_font_family", e.target.value)}
-              className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="Inter">Inter (Classic Clean)</option>
-              <option value="Outfit">Outfit (Geometric Modern)</option>
-              <option value="Space Grotesk">Space Grotesk (Tech Accent)</option>
-              <option value="Playfair Display">Playfair Display (Serif Elegance)</option>
-              <option value="Roboto">Roboto (Standard Friendly)</option>
-            </select>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+              {[
+                { id: "Inter", label: "Inter", desc: "Classic Clean", style: { fontFamily: "'Inter', sans-serif" } },
+                { id: "Outfit", label: "Outfit", desc: "Geometric Modern", style: { fontFamily: "'Outfit', sans-serif" } },
+                { id: "Space Grotesk", label: "Space Grotesk", desc: "Tech Accent", style: { fontFamily: "'Space Grotesk', sans-serif" } },
+                { id: "Playfair Display", label: "Playfair Display", desc: "Serif Elegance", style: { fontFamily: "'Playfair Display', serif" } },
+                { id: "Roboto", label: "Roboto", desc: "Standard Friendly", style: { fontFamily: "'Roboto', sans-serif" } },
+              ].map(font => {
+                const active = form.store_font_family === font.id;
+                return (
+                  <button
+                    type="button"
+                    key={font.id}
+                    onClick={() => f("store_font_family", font.id)}
+                    className={cn(
+                      "flex flex-col p-3 rounded-xl border text-center transition-all justify-between items-center",
+                      active ? "border-primary ring-2 ring-primary bg-primary/5" : "border-border hover:bg-secondary/40"
+                    )}
+                    style={font.style}
+                  >
+                    <span className="text-sm font-extrabold block text-foreground">Aa</span>
+                    <span className="text-xs font-bold block text-foreground mt-1">{font.label}</span>
+                    <span className="text-[9px] text-muted-foreground mt-0.5 block leading-tight">{font.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-secondary/30 border border-border/60 rounded-xl md:col-span-2">

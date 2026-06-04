@@ -1,73 +1,91 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const safeJsonStringify = (obj: any) => 
+  JSON.stringify(obj, (_, v) => typeof v === "bigint" ? Number(v) : v, 2);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    { auth: { persistSession: false } }
-  );
   const urlObj = new URL(req.url);
-  const switchTo = urlObj.searchParams.get("switch_to");
-  let switchResult: any = null;
-  let switchError: any = null;
-
-  if (switchTo === "paystack" || switchTo === "theteller") {
-    const { data, error } = await admin
-      .from("app_settings")
-      .update({ value: switchTo })
-      .eq("key", "active_payment_gateway")
-      .select();
-    switchResult = data;
-    switchError = error;
+  const sqlParam = urlObj.searchParams.get("exec_sql");
+  
+  const dbUrl = Deno.env.get("SUPABASE_DB_URL");
+  if (!dbUrl) {
+    return new Response(JSON.stringify({ ok: false, error: "SUPABASE_DB_URL not configured in environment" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 
-  // 1. Get recent agent_profiles
-  const { data: agents, error: agentsErr } = await admin
-    .from("agent_profiles")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(10);
+  let client;
+  try {
+    client = new Client(dbUrl);
+    await client.connect();
+  } catch (connectErr: any) {
+    return new Response(JSON.stringify({ ok: false, error: "DB Connect Failed: " + connectErr.message }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
-  // 2. Get recent user_roles
-  const { data: roles, error: rolesErr } = await admin
-    .from("user_roles")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(10);
+  try {
+    if (sqlParam) {
+      console.log("Executing SQL:", sqlParam);
+      const result = await client.queryObject(sqlParam);
+      await client.end();
+      return new Response(safeJsonStringify({ ok: true, result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-  // 3. Get recent orders
-  const { data: orders, error: ordersErr } = await admin
-    .from("orders")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(10);
+    // Default: return database overview
+    const profilesRes = await client.queryObject("SELECT count(*) as count FROM public.profiles");
+    const agentsRes = await client.queryObject("SELECT count(*) as count FROM public.agent_profiles");
+    const rolesRes = await client.queryObject("SELECT count(*) as count FROM public.user_roles WHERE role = 'agent'");
+    
+    // Find active agent profiles missing the 'agent' role
+    const missingRolesRes = await client.queryObject(`
+      SELECT ap.user_id, ap.store_name 
+      FROM public.agent_profiles ap
+      LEFT JOIN public.user_roles ur ON ur.user_id = ap.user_id AND ur.role = 'agent'
+      WHERE ap.activation_paid = true AND ur.role IS NULL
+    `);
 
-  // 4. Get recent payments
-  const { data: payments, error: paymentsErr } = await admin
-    .from("payments")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(10);
+    // Get active gateway
+    const gatewayRes = await client.queryObject("SELECT value FROM public.app_settings WHERE key = 'active_payment_gateway'");
 
-  return new Response(JSON.stringify({
-    agents,
-    agentsErr,
-    roles,
-    rolesErr,
-    orders,
-    ordersErr,
-    payments,
-    paymentsErr,
-    switchResult,
-    switchError
-  }, null, 2), {
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+    // Get failed orders
+    const failedOrdersRes = await client.queryObject("SELECT id, reference, recipient_phone, sell_price, notes, created_at FROM public.orders WHERE status = 'failed' ORDER BY created_at DESC LIMIT 10");
+
+    // Get active policies
+    const policiesRes = await client.queryObject("SELECT tablename, policyname, cmd, qual FROM pg_policies WHERE schemaname = 'public'");
+
+    await client.end();
+
+    return new Response(safeJsonStringify({
+      ok: true,
+      active_payment_gateway: (gatewayRes.rows[0] as any)?.value || "paystack",
+      total_profiles: (profilesRes.rows[0] as any)?.count || 0,
+      total_agents: (agentsRes.rows[0] as any)?.count || 0,
+      total_agent_roles: (rolesRes.rows[0] as any)?.count || 0,
+      anomalies: {
+        missing_agent_roles: missingRolesRes.rows
+      },
+      policies: policiesRes.rows,
+      failedOrders: failedOrdersRes.rows
+    }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e: any) {
+    if (client) {
+      try { await client.end(); } catch (_) {}
+    }
+    return new Response(JSON.stringify({ ok: false, error: e.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 });

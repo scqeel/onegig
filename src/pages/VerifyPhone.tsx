@@ -90,6 +90,55 @@ export default function VerifyPhonePage() {
 
       toast({ title: "Phone verified", description: "Your account is now fully secured!" });
       
+      // Try to automatically lookup and complete their profile name using Paystack
+      try {
+        const detectNetwork = (phone: string) => {
+          let num = phone.replace(/\D/g, "");
+          if (num.startsWith("233")) {
+            num = "0" + num.substring(3);
+          }
+          const pfx = num.substring(0, 3);
+          if (["024", "054", "055", "059", "025", "053"].includes(pfx)) return "MTN";
+          if (["020", "050"].includes(pfx)) return "TELECEL";
+          if (["027", "057", "026", "056"].includes(pfx)) return "AIRTELTIGO";
+          return "MTN";
+        };
+
+        const cleanedNum = unconfirmedPhone.replace(/\D/g, "");
+        const network = detectNetwork(cleanedNum);
+        
+        const { data: resolveRes } = await supabase.functions.invoke("paystack-resolve", {
+          body: { momo_number: cleanedNum, momo_network: network }
+        });
+
+        if (resolveRes?.ok && resolveRes?.account_name) {
+          const resolvedName = resolveRes.account_name;
+          
+          const { data: currentProfile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("id", session?.user.id)
+            .maybeSingle();
+
+          const nameToUpdate = currentProfile?.full_name?.trim();
+          if (!nameToUpdate || nameToUpdate === "" || nameToUpdate.toLowerCase().includes("user") || nameToUpdate.toLowerCase().includes("agent")) {
+            await supabase
+              .from("profiles")
+              .update({ full_name: resolvedName })
+              .eq("id", session?.user.id);
+
+            await supabase.auth.updateUser({
+              data: { full_name: resolvedName }
+            });
+
+            localStorage.setItem("show_profile_completion_prompt", "true");
+            localStorage.setItem("resolved_profile_name", resolvedName);
+          }
+        }
+      } catch (err) {
+        console.error("Auto name lookup failed:", err);
+      }
+
       // Refresh auth context so it picks up phone_confirmed_at
       await refresh();
       

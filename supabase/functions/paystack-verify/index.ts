@@ -29,7 +29,12 @@ function toProviderNetwork(code: string) {
 }
 
 function toPlanId(sizeLabel: string | null | undefined, sizeMb: number) {
-  if (sizeLabel && /gb/i.test(sizeLabel)) return String(sizeLabel).replace(/\s+/g, "").toUpperCase();
+  if (sizeLabel) {
+    const match = String(sizeLabel).match(/(\d+(?:\.\d+)?)\s*(gb|mb)/i);
+    if (match) {
+      return (match[1] + match[2]).toUpperCase();
+    }
+  }
   const gb = Number(sizeMb) / 1024;
   const safeGb = Number.isInteger(gb) ? String(gb) : gb.toFixed(1).replace(/\.0$/, "");
   return `${safeGb}GB`;

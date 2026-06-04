@@ -31,6 +31,53 @@ export function AdminUserDetailsModal({
   const [newPassword, setNewPassword] = useState("");
   const [resetting, setResetting] = useState(false);
 
+  // Paystack verification state
+  const [verifyingPhone, setVerifyingPhone] = useState(false);
+  const [verifiedPhoneName, setVerifiedPhoneName] = useState<string | null>(null);
+
+  const detectNetwork = (phone: string) => {
+    let num = phone.replace(/\D/g, "");
+    if (num.startsWith("233")) {
+      num = "0" + num.substring(3);
+    }
+    const pfx = num.substring(0, 3);
+    if (["024", "054", "055", "059", "025", "053"].includes(pfx)) return "MTN";
+    if (["020", "050"].includes(pfx)) return "TELECEL";
+    if (["027", "057", "026", "056"].includes(pfx)) return "AIRTELTIGO";
+    return "MTN";
+  };
+
+  const verifyPhoneMomoName = async (phone: string) => {
+    setVerifyingPhone(true);
+    setVerifiedPhoneName(null);
+    let num = phone.replace(/\D/g, "");
+    if (num.startsWith("233")) {
+      num = "0" + num.substring(3);
+    }
+    const network = detectNetwork(num);
+    try {
+      const { data, error } = await supabase.functions.invoke("paystack-resolve", {
+        body: { momo_number: num, momo_network: network }
+      });
+      if (data?.ok && data?.account_name) {
+        setVerifiedPhoneName(data.account_name);
+        toast({ title: "Name Verified", description: `${data.account_name}` });
+      } else {
+        setVerifiedPhoneName("Not Found");
+        toast({ title: "Verification Failed", description: data?.error || "Could not resolve name", variant: "destructive" });
+      }
+    } catch (err: any) {
+      setVerifiedPhoneName("Error");
+      toast({ title: "Verification Error", description: err.message, variant: "destructive" });
+    } finally {
+      setVerifyingPhone(false);
+    }
+  };
+
+  useEffect(() => {
+    setVerifiedPhoneName(null);
+  }, [user?.id]);
+
   // Fetch Wallet Balance
   const { data: balanceData, isLoading: loadingBalance, refetch: refetchBalance } = useQuery({
     queryKey: ["admin-user-balance", user?.id],
@@ -157,9 +204,39 @@ export function AdminUserDetailsModal({
               )}
             </div>
           </div>
-          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm text-muted-foreground">
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-4 text-sm text-muted-foreground items-center">
             <div><span className="font-semibold text-foreground">Email:</span> {user.email || "N/A"}</div>
-            <div><span className="font-semibold text-foreground">Phone:</span> {user.phone || "N/A"}</div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-foreground">Phone:</span> {user.phone || "N/A"}
+              {user.phone && (
+                <>
+                  {verifyingPhone ? (
+                    <span className="flex items-center gap-1 text-xs text-primary font-bold">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Verifying...
+                    </span>
+                  ) : verifiedPhoneName ? (
+                    <span className={cn(
+                      "rounded-full px-2 py-0.5 border text-[10px] font-bold leading-none",
+                      verifiedPhoneName === "Not Found" || verifiedPhoneName === "Error"
+                        ? "border-rose-500/20 bg-rose-500/10 text-rose-500"
+                        : "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                    )}>
+                      {verifiedPhoneName === "Not Found" || verifiedPhoneName === "Error"
+                        ? `MoMo Name: ${verifiedPhoneName}`
+                        : `Verified: ${verifiedPhoneName}`
+                      }
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => verifyPhoneMomoName(user.phone)}
+                      className="text-xs text-primary hover:underline font-bold"
+                    >
+                      (Verify Paystack Name)
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 

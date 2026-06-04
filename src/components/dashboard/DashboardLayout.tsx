@@ -1,6 +1,6 @@
-import { ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Bell, MessageCircle, Search, Menu, X, ChevronRight } from "lucide-react";
+import { ReactNode, useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Bell, MessageCircle, Search, Menu, X, ChevronRight, UserCheck } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { cn } from "@/lib/utils";
 import {
@@ -10,6 +10,14 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@/components/ui/drawer";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnreadNotifications } from "@/hooks/useNotifications";
 
@@ -43,7 +51,34 @@ export function DashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadCount } = useUnreadNotifications();
   const location = useLocation();
+  const nav = useNavigate();
+  const { profile } = useAuth();
   const isNotifications = location.pathname === "/dashboard/notifications";
+
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [momoName, setMomoName] = useState("");
+
+  useEffect(() => {
+    const showPrompt = localStorage.getItem("show_profile_completion_prompt") === "true";
+    const name = localStorage.getItem("resolved_profile_name");
+    if (showPrompt && name) {
+      setMomoName(name);
+      setPromptOpen(true);
+    }
+  }, [profile]);
+
+  const handleReviewProfile = () => {
+    localStorage.removeItem("show_profile_completion_prompt");
+    localStorage.removeItem("resolved_profile_name");
+    setPromptOpen(false);
+    nav("/dashboard/profile");
+  };
+
+  const handleClosePrompt = () => {
+    localStorage.removeItem("show_profile_completion_prompt");
+    localStorage.removeItem("resolved_profile_name");
+    setPromptOpen(false);
+  };
 
   return (
     <AppShell>
@@ -155,24 +190,21 @@ export function DashboardLayout({
       {/* ── Mobile Bottom Navigation (Modern Floating Pill) ── */}
       {sidebarItems.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
-          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-white/10 bg-[#0b0f19]/90 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-xl pointer-events-auto">
+          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-slate-200/50 bg-[#0b0f19]/95 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-xl pointer-events-auto">
             {sidebarItems.slice(0, 4).map((item) => {
               const isActive = item.active;
               const content = (
                 <div className={cn(
-                  "relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300 w-full h-full",
-                  isActive ? "text-white" : "text-white/40 hover:text-white/80"
+                  "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300 w-full h-full",
+                  isActive ? "text-primary font-bold" : "text-white/40 hover:text-white/80"
                 )}>
                   {isActive && (
                     <span className="absolute -top-[18px] h-1 w-8 rounded-full bg-primary shadow-[0_0_12px_rgba(139,92,246,0.9)] animate-in fade-in zoom-in" />
                   )}
-                  <span className={cn("transition-transform duration-300", isActive && "-translate-y-1 text-primary drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]")}>
+                  <span className="transition-transform duration-300">
                     {item.icon}
                   </span>
-                  <span className={cn(
-                    "text-[10px] font-bold tracking-tight transition-all duration-300",
-                    isActive ? "opacity-100 translate-y-0" : "opacity-0 absolute translate-y-4"
-                  )}>
+                  <span className="text-[10px] font-bold tracking-tight">
                     {item.label}
                   </span>
                 </div>
@@ -202,11 +234,11 @@ export function DashboardLayout({
                 }}
                 className="flex-1 flex justify-center h-full items-center active:scale-95 transition-transform touch-manipulation"
               >
-                <div className="relative flex flex-1 flex-col items-center justify-center gap-1 transition-all duration-300 text-white/40 hover:text-white/80">
+                <div className="relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300 text-white/40 hover:text-white/80">
                   <span className="transition-transform duration-300">
                     <Menu className="h-5 w-5" />
                   </span>
-                  <span className="text-[10px] font-bold tracking-tight opacity-0 absolute translate-y-4 transition-all duration-300">
+                  <span className="text-[10px] font-bold tracking-tight">
                     More
                   </span>
                 </div>
@@ -296,6 +328,38 @@ export function DashboardLayout({
           </div>
         </DrawerContent>
       </Drawer>
+
+      <Dialog open={promptOpen} onOpenChange={(val) => !val && handleClosePrompt()}>
+        <DialogContent className="w-[94vw] max-w-sm rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 p-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-float animate-in fade-in zoom-in duration-300">
+          <DialogHeader className="space-y-3">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-sm animate-bounce">
+              <UserCheck className="h-6 w-6" />
+            </div>
+            <DialogTitle className="text-center text-lg font-black text-foreground">
+              Profile Auto-Completed! 🚀
+            </DialogTitle>
+            <DialogDescription className="text-center text-xs text-muted-foreground/80 leading-relaxed">
+              We resolved your registered MoMo name: <span className="font-bold text-foreground font-mono block mt-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/30">{momoName}</span> and updated your profile display name automatically.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2 pt-3">
+            <Button
+              onClick={handleReviewProfile}
+              className="w-full h-11 rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] text-xs shadow-soft"
+            >
+              Verify & Complete Profile
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={handleClosePrompt}
+              className="w-full h-10 rounded-xl font-bold text-xs hover:bg-secondary/50 text-muted-foreground"
+            >
+              Looks good!
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

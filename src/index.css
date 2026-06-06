@@ -309,3 +309,43 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+/* Animated Font Logo styles */
+@keyframes shimmer-logo {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes signal-wave-1 {
+  0%, 100% { opacity: 0.3; }
+  15% { opacity: 1; }
+  30% { opacity: 0.3; }
+}
+@keyframes signal-wave-2 {
+  0%, 100% { opacity: 0.3; }
+  25% { opacity: 0.3; }
+  40% { opacity: 1; }
+  55% { opacity: 0.3; }
+}
+@keyframes signal-wave-3 {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.3; }
+  65% { opacity: 1; }
+  80% { opacity: 0.3; }
+}
+
+.animate-shimmer-logo {
+  background-size: 200% auto;
+  animation: shimmer-logo 6s linear infinite;
+}
+
+.animate-signal-1 {
+  animation: signal-wave-1 1.8s ease-in-out infinite;
+}
+.animate-signal-2 {
+  animation: signal-wave-2 1.8s ease-in-out infinite;
+}
+.animate-signal-3 {
+  animation: signal-wave-3 1.8s ease-in-out infinite;
+}

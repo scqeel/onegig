@@ -221,7 +221,7 @@ export default function HomePage() {
       {/* ── Navbar (Modern Floating Pill) ── */}
       <header className="fixed left-0 right-0 top-4 z-50 px-4 md:px-8 pointer-events-none">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-slate-200/50 bg-white/80 dark:bg-slate-950/80 px-4 md:px-6 shadow-[0_8px_32px_rgba(0,0,0,0.06)] backdrop-blur-xl dark:border-white/5 pointer-events-auto transition-all">
-          <Logo size="md" className="mix-blend-multiply dark:mix-blend-normal" />
+          <Logo size="md" />
           
           <nav className="hidden items-center gap-1 md:flex">
             <Link to="/track" className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white transition-colors">
@@ -267,7 +267,7 @@ export default function HomePage() {
               </SheetTrigger>
               <SheetContent side="right" className="w-72 border-l border-slate-100 dark:border-slate-900 bg-white/95 backdrop-blur-2xl dark:bg-slate-950/95 p-6 shadow-2xl">
                 <SheetHeader className="mb-8 text-left">
-                  <SheetTitle><Logo size="sm" className="mix-blend-multiply dark:mix-blend-normal" /></SheetTitle>
+                  <SheetTitle><Logo size="sm" /></SheetTitle>
                   <SheetDescription className="sr-only">Navigation</SheetDescription>
                 </SheetHeader>
                 <div className="flex flex-col gap-3">

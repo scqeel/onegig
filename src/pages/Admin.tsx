@@ -1937,6 +1937,7 @@ function SiteSettingsSection() {
   const [paystackSecretKey, setPaystackSecretKey] = useState("");
   const [thetellerMerchantId, setThetellerMerchantId] = useState("");
   const [thetellerApiKey, setThetellerApiKey] = useState("");
+  const [smsOtpEnabled, setSmsOtpEnabled] = useState(true);
 
   useQuery({
     queryKey: ["admin-site-settings"],
@@ -1959,6 +1960,7 @@ function SiteSettingsSection() {
       setPaystackSecretKey(String(map.paystack_secret_key ?? ""));
       setThetellerMerchantId(String(map.theteller_merchant_id ?? ""));
       setThetellerApiKey(String(map.theteller_api_key ?? ""));
+      setSmsOtpEnabled(map.sms_otp_enabled !== "false");
       return true;
     },
     staleTime: 60_000,
@@ -1981,6 +1983,7 @@ function SiteSettingsSection() {
       { key: "paystack_secret_key", value: paystackSecretKey },
       { key: "theteller_merchant_id", value: thetellerMerchantId },
       { key: "theteller_api_key", value: thetellerApiKey },
+      { key: "sms_otp_enabled",     value: String(smsOtpEnabled) },
     ];
     const { error } = await supabase.from("app_settings").upsert(rows as any);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
@@ -2249,6 +2252,20 @@ function SiteSettingsSection() {
                 className={cn("relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors", allowRegistrations ? "bg-emerald-500" : "bg-muted")}
               >
                 <span className={cn("inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform", allowRegistrations ? "translate-x-6" : "translate-x-1")} />
+              </button>
+            </div>
+
+            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 flex items-center justify-between gap-4">
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Enable SMS OTP Verification</label>
+                <p className="text-xs text-muted-foreground/80 mt-1">If disabled, phone number verification OTP is bypassed.</p>
+              </div>
+              <button 
+                type="button" 
+                onClick={() => setSmsOtpEnabled(!smsOtpEnabled)} 
+                className={cn("relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors", smsOtpEnabled ? "bg-emerald-500" : "bg-muted")}
+              >
+                <span className={cn("inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform", smsOtpEnabled ? "translate-x-6" : "translate-x-1")} />
               </button>
             </div>
 

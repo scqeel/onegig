@@ -122,12 +122,13 @@ export default function AuthPage() {
         return;
       }
 
-      // Only redirect to dashboard if they have a confirmed phone, or if they are a legacy user
+      // Only redirect to dashboard if they have a confirmed phone, or if they are a legacy user, or if OTP is disabled globally
       if (!loading && session && !refParam) {
         const isLegacyUser = new Date(session.user.created_at) < new Date("2026-05-30T00:00:00Z");
         const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
+        const isOtpRequired = settings?.sms_otp_enabled ?? true;
         
-        if (hasVerifiedPhone || isLegacyUser) {
+        if (hasVerifiedPhone || isLegacyUser || !isOtpRequired) {
           nav(from || "/dashboard", { replace: true });
         } else if (!isSignUp) {
           // If they are on the signin tab but have no verified phone, switch them to signup to complete verification
@@ -137,7 +138,7 @@ export default function AuthPage() {
     };
 
     checkRefRedirect();
-  }, [session, loading, nav, from, isSignUp, intent, setSearchParams, refParam]);
+  }, [session, loading, nav, from, isSignUp, intent, setSearchParams, refParam, settings]);
 
   const doSignIn = async () => {
     if (siMethod === "email") {
@@ -196,7 +197,8 @@ export default function AuthPage() {
           full_name: suFullName.trim(), 
           username: suUsername.toLowerCase().trim(),
           referred_by_code: finalReferralCode || parentRefCode || null,
-          intent: accountType
+          intent: accountType,
+          phone: formattedPhone
         } 
       };
       
@@ -224,14 +226,31 @@ export default function AuthPage() {
         }
       }
       
-      // Trigger OTP SMS verification by updating the user profile phone number
-      const updateRes = await authClient.updateUser({ phone: formattedPhone });
-      if (updateRes.error) {
-        toast({ title: "Phone registration failed", description: updateRes.error.message, variant: "destructive" });
-        return;
-      }
+      const isOtpRequired = settings?.sms_otp_enabled ?? true;
+      if (isOtpRequired) {
+        // Trigger OTP SMS verification by updating the user profile phone number
+        const updateRes = await authClient.updateUser({ phone: formattedPhone });
+        if (updateRes.error) {
+          toast({ title: "Phone registration failed", description: updateRes.error.message, variant: "destructive" });
+          return;
+        }
 
-      nav(`/verify-phone?intent=${accountType}`, { replace: true });
+        nav(`/verify-phone?intent=${accountType}`, { replace: true });
+      } else {
+        // Since OTP is disabled, update their profiles table phone number if registered already
+        if (userIsRegistered && currentSession?.user) {
+          const { error: profileErr } = await supabase
+            .from("profiles")
+            .update({ phone: formattedPhone })
+            .eq("id", currentSession.user.id);
+          
+          if (profileErr) {
+            console.error("Failed to update profile phone:", profileErr);
+          }
+        }
+        toast({ title: "Account created", description: "Welcome to OneGig!" });
+        nav(accountType === "agent" ? "/dashboard/agent" : "/dashboard/customer", { replace: true });
+      }
       return;
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Unexpected error. Please try again.";

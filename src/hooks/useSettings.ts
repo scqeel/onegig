@@ -20,6 +20,7 @@ export function useSettings() {
         platform_tagline: String(map.platform_tagline ?? "Buy data in seconds ⚡"),
         home_page_bg: String(map.home_page_bg ?? "none"),
         active_payment_gateway: String(map.active_payment_gateway ?? "paystack"),
+        sms_otp_enabled: map.sms_otp_enabled !== undefined ? String(map.sms_otp_enabled) === "true" : true,
       };
     },
     staleTime: 5 * 60 * 1000,

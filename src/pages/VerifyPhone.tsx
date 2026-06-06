@@ -7,12 +7,14 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { useSettings } from "@/hooks/useSettings";
 
 export default function VerifyPhonePage() {
   const nav = useNavigate();
   const loc = useLocation();
   const { session, loading, refresh } = useAuth();
   const { toast } = useToast();
+  const { data: settings, isLoading: settingsLoading } = useSettings();
 
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
@@ -40,17 +42,18 @@ export default function VerifyPhonePage() {
 
   // Protect route
   useEffect(() => {
-    if (!loading) {
+    if (!loading && !settingsLoading) {
       if (!session) {
         nav("/auth", { replace: true });
         return;
       }
-      if (session.user.phone && session.user.phone_confirmed_at) {
+      const isOtpRequired = settings?.sms_otp_enabled ?? true;
+      if (!isOtpRequired || (session.user.phone && session.user.phone_confirmed_at)) {
         nav("/dashboard", { replace: true });
         return;
       }
     }
-  }, [session, loading, nav]);
+  }, [session, loading, settingsLoading, settings, nav]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;

@@ -1,12 +1,14 @@
 import { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
+import { useSettings } from "@/hooks/useSettings";
 
 export function RequireAuth({ children, role }: { children: ReactNode; role?: AppRole }) {
   const { session, loading, roles } = useAuth();
+  const { data: settings, isLoading: settingsLoading } = useSettings();
   const loc = useLocation();
 
-  if (loading) {
+  if (loading || settingsLoading) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
         <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
@@ -15,11 +17,12 @@ export function RequireAuth({ children, role }: { children: ReactNode; role?: Ap
   }
   if (!session) return <Navigate to="/auth" state={{ from: loc.pathname }} replace />;
   
-  // Enforce phone verification only for new users (created on or after May 30, 2026)
+  // Enforce phone verification only if enabled globally and for new users (created on or after May 30, 2026)
+  const isOtpRequired = settings?.sms_otp_enabled ?? true;
   const isLegacyUser = new Date(session.user.created_at) < new Date("2026-05-30T00:00:00Z");
   const hasVerifiedPhone = session.user.phone && session.user.phone_confirmed_at;
   
-  if (!isLegacyUser && !hasVerifiedPhone) {
+  if (isOtpRequired && !isLegacyUser && !hasVerifiedPhone) {
     return <Navigate to="/verify-phone" state={{ from: loc.pathname }} replace />;
   }
 

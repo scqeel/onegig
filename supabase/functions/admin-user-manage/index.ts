@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
       const { error: txErr } = await admin.from("wallet_transactions").insert({
         user_id: target_user_id,
         type: amount > 0 ? "deposit" : "withdrawal",
-        amount: amount, 
+        amount: Math.abs(amount), 
         status: "completed",
         description,
       });

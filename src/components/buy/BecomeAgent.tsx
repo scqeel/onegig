@@ -58,6 +58,36 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
   const brandColor = parentAgent?.store_brand_color || "#7c3aed";
   const storeName = parentAgent?.store_name || "Data Platform";
 
+  const payWithRedirect = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-initiate`, {
+        body: {
+          purpose: "agent_activation",
+          email: profile?.email || "customer@mtopup.shop",
+          ref_slug: refSlug || undefined,
+          return_url: window.location.origin + "/payment/callback",
+          momo_number: momoNumber,
+        },
+      });
+
+      if (error || !data?.ok) {
+        setPhase("error");
+        setErrorMsg(data?.error || error?.message || "Failed to initialize activation payment");
+        return;
+      }
+
+      window.location.href = data.authorization_url;
+    } catch (e: any) {
+      setPhase("error");
+      setErrorMsg(e?.message || "An unexpected error occurred.");
+    }
+  };
+
   const activate = async () => {
     if (!settings) {
       toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
@@ -68,6 +98,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
       return;
     }
+
 
     setPhase("processing");
 
@@ -427,44 +458,44 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         />
       </div>
 
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-foreground">
-          Mobile Money Payment Number
-        </label>
-        <div className="flex gap-2">
-          <select 
-            className="w-[100px] h-12 rounded-xl border border-border/70 text-sm bg-background px-3 outline-none focus:ring-2 focus:ring-primary/20"
-            value={momoNetwork}
-            onChange={(e) => setMomoNetwork(e.target.value)}
-          >
-            <option value="MTN">MTN</option>
-            <option value="TELECEL">Telecel</option>
-            <option value="AIRTELTIGO">AT</option>
-          </select>
-          <Input
-            inputMode="tel"
-            value={momoNumber}
-            onChange={(e) => setMomoNumber(e.target.value)}
-            placeholder="024 123 4567"
-            className="flex-1 h-12 rounded-xl border-border/70 text-base"
-          />
+        <div className="space-y-3">
+          <label className="text-xs font-semibold text-foreground">
+            Mobile Money Payment Number
+          </label>
+          <div className="flex gap-2">
+            <select 
+              className="w-[100px] h-12 rounded-xl border border-border/70 text-sm bg-background px-3 outline-none focus:ring-2 focus:ring-primary/20"
+              value={momoNetwork}
+              onChange={(e) => setMomoNetwork(e.target.value)}
+            >
+              <option value="MTN">MTN</option>
+              <option value="TELECEL">Telecel</option>
+              <option value="AIRTELTIGO">AT</option>
+            </select>
+            <Input
+              inputMode="tel"
+              value={momoNumber}
+              onChange={(e) => setMomoNumber(e.target.value)}
+              placeholder="024 123 4567"
+              className="flex-1 h-12 rounded-xl border-border/70 text-base"
+            />
+          </div>
+          <p className="mt-1 text-[10px] text-muted-foreground">
+            The prompt will be sent to this number.
+          </p>
+          {isVerifying && (
+            <div className="mt-2 text-xs text-primary flex items-center gap-2" style={parentAgent ? { color: brandColor } : {}}>
+              <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" style={parentAgent ? { borderColor: brandColor, borderTopColor: 'transparent' } : {}} />
+              Verifying account...
+            </div>
+          )}
+          {accountName && !isVerifying && (
+            <div className="mt-2 text-xs font-semibold px-3 py-2 bg-success/10 text-success rounded-lg flex items-center gap-2 border border-success/20">
+              <CheckCircle2 className="h-4 w-4" />
+              {accountName}
+            </div>
+          )}
         </div>
-        <p className="mt-1 text-[10px] text-muted-foreground">
-          The prompt will be sent to this number.
-        </p>
-        {isVerifying && (
-          <div className="mt-2 text-xs text-primary flex items-center gap-2" style={parentAgent ? { color: brandColor } : {}}>
-            <span className="h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" style={parentAgent ? { borderColor: brandColor, borderTopColor: 'transparent' } : {}} />
-            Verifying account...
-          </div>
-        )}
-        {accountName && !isVerifying && (
-          <div className="mt-2 text-xs font-semibold px-3 py-2 bg-success/10 text-success rounded-lg flex items-center gap-2 border border-success/20">
-            <CheckCircle2 className="h-4 w-4" />
-            {accountName}
-          </div>
-        )}
-      </div>
 
       <div className="rounded-3xl border border-border/60 p-5 flex items-center justify-between">
         <div>
@@ -473,7 +504,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
         </div>
         <Button
           onClick={activate}
-          disabled={momoNumber.replace(/\D/g, "").length < 9 || isVerifying || phase === "processing"}
+          disabled={(momoNumber.replace(/\D/g, "").length < 9) || isVerifying || phase === "processing"}
           className="h-14 rounded-2xl px-6 text-white font-bold shadow-float"
           style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none', boxShadow: `0 12px 30px -10px ${brandColor}` } : { backgroundColor: 'var(--primary)' }}
         >

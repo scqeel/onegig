@@ -6,7 +6,7 @@ const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const supabase = createClient(url, key);
 
 async function run() {
-  const { data, error } = await supabase.from('app_settings').select('value').eq('key', 'data_providers');
+  const { data, error } = await supabase.from('app_settings').select('*');
   console.log('Error:', error);
   console.log('Data:', JSON.stringify(data, null, 2));
 }

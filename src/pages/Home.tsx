@@ -48,6 +48,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
+import { useSettings } from "@/hooks/useSettings";
 
 /* ─────────────────────────────────────────────
    Scroll-reveal hook
@@ -182,6 +183,7 @@ export default function HomePage() {
   const network = NETWORKS.find((n) => n.id === activeNetwork)!;
   const { theme, setTheme } = useTheme();
   const { user, isAdmin, isAgent, signOut } = useAuth();
+  const { data: settings } = useSettings();
 
   const dashboardPath = isAdmin ? '/admin' : isAgent ? '/agent' : '/dashboard/customer';
   const dashboardLabel = isAdmin ? 'Admin Dashboard' : isAgent ? 'Agent Dashboard' : 'My Dashboard';
@@ -894,7 +896,7 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
-      <DraggableWhatsApp link="https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y" />
+      <DraggableWhatsApp link={settings?.whatsapp_group_link || "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y"} />
     </main>
   );
 }

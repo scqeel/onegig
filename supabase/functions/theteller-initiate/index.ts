@@ -22,6 +22,7 @@ interface InitiateBody {
   amount?: number;
   email?: string;
   return_url?: string;
+  momo_number?: string;
 }
 
 Deno.serve(async (req) => {
@@ -173,6 +174,7 @@ Deno.serve(async (req) => {
         redirect_url: redirectUrl,
         desc: `${body.purpose} redirect checkout`,
         email: body.email || "customer@mtopup.shop", // redirect checkout requires email
+        subscriber_number: body.momo_number ? body.momo_number.replace(/\D/g, "") : undefined,
       }),
     });
 

@@ -252,7 +252,20 @@ Deno.serve(async (req) => {
     // Send Processing SMS
     if (customerPhone) {
       const isSelf = customerPhone === body.recipient_phone;
-      const waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
+      let waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
+      try {
+        const { data: waRow } = await admin
+          .from("app_settings")
+          .select("value")
+          .eq("key", "whatsapp_group_link")
+          .maybeSingle();
+        if (waRow?.value) {
+          waLink = String(waRow.value).trim();
+        }
+      } catch (err) {
+        console.error("Error fetching whatsapp_group_link:", err);
+      }
+
       const msg = isSelf 
         ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
         : `Your OneGig order of ${bundle.size_label} for ${body.recipient_phone} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;

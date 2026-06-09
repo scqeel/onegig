@@ -829,6 +829,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         return;
       }
 
+
       const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
         body: {
           purpose: "order",
@@ -929,6 +930,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           agent_slug: slug ?? null,
           email: email || "guest@mtopup.shop",
           return_url: window.location.origin + `/track`,
+          momo_number: momoNumber,
         },
       });
 
@@ -1063,15 +1065,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <h3 className="mt-6 text-xl font-black text-slate-800 dark:text-white">Payment Failed</h3>
         <p className="mt-2 font-medium text-red-500 px-4 max-w-md mx-auto">{errorMsg}</p>
         <div className="mt-8 flex flex-col gap-3 max-w-[280px] w-full mx-auto">
-          {activeGateway !== "theteller" && (
-            <Button
-              onClick={payWithRedirect}
-              className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-              Pay via Secure Web Page
-            </Button>
-          )}
+          <Button
+            onClick={payWithRedirect}
+            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
+            Pay via Secure Web Page
+          </Button>
           <Button
             onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
             className="h-13 rounded-2xl w-full font-bold border-2 bg-slate-950 text-white dark:bg-slate-800"

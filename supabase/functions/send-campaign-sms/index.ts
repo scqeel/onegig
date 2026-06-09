@@ -66,13 +66,31 @@ Deno.serve(async (req) => {
     return json({ error: "No recipients found" }, 400);
   }
 
-  // 3. Send SMS asynchronously
-  // TXTConnect might complain if we blast concurrently, so we do chunks or sequentially.
-  // For safety and speed, we do sequential batches of 10.
+  // 3. Load TXTConnect configurations from database
+  const { data: smsKeyRow } = await admin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "txtconnect_api_key")
+    .maybeSingle();
+  const apiKey = smsKeyRow?.value ? String(smsKeyRow.value) : undefined;
+
+  const { data: smsSenderRow } = await admin
+    .from("app_settings")
+    .select("value")
+    .eq("key", "sms_sender_id")
+    .maybeSingle();
+  const senderId = smsSenderRow?.value ? String(smsSenderRow.value) : undefined;
+
+  // 4. Send SMS sequentially and catch errors
   let sent = 0;
-  for (const phone of phoneArray) {
-    await sendSMS({ to: phone, message });
-    sent++;
+  try {
+    for (const phone of phoneArray) {
+      await sendSMS({ to: phone, message, apiKey, senderId });
+      sent++;
+    }
+  } catch (err: any) {
+    console.error("SMS campaign sending error:", err);
+    return json({ error: err.message || "Failed to send SMS campaign midway.", sent }, 500);
   }
 
   return json({ ok: true, sent });

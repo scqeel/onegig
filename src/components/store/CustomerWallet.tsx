@@ -77,6 +77,43 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
     };
   }, [userId]);
 
+  const payWithRedirect = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount < 1) {
+      toast({ title: "Invalid amount", description: "Minimum top-up is GHS 1", variant: "destructive" });
+      return;
+    }
+
+    setIsTopupOpen(false);
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-initiate`, {
+        body: {
+          purpose: "wallet_deposit",
+          amount: numAmount,
+          email: profile?.email || "customer@mtopup.shop",
+          return_url: window.location.origin + "/payment/callback",
+          momo_number: momoNumber,
+        },
+      });
+
+      if (error || !data?.ok) {
+        setPhase("error");
+        setErrorMsg(data?.error || error?.message || "Failed to initiate deposit");
+        return;
+      }
+
+      window.location.href = data.authorization_url;
+    } catch (e: any) {
+      setPhase("error");
+      setErrorMsg(e?.message || "An unexpected error occurred.");
+    }
+  };
+
   const initiateDeposit = async () => {
     if (!settings) {
       toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
@@ -91,6 +128,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
       toast({ title: "Invalid number", description: "Enter a valid mobile money number", variant: "destructive" });
       return;
     }
+
 
     setPhase("processing");
     try {
@@ -249,33 +287,32 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
                   onChange={(e) => setAmount(e.target.value)}
                   className="bg-slate-950 border-slate-800 h-12 text-lg focus:ring-emerald-500 focus:border-emerald-500"
                 />
-                <p className="text-xs text-slate-500">A 3% Paystack processing fee will be applied.</p>
+                 <p className="text-xs text-slate-500">A 3% {activeGateway === "theteller" ? "theTeller" : "Paystack"} processing fee will be applied.</p>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Mobile Money Number</label>
-                <div className="flex gap-2">
-                  <select 
-                    className="w-[100px] h-12 rounded-lg border-slate-800 bg-slate-950 text-sm text-white px-3 border outline-none focus:ring-emerald-500 focus:border-emerald-500" 
-                    value={momoNetwork} 
-                    onChange={e => setMomoNetwork(e.target.value)}
-                  >
-                    <option value="MTN">MTN</option>
-                    <option value="TELECEL">Telecel</option>
-                    <option value="AIRTELTIGO">AT</option>
-                  </select>
-                  <Input 
-                    value={momoNumber} 
-                    onChange={e => setMomoNumber(e.target.value)} 
-                    placeholder="024 XXX XXXX" 
-                    className="flex-1 bg-slate-950 border-slate-800 h-12 focus:ring-emerald-500 focus:border-emerald-500" 
-                  />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Mobile Money Number</label>
+                  <div className="flex gap-2">
+                    <select 
+                      className="w-[100px] h-12 rounded-lg border-slate-800 bg-slate-950 text-sm text-white px-3 border outline-none focus:ring-emerald-500 focus:border-emerald-500" 
+                      value={momoNetwork} 
+                      onChange={e => setMomoNetwork(e.target.value)}
+                    >
+                      <option value="MTN">MTN</option>
+                      <option value="TELECEL">Telecel</option>
+                      <option value="AIRTELTIGO">AT</option>
+                    </select>
+                    <Input 
+                      value={momoNumber} 
+                      onChange={e => setMomoNumber(e.target.value)} 
+                      placeholder="024 XXX XXXX" 
+                      className="flex-1 bg-slate-950 border-slate-800 h-12 focus:ring-emerald-500 focus:border-emerald-500" 
+                    />
+                  </div>
                 </div>
-              </div>
               
               <Button 
-                onClick={initiateDeposit} 
-                disabled={!amount || momoNumber.length < 9}
+                onClick={initiateDeposit}                 disabled={!amount || momoNumber.length < 9}
                 className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-lg mt-2"
               >
                 Pay GH₵{(Number(amount || 0) * 1.03).toFixed(2)}

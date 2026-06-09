@@ -83,13 +83,52 @@ export const WalletManager = () => {
     };
   }, [profile?.id]);
 
+  const payWithRedirect = async () => {
+    if (!settings) {
+      toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
+      return;
+    }
+    const numAmount = Number(amount);
+    if (isNaN(numAmount) || numAmount < 1) {
+      toast({ title: "Enter a valid amount", variant: "destructive" });
+      return;
+    }
+
+    setDepositOpen(false);
+    setPhase("processing");
+    try {
+      const { data, error } = await supabase.functions.invoke(`${activeGateway}-initiate`, {
+        body: {
+          purpose: "wallet_deposit",
+          amount: numAmount,
+          email: profile?.email || "customer@mtopup.shop",
+          return_url: window.location.origin + "/payment/callback",
+          momo_number: momoNumber,
+        },
+      });
+
+      if (error || !data?.ok) {
+        setPhase("error");
+        setErrorMsg(data?.error || error?.message || "Failed to initiate deposit");
+        return;
+      }
+
+      window.location.href = data.authorization_url;
+    } catch (e: any) {
+      setPhase("error");
+      setErrorMsg(e?.message || "An unexpected error occurred.");
+    }
+  };
+
   const initiateDeposit = async () => {
     if (!settings) {
       toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
       return;
     }
     if (!amount || Number(amount) < 1) return toast({ title: "Enter a valid amount", variant: "destructive" });
+    
     if (momoNumber.length < 9) return toast({ title: "Enter valid mobile number", variant: "destructive" });
+
 
     setPhase("processing");
     try {
@@ -353,18 +392,22 @@ export const WalletManager = () => {
                 </div>
               )}
 
-              <div>
-                <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Mobile Money Number</label>
-                <div className="flex gap-2">
-                  <select className="w-[90px] h-12 rounded-lg border-slate-200 bg-white text-sm" value={momoNetwork} onChange={e => setMomoNetwork(e.target.value)}>
-                    <option value="MTN">MTN</option>
-                    <option value="TELECEL">Telecel</option>
-                    <option value="AIRTELTIGO">AT</option>
-                  </select>
-                  <Input value={momoNumber} onChange={e => setMomoNumber(e.target.value)} placeholder="024 XXX XXXX" className="flex-1 h-12 rounded-lg" />
+                <div>
+                  <label className="text-xs font-semibold text-slate-500 mb-1.5 block">Mobile Money Number</label>
+                  <div className="flex gap-2">
+                    <select className="w-[90px] h-12 rounded-lg border-slate-200 bg-white text-sm" value={momoNetwork} onChange={e => setMomoNetwork(e.target.value)}>
+                      <option value="MTN">MTN</option>
+                      <option value="TELECEL">Telecel</option>
+                      <option value="AIRTELTIGO">AT</option>
+                    </select>
+                    <Input value={momoNumber} onChange={e => setMomoNumber(e.target.value)} placeholder="024 XXX XXXX" className="flex-1 h-12 rounded-lg" />
+                  </div>
                 </div>
-              </div>
-              <Button onClick={initiateDeposit} className="w-full h-12 mt-2 rounded-lg font-bold">
+              <Button 
+                onClick={initiateDeposit} 
+                disabled={!amount || Number(amount) < 1 || momoNumber.length < 9}
+                className="w-full h-12 mt-2 rounded-lg font-bold"
+              >
                 Pay GH₵{(Number(amount || 0) * 1.03).toFixed(2)}
               </Button>
             </div>

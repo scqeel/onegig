@@ -1938,6 +1938,8 @@ function SiteSettingsSection() {
   const [thetellerMerchantId, setThetellerMerchantId] = useState("");
   const [thetellerApiKey, setThetellerApiKey] = useState("");
   const [smsOtpEnabled, setSmsOtpEnabled] = useState(true);
+  const [txtconnectApiKey, setTxtconnectApiKey] = useState("");
+  const [smsSenderId, setSmsSenderId] = useState("OneGig");
 
   useQuery({
     queryKey: ["admin-site-settings"],
@@ -1961,6 +1963,8 @@ function SiteSettingsSection() {
       setThetellerMerchantId(String(map.theteller_merchant_id ?? ""));
       setThetellerApiKey(String(map.theteller_api_key ?? ""));
       setSmsOtpEnabled(map.sms_otp_enabled !== "false");
+      setTxtconnectApiKey(String(map.txtconnect_api_key ?? ""));
+      setSmsSenderId(String(map.sms_sender_id ?? "OneGig"));
       return true;
     },
     staleTime: 60_000,
@@ -1984,6 +1988,8 @@ function SiteSettingsSection() {
       { key: "theteller_merchant_id", value: thetellerMerchantId },
       { key: "theteller_api_key", value: thetellerApiKey },
       { key: "sms_otp_enabled",     value: String(smsOtpEnabled) },
+      { key: "txtconnect_api_key",  value: txtconnectApiKey },
+      { key: "sms_sender_id",       value: smsSenderId },
     ];
     const { error } = await supabase.from("app_settings").upsert(rows as any);
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
@@ -2281,6 +2287,33 @@ function SiteSettingsSection() {
               >
                 <span className={cn("inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform", maintenanceMode ? "translate-x-6" : "translate-x-1")} />
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* SMS Gateway Configuration */}
+        <div>
+          <h3 className="mb-3 text-sm font-bold text-foreground">SMS Gateway Configuration</h3>
+          <div className="overflow-hidden rounded-[20px] border border-border/50 bg-background/30 shadow-sm transition-all focus-within:shadow-md focus-within:border-border/80">
+            <div className="group relative border-b border-border/50 p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">TXTConnect API Key</label>
+              <input 
+                type="password" 
+                value={txtconnectApiKey} 
+                onChange={(e) => setTxtconnectApiKey(e.target.value)} 
+                placeholder="Enter API key" 
+                className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/40 sm:text-right" 
+              />
+            </div>
+            <div className="group relative p-4 transition-colors hover:bg-accent/20 focus-within:bg-accent/30 flex flex-col sm:flex-row sm:items-center gap-2">
+              <label className="sm:w-1/3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">SMS Sender ID</label>
+              <input 
+                type="text" 
+                value={smsSenderId} 
+                onChange={(e) => setSmsSenderId(e.target.value)} 
+                placeholder="OneGig" 
+                className="flex-1 w-full bg-transparent text-sm font-semibold text-foreground outline-none placeholder:text-muted-foreground/40 sm:text-right" 
+              />
             </div>
           </div>
         </div>

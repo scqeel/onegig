@@ -83,6 +83,8 @@ export default function AuthPage() {
   const [suConfirmPassword, setSuConfirmPassword] = useState("");
   const [suReferralCode, setSuReferralCode] = useState(searchParams.get("invite") || searchParams.get("ref") || "");
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuPassword, setShowSuPassword] = useState(false);
+  const [showSuConfirmPassword, setShowSuConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (parentAgent?.referral_code) {
@@ -642,19 +644,29 @@ export default function AuthPage() {
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-foreground">Password</label>
-                        <Input
-                          type="password" placeholder="Min. 6 characters"
-                          value={suPassword} onChange={(e) => setSuPassword(e.target.value)}
-                          className={inputCls}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showSuPassword ? "text" : "password"} placeholder="Min. 6 characters"
+                            value={suPassword} onChange={(e) => setSuPassword(e.target.value)}
+                            className={`${inputCls} pr-10`}
+                          />
+                          <button type="button" onClick={() => setShowSuPassword(!showSuPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showSuPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-foreground">Confirm Password</label>
-                        <Input
-                          type="password" placeholder="Confirm your password"
-                          value={suConfirmPassword} onChange={(e) => setSuConfirmPassword(e.target.value)}
-                          className={inputCls}
-                        />
+                        <div className="relative">
+                          <Input
+                            type={showSuConfirmPassword ? "text" : "password"} placeholder="Confirm your password"
+                            value={suConfirmPassword} onChange={(e) => setSuConfirmPassword(e.target.value)}
+                            className={`${inputCls} pr-10`}
+                          />
+                          <button type="button" onClick={() => setShowSuConfirmPassword(!showSuConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            {showSuConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
                       </div>
                     </>
                   )}

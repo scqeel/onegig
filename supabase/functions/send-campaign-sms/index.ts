@@ -81,17 +81,25 @@ Deno.serve(async (req) => {
     .maybeSingle();
   const senderId = smsSenderRow?.value ? String(smsSenderRow.value) : undefined;
 
-  // 4. Send SMS sequentially and catch errors
+  // 4. Send SMS sequentially, catching errors per recipient to avoid crashing the bulk campaign
   let sent = 0;
-  try {
-    for (const phone of phoneArray) {
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const phone of phoneArray) {
+    try {
       await sendSMS({ to: phone, message, apiKey, senderId });
       sent++;
+    } catch (err: any) {
+      console.warn(`Failed to send campaign SMS to ${phone}:`, err.message);
+      failed++;
+      errors.push(`${phone}: ${err.message}`);
     }
-  } catch (err: any) {
-    console.error("SMS campaign sending error:", err);
-    return json({ error: err.message || "Failed to send SMS campaign midway.", sent }, 500);
   }
 
-  return json({ ok: true, sent });
+  if (sent === 0 && failed > 0) {
+    return json({ error: "Failed to send SMS to all recipients.", errors, sent, failed }, 500);
+  }
+
+  return json({ ok: true, sent, failed, errors: errors.slice(0, 10) });
 });

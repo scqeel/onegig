@@ -30,6 +30,20 @@ jobs:
           supabase functions deploy theteller-process --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy theteller-verify --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy theteller-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy send-campaign-sms --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy crm-manage --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy wallet-pay --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy auth-sms-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy paystack-reconcile --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy paystack-resolve --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy activate-agent --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy admin-convert-agent --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy admin-delete-user --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy admin-make-admin --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy admin-user-manage --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy debug-db --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy process-withdrawal --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy request-withdrawal --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 

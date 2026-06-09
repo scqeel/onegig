@@ -173,19 +173,24 @@ export default function AuthPage() {
   };
 
   const doSignUp = async () => {
-    if (!suFullName || !suUsername || !suPassword || !suConfirmPassword || !suEmail || !suPhone) {
+    const isEmail = suMethod === "email";
+    const hasRequired = isEmail
+      ? (suFullName && suUsername && suEmail && suPassword && suConfirmPassword && suPhone)
+      : (suFullName && suUsername && suPhone);
+
+    if (!hasRequired) {
       toast({ title: "Please fill in all fields", variant: "destructive" });
       return;
     }
     
-    if (suPassword !== suConfirmPassword) {
+    if (isEmail && suPassword !== suConfirmPassword) {
       toast({ title: "Passwords do not match", variant: "destructive" });
       return;
     }
 
     setBusy(true);
     try {
-      const normalizedEmail = suEmail.trim().toLowerCase();
+      const normalizedEmail = isEmail ? suEmail.trim().toLowerCase() : "";
       const formattedPhone = formatPhone(suPhone);
       const parentRefCode = (parentAgent as any)?.referral_code;
       let finalReferralCode = suReferralCode.trim();
@@ -211,13 +216,17 @@ export default function AuthPage() {
       }
 
       if (!userIsRegistered) {
-        const res = await authClient.signUp({ email: normalizedEmail, password: suPassword, options });
+        const signUpParams = isEmail
+          ? { email: normalizedEmail, password: suPassword, options }
+          : { phone: formattedPhone, options };
+          
+        const res = await authClient.signUp(signUpParams);
         
         if (res.error) {
           // If the error is "already registered", they might have failed at the OTP step previously
           // but we can't update phone if they aren't logged in. They must log in.
           if (res.error.message.toLowerCase().includes("already registered")) {
-             toast({ title: "Account exists", description: "Email already registered. Please sign in to continue.", variant: "destructive" });
+             toast({ title: "Account exists", description: "Email or phone already registered. Please sign in to continue.", variant: "destructive" });
              switchTo("signin");
              return;
           }
@@ -228,14 +237,17 @@ export default function AuthPage() {
       
       const isOtpRequired = settings?.sms_otp_enabled ?? true;
       if (isOtpRequired) {
-        // Trigger OTP SMS verification by updating the user profile phone number
-        const updateRes = await authClient.updateUser({ phone: formattedPhone });
-        if (updateRes.error) {
-          toast({ title: "Phone registration failed", description: updateRes.error.message, variant: "destructive" });
-          return;
+        if (isEmail) {
+          // Trigger OTP SMS verification by updating the user profile phone number
+          const updateRes = await authClient.updateUser({ phone: formattedPhone });
+          if (updateRes.error) {
+            toast({ title: "Phone registration failed", description: updateRes.error.message, variant: "destructive" });
+            return;
+          }
+          nav(`/verify-phone?intent=${accountType}`, { replace: true });
+        } else {
+          nav(`/verify-phone?intent=${accountType}&phone=${encodeURIComponent(formattedPhone)}`, { replace: true });
         }
-
-        nav(`/verify-phone?intent=${accountType}`, { replace: true });
       } else {
         // Since OTP is disabled, update their profiles table phone number if registered already
         if (userIsRegistered && currentSession?.user) {
@@ -618,7 +630,7 @@ export default function AuthPage() {
                     />
                   </div>
 
-                  {suMethod === "email" ? (
+                  {suMethod === "email" && (
                     <>
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-foreground">Email address</label>
@@ -645,16 +657,16 @@ export default function AuthPage() {
                         />
                       </div>
                     </>
-                  ) : (
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-foreground">Phone Number</label>
-                      <Input
-                        type="tel" inputMode="tel" placeholder="0551234567"
-                        value={suPhone} onChange={(e) => setSuPhone(e.target.value)}
-                        className={inputCls}
-                      />
-                    </div>
                   )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-foreground">Phone Number</label>
+                    <Input
+                      type="tel" inputMode="tel" placeholder="0551234567"
+                      value={suPhone} onChange={(e) => setSuPhone(e.target.value)}
+                      className={inputCls}
+                    />
+                  </div>
 
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">

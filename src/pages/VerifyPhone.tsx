@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ShieldCheck, ArrowLeft, Loader2, KeyRound } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useSettings } from "@/hooks/useSettings";
 export default function VerifyPhonePage() {
   const nav = useNavigate();
   const loc = useLocation();
+  const [searchParams] = useSearchParams();
   const { session, loading, refresh } = useAuth();
   const { toast } = useToast();
   const { data: settings, isLoading: settingsLoading } = useSettings();
@@ -40,20 +41,22 @@ export default function VerifyPhonePage() {
   const brandColor = parentAgent?.store_brand_color || "#7c3aed";
   const storeName = parentAgent?.store_name || "Data Platform";
 
+  const phoneParam = searchParams.get("phone") || "";
+
   // Protect route
   useEffect(() => {
     if (!loading && !settingsLoading) {
-      if (!session) {
+      if (!session && !phoneParam) {
         nav("/auth", { replace: true });
         return;
       }
       const isOtpRequired = settings?.sms_otp_enabled ?? true;
-      if (!isOtpRequired || (session.user.phone && session.user.phone_confirmed_at)) {
+      if (!isOtpRequired || (session && session.user.phone && session.user.phone_confirmed_at)) {
         nav("/dashboard", { replace: true });
         return;
       }
     }
-  }, [session, loading, settingsLoading, settings, nav]);
+  }, [session, loading, settingsLoading, settings, nav, phoneParam]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -70,7 +73,7 @@ export default function VerifyPhonePage() {
       return;
     }
 
-    const unconfirmedPhone = session?.user?.new_phone || session?.user?.phone;
+    const unconfirmedPhone = phoneParam || session?.user?.new_phone || session?.user?.phone;
 
     if (!unconfirmedPhone) {
       toast({ title: "Phone number missing", description: "Please enter your phone number first.", variant: "destructive" });
@@ -80,10 +83,11 @@ export default function VerifyPhonePage() {
 
     setBusy(true);
     try {
+      const otpType = phoneParam ? "sms" : "phone_change";
       const { error } = await authClient.verifyOtp({ 
         phone: unconfirmedPhone, 
         token: finalOtp.trim(), 
-        type: "phone_change" 
+        type: otpType
       });
 
       if (error) {
@@ -180,7 +184,7 @@ export default function VerifyPhonePage() {
     );
   }
 
-  const displayPhone = session?.user?.new_phone || session?.user?.phone;
+  const displayPhone = phoneParam || session?.user?.new_phone || session?.user?.phone;
   const phoneMasked = displayPhone 
     ? displayPhone.replace(/(\+?\d{3})(\d{2})(\d{3})(\d{4})/, "$1 *** *** $4")
     : "your phone";

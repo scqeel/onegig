@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getPaystackSecretKey } from "../_shared/settings.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,12 +11,6 @@ const json = (body: unknown, status = 200) =>
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-
-const getPaystackSecret = () =>
-  Deno.env.get("PAYSTACK_SECRET_KEY") ||
-  Deno.env.get("PAYSTACK_SECRET") ||
-  Deno.env.get("PAYSTACK_LIVE_SECRET_KEY") ||
-  "";
 
 function toPaystackBankCode(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
@@ -35,7 +30,7 @@ Deno.serve(async (req) => {
       return json({ error: "momo_number and momo_network are required" }, 400);
     }
 
-    const paystackSecret = getPaystackSecret();
+    const paystackSecret = await getPaystackSecretKey();
     if (!paystackSecret) {
       return json({ error: "Missing Paystack secrets. Set PAYSTACK_SECRET_KEY." }, 500);
     }

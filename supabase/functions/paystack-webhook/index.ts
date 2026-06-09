@@ -1,3 +1,5 @@
+import { getPaystackSecretKey } from "../_shared/settings.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-paystack-signature",
@@ -9,12 +11,6 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const getPaystackSecret = () =>
-  Deno.env.get("PAYSTACK_SECRET_KEY") ||
-  Deno.env.get("PAYSTACK_SECRET") ||
-  Deno.env.get("PAYSTACK_LIVE_SECRET_KEY") ||
-  "";
-
 const toHex = (bytes: Uint8Array) => Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 
 Deno.serve(async (req) => {
@@ -22,7 +18,7 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
-    const paystackSecret = getPaystackSecret();
+    const paystackSecret = await getPaystackSecretKey();
     if (!paystackSecret) return json({ error: "Missing Paystack secret" }, 500);
 
     const signature = req.headers.get("x-paystack-signature") ?? "";

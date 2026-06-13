@@ -233,7 +233,15 @@ export function BuyDataFlow({
 
   // Recipient Validation Logic
   useEffect(() => {
-    const num = phone.replace(/\D/g, "");
+    let num = phone.replace(/\D/g, "");
+    if (num.startsWith("233") && num.length > 9) {
+      num = "0" + num.slice(3);
+    } else if (num.startsWith("00233") && num.length > 11) {
+      num = "0" + num.slice(5);
+    } else if (!num.startsWith("0") && num.length === 9) {
+      num = "0" + num;
+    }
+
     setRecipientNetworkError(null);
     if (num.length >= 3 && network) {
       const pfxNet = getNetworkFromPrefix(num);
@@ -679,6 +687,18 @@ export function BuyDataFlow({
               </>
             )}
           </h3>
+
+          {phase === "processing" && (
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-2.5 rounded-full border border-indigo-100 dark:border-indigo-900/40 shadow-sm max-w-sm">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                A payment prompt is being sent to your phone. Please check your screen and enter PIN.
+              </div>
+            </div>
+          )}
 
           {phase === "polling" && (
             <div className="flex flex-col items-center">

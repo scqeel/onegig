@@ -12,6 +12,26 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+function normalizeGhanaPhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, ""); // Only numbers
+  if (cleaned.startsWith("00233") && cleaned.length > 11) {
+    cleaned = cleaned.slice(5);
+  }
+  if (cleaned.startsWith("233") && cleaned.length > 9) {
+    cleaned = cleaned.slice(3);
+  }
+  if (cleaned.startsWith("0")) {
+    if (cleaned.length > 10) {
+      cleaned = cleaned.slice(0, 10);
+    }
+  } else {
+    if (cleaned.length === 9) {
+      cleaned = "0" + cleaned;
+    }
+  }
+  return cleaned;
+}
+
 function toPaystackBankCode(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
   if (["MTN", "M"].includes(normalized)) return "MTN";
@@ -39,7 +59,7 @@ Deno.serve(async (req) => {
     // But Paystack might return a dummy name.
     
     const bankCode = toPaystackBankCode(body.momo_network);
-    const accountNumber = body.momo_number.replace(/\D/g, "");
+    const accountNumber = normalizeGhanaPhone(body.momo_number);
 
     const resolveRes = await fetch(`https://api.paystack.co/bank/resolve?account_number=${accountNumber}&bank_code=${bankCode}`, {
       method: "GET",

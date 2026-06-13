@@ -31,11 +31,31 @@ interface ProcessBody {
   points_redeemed?: number;
 }
 
+function normalizeGhanaPhone(phone: string): string {
+  let cleaned = phone.replace(/\D/g, ""); // Only numbers
+  if (cleaned.startsWith("00233") && cleaned.length > 11) {
+    cleaned = cleaned.slice(5);
+  }
+  if (cleaned.startsWith("233") && cleaned.length > 9) {
+    cleaned = cleaned.slice(3);
+  }
+  if (cleaned.startsWith("0")) {
+    if (cleaned.length > 10) {
+      cleaned = cleaned.slice(0, 10);
+    }
+  } else {
+    if (cleaned.length === 9) {
+      cleaned = "0" + cleaned;
+    }
+  }
+  return cleaned;
+}
+
 function toPaystackProvider(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
   if (["MTN", "M"].includes(normalized)) return "mtn";
   if (["TELECEL", "VODAFONE", "VODA", "VOD", "T", "TCL"].includes(normalized)) return "vod";
-  if (["AIRTELTIGO", "AT", "AIRTEL", "TIGO", "A"].includes(normalized)) return "tgo";
+  if (["AIRTELTIGO", "AT", "AIRTEL", "TIGO", "A"].includes(normalized)) return "atl";
   return "mtn";
 }
 
@@ -113,112 +133,122 @@ Deno.serve(async (req) => {
         return json({ error: "bundle_id and recipient_phone are required" }, 400);
       }
 
-      const { data: bundle, error: bundleErr } = await admin
+      // Query bundle, user role, agent profile, and coupon in parallel
+      const bundlePromise = admin
         .from("bundles")
         .select("id, base_price, user_price, size_label, network_id")
         .eq("id", body.bundle_id)
         .maybeSingle();
 
-      if (bundleErr || !bundle) return json({ error: "Bundle not found" }, 404);
+      const rolePromise = userId
+        ? admin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userId)
+            .eq("role", "agent")
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
+
+      const agentPromise = body.agent_slug
+        ? admin
+            .from("agent_profiles")
+            .select("id, activation_paid, user_id")
+            .eq("store_slug", body.agent_slug)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
+
+      const couponPromise = body.coupon_code
+        ? admin
+            .from("coupons")
+            .select("*")
+            .eq("code", String(body.coupon_code).trim().toUpperCase())
+            .eq("active", true)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
+
+      const [bundleRes, roleRes, agentRes, couponRes] = await Promise.all([
+        bundlePromise,
+        rolePromise,
+        agentPromise,
+        couponPromise,
+      ]);
+
+      const bundle = bundleRes.data;
+      if (bundleRes.error || !bundle) return json({ error: "Bundle not found" }, 404);
 
       amount = Number(bundle.user_price ?? bundle.base_price);
       let source: "direct" | "agent_store" = "direct";
 
-      if (userId) {
-        const { data: roleRow } = await admin
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .eq("role", "agent")
-          .maybeSingle();
-        if (roleRow?.role === "agent") {
-          amount = Number(bundle.base_price);
-        }
+      const roleRow = roleRes.data;
+      if (roleRow?.role === "agent") {
+        amount = Number(bundle.base_price);
       }
 
-      if (body.agent_slug) {
-        const { data: agent } = await admin
-          .from("agent_profiles")
-          .select("id, activation_paid, user_id")
-          .eq("store_slug", body.agent_slug)
-          .maybeSingle();
+      const agent = agentRes.data;
+      if (agent) {
+        source = "agent_store";
+      }
 
-        if (agent) {
-          source = "agent_store";
-          if (agent.activation_paid) {
-            const { data: ap } = await admin
-              .from("agent_bundle_prices")
-              .select("sell_price")
-              .eq("agent_id", agent.id)
-              .eq("bundle_id", bundle.id)
-              .maybeSingle();
-            if (ap?.sell_price != null) amount = Number(ap.sell_price);
-          }
-        }
+      // Now query agent bundle price if agent is active, and loyalty points if points are redeemed
+      const agentPricePromise = (agent && agent.activation_paid)
+        ? admin
+            .from("agent_bundle_prices")
+            .select("sell_price")
+            .eq("agent_id", agent.id)
+            .eq("bundle_id", bundle.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
+
+      const loyaltyPromise = (body.points_redeemed && body.points_redeemed > 0 && userId && agent)
+        ? admin
+            .from("loyalty_points")
+            .select("points_balance")
+            .eq("user_id", userId)
+            .eq("agent_id", agent.id)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
+
+      const [agentPriceRes, loyaltyRes] = await Promise.all([
+        agentPricePromise,
+        loyaltyPromise,
+      ]);
+
+      if (agentPriceRes.data?.sell_price != null) {
+        amount = Number(agentPriceRes.data.sell_price);
       }
 
       // Secure Server-side Coupon Validation
       let discountAmount = 0;
-      if (body.coupon_code) {
-        const cleanCouponCode = String(body.coupon_code).trim().toUpperCase();
-        const { data: coupon } = await admin
-          .from("coupons")
-          .select("*")
-          .eq("code", cleanCouponCode)
-          .eq("active", true)
-          .maybeSingle();
-
-        if (coupon) {
-          if (Number(coupon.current_uses) < Number(coupon.max_uses)) {
-            let isValidForStore = true;
-            if (coupon.agent_id) {
-              if (body.agent_slug) {
-                const { data: agentProfile } = await admin
-                  .from("agent_profiles")
-                  .select("id")
-                  .eq("store_slug", body.agent_slug)
-                  .maybeSingle();
-                
-                if (!agentProfile || agentProfile.id !== coupon.agent_id) {
-                  isValidForStore = false;
-                }
-              } else {
+      const coupon = couponRes.data;
+      if (coupon) {
+        if (Number(coupon.current_uses) < Number(coupon.max_uses)) {
+          let isValidForStore = true;
+          if (coupon.agent_id) {
+            if (agent) {
+              if (agent.id !== coupon.agent_id) {
                 isValidForStore = false;
               }
+            } else {
+              isValidForStore = false;
             }
+          }
 
-            if (isValidForStore) {
-              // Ensure discount does not exceed the storefront base price (prevent negative/free order checkouts)
-              discountAmount = Math.min(amount, Number(coupon.discount_amount));
-            }
+          if (isValidForStore) {
+            discountAmount = Math.min(amount, Number(coupon.discount_amount));
           }
         }
       }
 
       let loyaltyDiscount = 0;
-      if (body.points_redeemed && body.points_redeemed > 0 && userId && body.agent_slug) {
-        const { data: agentProfile } = await admin
-          .from("agent_profiles")
-          .select("id")
-          .eq("store_slug", body.agent_slug)
-          .maybeSingle();
-
-        if (agentProfile) {
-          const { data: loyaltyRow } = await admin
-            .from("loyalty_points")
-            .select("points_balance")
-            .eq("user_id", userId)
-            .eq("agent_id", agentProfile.id)
-            .maybeSingle();
-
-          const pointsAvailable = loyaltyRow?.points_balance ?? 0;
-          const maxPointsToDeduct = Math.floor(pointsAvailable / 10); // max discount in GHS
-          
-          if (maxPointsToDeduct > 0) {
-            loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
-            // Cap discount so that the customer pays at least GHS 1.00 before transaction fee
-            loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
-          }
+      const loyaltyRow = loyaltyRes.data;
+      if (loyaltyRow && body.points_redeemed) {
+        const pointsAvailable = loyaltyRow.points_balance ?? 0;
+        const maxPointsToDeduct = Math.floor(pointsAvailable / 10); // max discount in GHS
+        
+        if (maxPointsToDeduct > 0) {
+          loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
+          // Cap discount so that the customer pays at least GHS 1.00 before transaction fee
+          loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
         }
       }
 
@@ -285,7 +315,7 @@ Deno.serve(async (req) => {
           reference,
           currency: "GHS",
           mobile_money: {
-            phone: body.momo_number.replace(/\D/g, ""),
+            phone: normalizeGhanaPhone(body.momo_number),
             provider: toPaystackProvider(body.momo_network),
           },
           metadata: {

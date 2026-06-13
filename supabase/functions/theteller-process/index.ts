@@ -36,6 +36,17 @@ function toTellerProvider(code: string) {
   return "mtn";
 }
 
+function formatTo233(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0")) {
+    return "233" + digits.slice(1);
+  }
+  if (digits.startsWith("233")) {
+    return digits;
+  }
+  return "233" + digits;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -259,7 +270,7 @@ Deno.serve(async (req) => {
           transaction_id: reference,
           desc: `${body.purpose} payment`,
           merchant_id: merchantId,
-          subscriber_number: body.momo_number.replace(/\D/g, ""),
+          subscriber_number: formatTo233(body.momo_number),
           "r-switch": rSwitch
         }),
       });
@@ -278,7 +289,8 @@ Deno.serve(async (req) => {
     }
 
     // theTeller returns status code '000' for success, '100' for pending (awaiting momo authorize PIN)
-    if (processData?.code !== "000" && processData?.code !== "100") {
+    const resCode = String(processData?.code ?? "");
+    if (resCode !== "000" && resCode !== "100") {
       console.error("theTeller Process Failed:", processData);
       
       await admin.from("payments").insert({
@@ -291,7 +303,8 @@ Deno.serve(async (req) => {
         payload: {
           ...payload,
           gateway: "theteller",
-          error_message: processData?.reason ?? "Unable to initialize payment"
+          error_message: processData?.reason ?? "Unable to initialize payment",
+          gateway_response: processData
         },
       });
 
@@ -315,7 +328,7 @@ Deno.serve(async (req) => {
     return json({
       ok: true,
       reference,
-      status: processData?.code === "000" ? "success" : "pending",
+      status: String(processData?.code ?? "") === "000" ? "success" : "pending",
       message: processData?.reason || "Please authorize the transaction on your phone.",
     });
   } catch (e: any) {

@@ -81,7 +81,9 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     if (client) {
-      try { await client.end(); } catch (_) {}
+      try { await client.end(); } catch (_) {
+        // ignore error during disconnect
+      }
     }
     return new Response(JSON.stringify({ ok: false, error: e.message }), {
       status: 500,

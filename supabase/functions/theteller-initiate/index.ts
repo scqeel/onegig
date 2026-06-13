@@ -25,6 +25,17 @@ interface InitiateBody {
   momo_number?: string;
 }
 
+function formatTo233(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("0")) {
+    return "233" + digits.slice(1);
+  }
+  if (digits.startsWith("233")) {
+    return digits;
+  }
+  return "233" + digits;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -148,7 +159,9 @@ Deno.serve(async (req) => {
     if (referer) {
       try {
         frontendOrigin = new URL(referer).origin;
-      } catch (_) {}
+      } catch (_) {
+        // use default origin on parse failure
+      }
     }
     let redirectUrl = body.return_url || `${frontendOrigin}/track`;
     
@@ -174,7 +187,7 @@ Deno.serve(async (req) => {
         redirect_url: redirectUrl,
         desc: `${body.purpose} redirect checkout`,
         email: body.email || "customer@mtopup.shop", // redirect checkout requires email
-        subscriber_number: body.momo_number ? body.momo_number.replace(/\D/g, "") : undefined,
+        subscriber_number: body.momo_number ? formatTo233(body.momo_number) : undefined,
       }),
     });
 

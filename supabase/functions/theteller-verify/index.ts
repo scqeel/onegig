@@ -649,8 +649,9 @@ async function verifyAndProcess(reference: string) {
     throw new Error(verifyData?.reason || "Unable to verify payment via theTeller");
   }
 
-  const isSuccess = verifyData.code === "000";
-  const isPending = verifyData.code === "111" || verifyData.code === "100" || verifyData.status === "pending";
+  const resCode = String(verifyData?.code ?? "");
+  const isSuccess = resCode === "000";
+  const isPending = resCode === "111" || resCode === "100" || verifyData?.status === "pending";
 
   const { data: paymentRow } = await admin
     .from("payments")

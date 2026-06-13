@@ -101,9 +101,9 @@ Deno.serve(async (req) => {
 
     // Register with Deno / Supabase EdgeRuntime to keep the process alive
     // until the SMS and notifications are fully sent/processed.
-    // @ts-ignore
+    // @ts-expect-error EdgeRuntime is a global context in Supabase Edge Functions
     if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
-      // @ts-ignore
+      // @ts-expect-error EdgeRuntime is a global context in Supabase Edge Functions
       EdgeRuntime.waitUntil(
         backgroundTask.catch((err) => {
           console.error("Background SMS execution error:", err);

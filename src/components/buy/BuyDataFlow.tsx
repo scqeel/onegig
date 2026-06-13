@@ -172,10 +172,14 @@ export function BuyDataFlow({
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [accountName, setAccountName] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [payWithWallet, setPayWithWallet] = useState(false);
 
   // Recipient Validation States
+  const [recipientAccountName, setRecipientAccountName] = useState<string | null>(null);
+  const [isVerifyingRecipient, setIsVerifyingRecipient] = useState(false);
   const [recipientNetworkError, setRecipientNetworkError] = useState<string | null>(null);
 
   const getNetworkFromPrefix = (num: string) => {
@@ -199,6 +203,34 @@ export function BuyDataFlow({
     if (network && network.code) setMomoNetwork(network.code);
   }, [networks, network]);
 
+  useEffect(() => {
+    const num = momoNumber.replace(/\D/g, "");
+    if (num.length >= 10 && checkoutOpen && !payWithWallet) {
+      setAccountName(null);
+      setIsVerifying(true);
+      const timer = setTimeout(async () => {
+        try {
+          const { data } = await supabase.functions.invoke("paystack-resolve", {
+            body: { momo_number: num, momo_network: momoNetwork }
+          });
+          if (data?.ok && data?.account_name) {
+            setAccountName(data.account_name);
+          } else {
+            setAccountName(data?.error ? "Account not found" : "Unknown Account");
+          }
+        } catch (e) {
+          setAccountName("Unknown Account");
+        } finally {
+          setIsVerifying(false);
+        }
+      }, 600);
+      return () => clearTimeout(timer);
+    } else {
+      setAccountName(null);
+      setIsVerifying(false);
+    }
+  }, [momoNumber, momoNetwork, checkoutOpen, payWithWallet]);
+
   // Recipient Validation Logic
   useEffect(() => {
     const num = phone.replace(/\D/g, "");
@@ -212,7 +244,30 @@ export function BuyDataFlow({
         }
       }
     }
-  }, [phone, network]);
+    
+    if (num.length >= 10 && checkoutOpen && network && !recipientNetworkError) {
+      setRecipientAccountName(null);
+      setIsVerifyingRecipient(true);
+      const timer = setTimeout(async () => {
+        try {
+          const { data } = await supabase.functions.invoke("paystack-resolve", {
+            body: { momo_number: num, momo_network: network.code }
+          });
+          if (data?.ok && data?.account_name) {
+            setRecipientAccountName(data.account_name);
+          }
+        } catch (e) {
+          // Ignore
+        } finally {
+          setIsVerifyingRecipient(false);
+        }
+      }, 600);
+      return () => clearTimeout(timer);
+    } else {
+      setRecipientAccountName(null);
+      setIsVerifyingRecipient(false);
+    }
+  }, [phone, network, checkoutOpen, recipientNetworkError]);
 
   const priceFor = (b: BundleRow) =>
     priceOverrides && priceOverrides[b.id] != null
@@ -931,6 +986,11 @@ export function BuyDataFlow({
                       recipientNetworkError ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10" : ""
                     )}
                   />
+                  {isVerifyingRecipient && (
+                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                      <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                    </div>
+                  )}
                 </div>
                 
                 {recipientNetworkError ? (
@@ -939,6 +999,13 @@ export function BuyDataFlow({
                     {recipientNetworkError}
                   </p>
                 ) : null}
+                
+                {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
+                  <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                    <span className="truncate">{recipientAccountName}</span>
+                  </div>
+                )}
               </div>
 
               {/* Momo inputs are hidden if paying with wallet */}
@@ -969,8 +1036,20 @@ export function BuyDataFlow({
                         placeholder="e.g. 024 123 4567"
                         className="h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-sm transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
+                      {isVerifying && (
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                          <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                        </div>
+                      )}
                     </div>
                   </div>
+                  
+                  {accountName && !isVerifying && (
+                    <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                      <span className="truncate">{accountName}</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1031,7 +1110,7 @@ export function BuyDataFlow({
                     !bundle ||
                     phone.replace(/\D/g, "").length < 9 ||
                     !!recipientNetworkError ||
-                    (!payWithWallet && momoNumber.replace(/\D/g, "").length < 9)
+                    (!payWithWallet && (momoNumber.replace(/\D/g, "").length < 9 || isVerifying || accountName === "Unknown Account" || accountName === "Account not found"))
                   }
                   className={cn(
                     "h-12 w-full rounded-[1.25rem] text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg transition-all active:scale-[0.97] hover:scale-[1.01] duration-300 flex items-center justify-center gap-1.5",

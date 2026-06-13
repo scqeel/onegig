@@ -78,6 +78,26 @@ function getNetStyle(code: string) {
   };
 }
 
+function getApprovalInstructions(netCode: string) {
+  const code = String(netCode || "MTN").toUpperCase();
+  if (code === "MTN") {
+    return {
+      shortcode: "*170#",
+      steps: "Dial *170# > Option 6 (My Wallet) > Option 3 (Approvals) to approve."
+    };
+  }
+  if (code === "TELECEL" || code === "VODAFONE" || code === "VODA") {
+    return {
+      shortcode: "*110#",
+      steps: "Dial *110# > Option 4 (Make Payment) > Option 2 (My Approvals) to approve."
+    };
+  }
+  return {
+    shortcode: "*110#",
+    steps: "Dial *110# and check your Approvals menu to authorize the payment."
+  };
+}
+
 // Step indicator
 function StepBar({ step }: { step: 1 | 2 | 3 }) {
   const steps = ["Network", "Bundle", "Pay"];
@@ -709,6 +729,22 @@ export function BuyDataFlow({
         </div>
         <p className="mt-4 font-semibold text-destructive px-4 max-w-sm mx-auto">{errorMsg}</p>
         
+        {/* USSD Manual Approval Alert */}
+        <div className="mt-6 mx-auto max-w-sm rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-950/30 dark:bg-amber-950/15 text-left">
+          <div className="flex gap-3">
+            <Smartphone className="h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <h4 className="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-wider">Didn't receive the prompt?</h4>
+              <p className="text-xs text-amber-700/95 dark:text-amber-500/95 font-medium leading-relaxed">
+                Sometimes telecom networks delay push notifications. You can manually authorize your payment:
+              </p>
+              <div className="mt-2 bg-white/70 dark:bg-black/20 rounded-lg p-2.5 font-mono text-[11px] font-bold text-amber-900 dark:text-amber-300 border border-amber-100/50 dark:border-amber-950/20">
+                {getApprovalInstructions(momoNetwork).steps}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="mt-7 flex flex-col gap-3 max-w-[280px] mx-auto">
           <Button
             className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"

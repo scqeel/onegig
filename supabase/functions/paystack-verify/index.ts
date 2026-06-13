@@ -3,6 +3,10 @@ import { getPaystackSecretKey } from "../_shared/settings.ts";
 import { sendWebPushNotification } from "../_shared/push.ts";
 import { sendSMS } from "../_shared/sms.ts";
 
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const admin = createClient(supabaseUrl, serviceKey);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -673,12 +677,8 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
 }
 
 async function verifyAndProcess(reference: string) {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const paystackSecret = await getPaystackSecretKey();
   if (!paystackSecret) throw new Error("Missing Paystack secret");
-
-  const admin = createClient(supabaseUrl, serviceKey);
 
   const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
     headers: { Authorization: `Bearer ${paystackSecret}` },

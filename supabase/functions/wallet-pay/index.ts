@@ -2,6 +2,10 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendSMS } from "../_shared/sms.ts";
 import { sendWebPushNotification } from "../_shared/push.ts";
 
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const admin = createClient(supabaseUrl, serviceKey);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -414,21 +418,28 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ ok: false, error: "Unauthorized" }, 200);
     
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    let userId: string | null = null;
+    if (authHeader.startsWith("Bearer ")) {
+      try {
+        const token = authHeader.substring(7);
+        const parts = token.split(".");
+        if (parts.length === 3) {
+          const payload = parts[1];
+          const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+          const decoded = atob(base64);
+          const user = JSON.parse(decoded);
+          userId = user.sub ?? null;
+        }
+      } catch (err) {
+        console.warn("Failed to parse local JWT payload", err);
+      }
+    }
 
-    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: ud, error: udErr } = await userClient.auth.getUser();
-    if (udErr || !ud.user?.id) return json({ ok: false, error: "Unauthorized" }, 200);
-    
-    const userId = ud.user.id;
+    if (!userId) return json({ ok: false, error: "Unauthorized" }, 200);
     const body = await req.json();
     
     const { bundle_id, recipient_phone, agent_slug } = body;
     if (!bundle_id || !recipient_phone) return json({ ok: false, error: "Missing required fields" }, 200);
-
-    const admin = createClient(supabaseUrl, serviceKey);
 
     // 1. Check wallet balance
     const { data: balanceData, error: balanceErr } = await admin.rpc("get_wallet_balance", { _user_id: userId });

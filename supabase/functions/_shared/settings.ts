@@ -1,9 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
+const settingsCache = new Map<string, string>();
+
+// Global admin client cached for reuse across requests
+let cachedAdminClient: any = null;
+function getAdminClient(url: string, key: string) {
+  if (!cachedAdminClient) {
+    cachedAdminClient = createClient(url, key);
+  }
+  return cachedAdminClient;
+}
+
 export async function getAppSetting(key: string): Promise<string> {
+  if (settingsCache.has(key)) {
+    return settingsCache.get(key)!;
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const admin = createClient(supabaseUrl, serviceKey);
+  const admin = getAdminClient(supabaseUrl, serviceKey);
 
   const { data } = await admin
     .from("app_settings")
@@ -11,7 +26,9 @@ export async function getAppSetting(key: string): Promise<string> {
     .eq("key", key)
     .maybeSingle();
 
-  return data?.value ? String(data.value) : "";
+  const val = data?.value ? String(data.value) : "";
+  settingsCache.set(key, val);
+  return val;
 }
 
 export async function getPaystackSecretKey(): Promise<string> {

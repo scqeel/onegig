@@ -1,6 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { getPaystackSecretKey } from "../_shared/settings.ts";
 
+const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const admin = createClient(supabaseUrl, serviceKey);
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -104,24 +108,25 @@ Deno.serve(async (req) => {
     if (!body?.purpose) return json({ error: "purpose is required" }, 400);
     if (!body?.momo_number || !body?.momo_network) return json({ error: "momo_number and momo_network are required" }, 400);
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY")!;
-    const admin = createClient(supabaseUrl, serviceKey);
-
     const authHeader = req.headers.get("Authorization");
     let userId: string | null = null;
     let userEmail: string | null = null;
 
-    if (authHeader) {
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       try {
-        const safeAnonKey = anonKey || serviceKey;
-        const userClient = createClient(supabaseUrl, safeAnonKey, { global: { headers: { Authorization: authHeader } } });
-        const { data: ud } = await userClient.auth.getUser();
-        userId = ud.user?.id ?? null;
-        userEmail = ud.user?.email ?? null;
+        const token = authHeader.substring(7);
+        const parts = token.split(".");
+        if (parts.length === 3) {
+          const payload = parts[1];
+          // Base64url decode
+          const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+          const decoded = atob(base64);
+          const user = JSON.parse(decoded);
+          userId = user.sub ?? null;
+          userEmail = user.email ?? null;
+        }
       } catch (err) {
-        console.warn("Failed to get user from auth header", err);
+        console.warn("Failed to parse local JWT payload", err);
       }
     }
 

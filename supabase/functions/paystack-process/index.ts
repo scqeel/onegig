@@ -352,6 +352,10 @@ Deno.serve(async (req) => {
       let errorMsg = processData?.message ?? "Unable to initialize payment";
       if (errorMsg === "Charge attempted") {
         errorMsg = "A payment prompt is already active on your phone. Please check your phone and enter your PIN — do not tap Pay again.";
+      } else if (errorMsg === "Unable to perform transaction, try again") {
+        errorMsg = "Payment declined by mobile operator. Please verify you have sufficient funds and your wallet is active, then try again.";
+      } else if (errorMsg.toLowerCase().includes("insufficient") && errorMsg.toLowerCase().includes("fund")) {
+        errorMsg = "Your mobile money wallet has insufficient funds to complete this payment. Please top up and try again.";
       }
       
       return json({ error: errorMsg, gateway_response: processData?.data?.gateway_response }, 200);

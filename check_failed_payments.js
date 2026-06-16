@@ -14,13 +14,14 @@ async function run() {
   `;
   
   try {
-    const res = await fetch(`${supabaseUrl}/functions/v1/debug-db?exec_sql=${encodeURIComponent(sql)}`, {
-      method: "GET",
+    const res = await fetch(`${supabaseUrl}/functions/v1/debug-db`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${supabaseKey}`,
         "apikey": supabaseKey
-      }
+      },
+      body: JSON.stringify({ exec_sql: sql })
     });
     
     const data = await res.json();

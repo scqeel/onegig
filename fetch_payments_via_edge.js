@@ -5,14 +5,15 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 async function executeSql(sql) {
-  const url = `${supabaseUrl}/functions/v1/debug-db?exec_sql=${encodeURIComponent(sql)}`;
+  const url = `${supabaseUrl}/functions/v1/debug-db`;
   const res = await fetch(url, {
-    method: "GET",
+    method: "POST",
     headers: {
       "Content-Type": "application/json",
       "Authorization": `Bearer ${supabaseKey}`,
       "apikey": supabaseKey
-    }
+    },
+    body: JSON.stringify({ exec_sql: sql })
   });
   const data = await res.json();
   if (!data.ok) {

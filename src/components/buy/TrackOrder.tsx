@@ -58,56 +58,29 @@ export function TrackOrder() {
     if (!raw) { setOrders(null); return; }
 
     setLoading(true);
-    const digits     = raw.replace(/\D/g, "");
-    const isPhone    = digits.length >= 9;
-    const isRef      = raw.length >= 4 && (!isPhone || /[a-zA-Z_-]/.test(raw));
 
-    const base = () =>
-      supabase
-        .from("orders")
-        .select(
-          "id, reference, payment_reference, recipient_phone, status, sell_price, created_at, bundle:bundles(size_label), network:networks(name, logo_emoji)"
-        )
-        .order("created_at", { ascending: false })
-        .limit(15);
-
-    // Run separate queries to avoid double-encoding % in .or() ilike
-    const promises: Promise<{ data: OrderResult[] | null }>[] = [];
-
-    if (isPhone) {
-      promises.push(
-        base()
-          .or(`recipient_phone.eq.${digits},customer_phone.eq.${digits}`)
-          .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
-      );
+    const { data, error } = await supabase.rpc("track_order", { search_query: raw });
+    
+    if (error) {
+      console.error("Order tracking failed:", error.message);
+      setOrders([]);
+      setLoading(false);
+      return;
     }
 
-    if (isRef) {
-      promises.push(
-        base()
-          .ilike("reference", `%${raw}%`)
-          .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
-      );
-      promises.push(
-        base()
-          .ilike("payment_reference", `%${raw}%`)
-          .then(({ data }) => ({ data: (data ?? []) as OrderResult[] }))
-      );
-    }
+    const mapped: OrderResult[] = (data ?? []).map((o: any) => ({
+      id: o.id,
+      reference: o.reference,
+      payment_reference: o.payment_reference,
+      recipient_phone: o.recipient_phone,
+      status: o.status,
+      sell_price: o.sell_price,
+      created_at: o.created_at,
+      bundle: o.bundle_size_label ? { size_label: o.bundle_size_label } : null,
+      network: o.network_name ? { name: o.network_name, logo_emoji: o.network_logo_emoji } : null
+    }));
 
-    const results = await Promise.all(promises);
-
-    // Merge and deduplicate by id
-    const seen = new Set<string>();
-    const merged: OrderResult[] = [];
-    for (const r of results) {
-      for (const o of r.data ?? []) {
-        if (!seen.has(o.id)) { seen.add(o.id); merged.push(o); }
-      }
-    }
-    merged.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-    setOrders(merged);
+    setOrders(mapped);
     setLastUpdated(new Date());
     setLoading(false);
   }, []);
@@ -179,6 +152,21 @@ export function TrackOrder() {
 
     subscribeToOrders(liveIds);
   }, [orders, subscribeToOrders]);
+
+  // Polling fallback: if any order is not complete, refresh them every 10 seconds
+  useEffect(() => {
+    if (!orders || orders.length === 0) return;
+    const hasLive = orders.some((o) => !STATUS_COMPLETE.has(o.status));
+    if (!hasLive) return;
+
+    const interval = setInterval(() => {
+      if (query.trim()) {
+        fetchOrders(query.trim());
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [orders, query, fetchOrders]);
 
   // ── Debounced auto-search ─────────────────────────────────────────────────
   useEffect(() => {

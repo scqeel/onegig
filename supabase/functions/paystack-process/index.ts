@@ -112,21 +112,21 @@ Deno.serve(async (req) => {
     let userId: string | null = null;
     let userEmail: string | null = null;
 
-    if (authHeader && authHeader.startsWith("Bearer ")) {
+    if (authHeader && authHeader.startsWith("Bearer ") && authHeader.substring(7).trim() !== "" && authHeader !== "Bearer null" && authHeader !== "Bearer undefined") {
       try {
-        const token = authHeader.substring(7);
-        const parts = token.split(".");
-        if (parts.length === 3) {
-          const payload = parts[1];
-          // Base64url decode
-          const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-          const decoded = atob(base64);
-          const user = JSON.parse(decoded);
-          userId = user.sub ?? null;
-          userEmail = user.email ?? null;
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+        const userClient = createClient(supabaseUrl, anonKey, {
+          global: { headers: { Authorization: authHeader } },
+        });
+        const { data: ud, error: udErr } = await userClient.auth.getUser();
+        if (udErr || !ud.user) {
+          return json({ error: "Unauthorized: Invalid token" }, 401);
         }
+        userId = ud.user.id;
+        userEmail = ud.user.email ?? null;
       } catch (err) {
-        console.warn("Failed to parse local JWT payload", err);
+        console.warn("Failed to verify JWT payload via GoTrue", err);
+        return json({ error: "Unauthorized: Token verification failed" }, 401);
       }
     }
 

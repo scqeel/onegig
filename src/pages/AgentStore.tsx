@@ -378,26 +378,25 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     setIsCheckingLoyalty(true);
     try {
       const clean = loyaltyPhone.replace(/\D/g, "");
-      const { data: profileRow } = await supabase
-        .from("profiles")
-        .select("id")
-        .eq("phone", clean)
-        .maybeSingle();
+      const { data: points, error } = await supabase.rpc("get_loyalty_points", {
+        phone_number: clean,
+        agent_uuid: agent.id
+      });
 
-      if (!profileRow) {
-        toast({ title: "No loyalty history", description: "You don't have any purchase history on this store yet.", variant: "destructive" });
+      if (error) {
+        toast({ title: "Failed to check points", description: error.message, variant: "destructive" });
         setIsCheckingLoyalty(false);
         return;
       }
 
-      const { data: loyaltyRow } = await supabase
-        .from("loyalty_points")
-        .select("points_balance")
-        .eq("user_id", profileRow.id)
-        .eq("agent_id", agent.id)
-        .maybeSingle();
+      if (points === 0) {
+        toast({ title: "No loyalty history", description: "You don't have any purchase history on this store yet.", variant: "destructive" });
+        setLoyaltyPointsBalance(0);
+        setIsCheckingLoyalty(false);
+        return;
+      }
 
-      setLoyaltyPointsBalance(loyaltyRow?.points_balance ?? 0);
+      setLoyaltyPointsBalance(points);
     } catch (e) {
       toast({ title: "Failed to check points", variant: "destructive" });
     } finally {

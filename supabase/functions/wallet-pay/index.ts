@@ -416,26 +416,23 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ ok: false, error: "Unauthorized" }, 200);
+    if (!authHeader) return json({ ok: false, error: "Unauthorized" }, 401);
     
     let userId: string | null = null;
-    if (authHeader.startsWith("Bearer ")) {
-      try {
-        const token = authHeader.substring(7);
-        const parts = token.split(".");
-        if (parts.length === 3) {
-          const payload = parts[1];
-          const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
-          const decoded = atob(base64);
-          const user = JSON.parse(decoded);
-          userId = user.sub ?? null;
-        }
-      } catch (err) {
-        console.warn("Failed to parse local JWT payload", err);
+    try {
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!;
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: ud, error: udErr } = await userClient.auth.getUser();
+      if (!udErr && ud.user) {
+        userId = ud.user.id;
       }
+    } catch (err) {
+      console.warn("Failed to verify JWT payload via GoTrue", err);
     }
 
-    if (!userId) return json({ ok: false, error: "Unauthorized" }, 200);
+    if (!userId) return json({ ok: false, error: "Unauthorized" }, 401);
     const body = await req.json();
     
     const { bundle_id, recipient_phone, agent_slug } = body;

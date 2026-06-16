@@ -12,7 +12,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   
   const urlObj = new URL(req.url);
-  const sqlParam = urlObj.searchParams.get("exec_sql");
+  let sqlParam = urlObj.searchParams.get("exec_sql");
+  
+  if (req.method === "POST") {
+    try {
+      const body = await req.json();
+      if (body?.exec_sql) {
+        sqlParam = body.exec_sql;
+      }
+    } catch (_) {
+      // ignore
+    }
+  }
   
   const dbUrl = Deno.env.get("SUPABASE_DB_URL");
   if (!dbUrl) {

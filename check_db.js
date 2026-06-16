@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 const url = 'https://huvuogyvgeoqiqltbgcw.supabase.co';
 const key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1dnVvZ3l2Z2VvcWlxbHRiZ2N3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MjY1MDYsImV4cCI6MjA5MTAwMjUwNn0.uysmVkP3O00NZaT4ucojUmJAHSA9HB6IUCl7wZCUvVQ';
@@ -47,13 +49,26 @@ async function run() {
     $$;
   `;
 
-  const { data, error } = await supabase.rpc('exec_sql', { query: sql });
-  if (error) {
-     console.error("RPC exec_sql might not exist. Falling back to edge function if possible, or manual creation required.");
-     console.error(error.message);
-     // Let's create an edge function to run this sql instead.
-  } else {
-     console.log("Success:", data);
+  const supabaseUrl = process.env.VITE_SUPABASE_URL || url;
+  const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY || key;
+
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/debug-db?exec_sql=${encodeURIComponent(sql)}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${supabaseKey}`,
+        "apikey": supabaseKey
+      }
+    });
+    const data = await res.json();
+    if (data.ok) {
+      console.log("Success:", data.result);
+    } else {
+      console.error("Failed executing SQL via edge:", data.error);
+    }
+  } catch (err) {
+    console.error("Fetch error:", err.message);
   }
 }
 

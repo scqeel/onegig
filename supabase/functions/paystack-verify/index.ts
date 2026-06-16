@@ -762,6 +762,7 @@ async function verifyAndProcess(reference: string) {
         type: "deposit",
         amount: depositAmount,
         status: "completed",
+        reference: reference,
         description: `Wallet Deposit via Paystack (${reference})`,
       });
       if (wErr) throw new Error("Wallet insert failed: " + wErr.message);
@@ -826,6 +827,7 @@ async function verifyAndProcess(reference: string) {
             type: "deposit",
             amount: depositAmount,
             status: "completed",
+            reference: reference,
             description: `Wallet Deposit via Paystack (${reference})`,
           });
           if (wErr) {
@@ -907,6 +909,7 @@ async function verifyAndProcess(reference: string) {
       type: "deposit",
       amount: depositAmount,
       status: "completed",
+      reference: reference,
       description: `Wallet Deposit via Paystack (${reference})`,
     });
     if (wErr) throw new Error("Wallet insert failed: " + wErr.message);

@@ -240,6 +240,7 @@ Deno.serve(async (req) => {
         type: "deposit",
         amount: depositAmount,
         status: "completed",
+        reference: payment.reference,
         description: `Wallet Deposit (Manually Resolved: ${payment.reference})`,
       });
 

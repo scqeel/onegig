@@ -690,6 +690,7 @@ async function verifyAndProcess(reference: string) {
             type: "deposit",
             amount: depositAmount,
             status: "completed",
+            reference: reference,
             description: `Wallet Deposit via theTeller (${reference})`,
           });
           if (wErr) {
@@ -786,6 +787,7 @@ async function verifyAndProcess(reference: string) {
       type: "deposit",
       amount: depositAmount,
       status: "completed",
+      reference: reference,
       description: `Wallet Deposit via theTeller (${reference})`,
     });
 

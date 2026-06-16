@@ -299,7 +299,14 @@ async function activateAgent(admin: ReturnType<typeof createClient>, userId: str
 }
 
 async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any) {
-  const payload = payment.payload ?? {};
+  let payload = payment.payload ?? {};
+  if (typeof payload === "string") {
+    try {
+      payload = JSON.parse(payload);
+    } catch (_) {
+      payload = {};
+    }
+  }
   const bundleId = String(payload.bundle_id || "");
   const recipient = String(payload.recipient_phone || "");
   const agentSlug = payload.agent_slug ? String(payload.agent_slug) : null;

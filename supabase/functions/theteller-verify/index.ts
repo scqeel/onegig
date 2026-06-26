@@ -40,6 +40,34 @@ function toPlanId(sizeLabel: string | null | undefined, sizeMb: number) {
   return `${safeGb}GB`;
 }
 
+function toSwiftDataNetwork(networkCode: string, sizeLabel: string | null | undefined): string {
+  const net = String(networkCode || "").toUpperCase();
+  if (net === "MTN") return "yello";
+  if (net === "TELECEL" || net === "VODAFONE") return "telecel";
+  if (net === "AT" || net === "AIRTELTIGO") {
+    const label = String(sizeLabel || "").toLowerCase();
+    if (label.includes("non-expiry") || label.includes("ishare") || label.includes("non expiry")) {
+      return "at_ishare";
+    }
+    return "at_bigtime";
+  }
+  return "yello";
+}
+
+function toSizeGb(sizeLabel: string | null | undefined, sizeMb: number): number {
+  if (sizeLabel) {
+    const match = String(sizeLabel).match(/(\d+(?:\.\d+)?)\s*(gb)/i);
+    if (match) {
+      return Number(match[1]);
+    }
+    const matchMb = String(sizeLabel).match(/(\d+(?:\.\d+)?)\s*(mb)/i);
+    if (matchMb) {
+      return Number(matchMb[1]) / 1024;
+    }
+  }
+  return Number(sizeMb) / 1024;
+}
+
 async function deliverData(
   admin: ReturnType<typeof createClient>,
   args: {
@@ -66,7 +94,15 @@ async function deliverData(
   let endpoint = "";
   let payload: any = {};
 
-  if (activeProviderKey === "swft") {
+  if (activeProviderKey === "swiftdata") {
+    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;
+    payload = {
+      phone: normalizePhone(args.recipient),
+      network: toSwiftDataNetwork(args.network_code, args.size_label),
+      size_gb: toSizeGb(args.size_label, args.size_mb),
+      reference: requestId,
+    };
+  } else if (activeProviderKey === "swft") {
     endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
     const plan = toPlanId(args.size_label, args.size_mb).toLowerCase();
     const net = toProviderNetwork(args.network_code);
@@ -107,17 +143,17 @@ async function deliverData(
     parsed = null;
   }
 
-  if (response.status !== 200) {
+  if (response.status !== 200 || (parsed && parsed.success === false)) {
     return {
       ok: false,
       provider_ref: requestId,
-      message: parsed?.message || rawText || `Provider failed with HTTP ${response.status}`,
+      message: parsed?.error || parsed?.message || rawText || `Provider failed with HTTP ${response.status}`,
     };
   }
 
   return {
     ok: true,
-    provider_ref: parsed?.request_id || parsed?.reference || requestId,
+    provider_ref: parsed?.order?.reference || parsed?.request_id || parsed?.reference || requestId,
     message: parsed?.message || null,
   };
 }

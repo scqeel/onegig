@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
 
     if (body.purpose === "wallet_deposit") {
       if (!userId) return json({ error: "Unauthorized" }, 401);
-      const depositAmount = Number((body as any).deposit_amount);
+      const depositAmount = Number((body as any).deposit_amount ?? (body as any).amount);
       if (!depositAmount || depositAmount <= 0) return json({ error: "Invalid deposit amount" }, 400);
 
       // Add 3% processing fee

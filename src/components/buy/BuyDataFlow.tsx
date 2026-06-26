@@ -305,6 +305,11 @@ export function BuyDataFlow({
       toast({ title: "Enter recipient phone", variant: "destructive" });
       return;
     }
+
+    if (!payWithWallet && activeGateway === "theteller") {
+      return payWithRedirect();
+    }
+
     if (!payWithWallet && (!momoNumber || momoNumber.replace(/\D/g, "").length < 9)) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
       return;

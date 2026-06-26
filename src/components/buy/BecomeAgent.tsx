@@ -93,6 +93,10 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
       toast({ title: "Loading settings", description: "Payment configuration is still loading. Please try again in a moment.", variant: "destructive" });
       return;
     }
+
+    if (activeGateway === "theteller") {
+      return payWithRedirect();
+    }
     
     if (!momoNumber || momoNumber.replace(/\D/g, "").length < 9) {
       toast({ title: "Enter mobile money number", variant: "destructive" });

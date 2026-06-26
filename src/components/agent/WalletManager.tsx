@@ -127,6 +127,10 @@ export const WalletManager = () => {
     }
     if (!amount || Number(amount) < 1) return toast({ title: "Enter a valid amount", variant: "destructive" });
     
+    if (activeGateway === "theteller") {
+      return payWithRedirect();
+    }
+    
     if (momoNumber.length < 9) return toast({ title: "Enter valid mobile number", variant: "destructive" });
 
 

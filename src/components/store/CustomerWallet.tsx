@@ -6,6 +6,7 @@ import { formatGHS } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useSettings } from "@/hooks/useSettings";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Dialog,
   DialogContent,
@@ -44,6 +45,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
   }, [otpTimer]);
   const { data: settings } = useSettings();
   const activeGateway = settings?.active_payment_gateway || "paystack";
+  const { profile } = useAuth();
   console.log("[CustomerWallet] activeGateway resolved to:", activeGateway);
 
   const loadBalance = async () => {
@@ -124,6 +126,11 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
       toast({ title: "Invalid amount", description: "Minimum top-up is GHS 1", variant: "destructive" });
       return;
     }
+
+    if (activeGateway === "theteller") {
+      return payWithRedirect();
+    }
+    
     if (momoNumber.length < 9) {
       toast({ title: "Invalid number", description: "Enter a valid mobile money number", variant: "destructive" });
       return;

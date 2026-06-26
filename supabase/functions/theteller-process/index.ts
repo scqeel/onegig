@@ -234,9 +234,10 @@ Deno.serve(async (req) => {
       payload = { user_id: userId, ref_slug: (body as any).ref_slug };
     } else if (body.purpose === "wallet_deposit") {
       if (!userId) return json({ error: "Authentication required for wallet deposit" }, 401);
-      if (!body.amount || body.amount < 1) return json({ error: "Valid amount required" }, 400);
+      const rawAmount = body.amount ?? (body as any).deposit_amount;
+      if (!rawAmount || Number(rawAmount) < 1) return json({ error: "Valid amount required" }, 400);
       
-      const depositAmount = Number(body.amount);
+      const depositAmount = Number(rawAmount);
       const fee = depositAmount * 0.03;
       amount = depositAmount + fee;
       

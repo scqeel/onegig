@@ -72,9 +72,26 @@ Deno.serve(async (req) => {
 
       return json({
         success: true,
-        balance: balanceData,
+        balance: {
+          success: true,
+          mainBalance: balanceData.balance !== undefined ? balanceData.balance : balanceData.mainBalance,
+          apiBalance: balanceData.api_balance !== undefined ? balanceData.api_balance : balanceData.apiBalance,
+          currency: balanceData.currency
+        },
         wallets: walletsData,
       });
+
+    } else if (action === "get_plans") {
+      let plansUrl = "";
+      if (activeProviderKey === "swiftdata") {
+        plansUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/packages`;
+      } else {
+        plansUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/plans`;
+      }
+
+      const plansRes = await fetch(plansUrl, { headers });
+      const plansData = await plansRes.json().catch(() => ({ success: false }));
+      return json(plansData);
 
     } else if (action === "wallet_transfer") {
       const { from, to, amount } = body;

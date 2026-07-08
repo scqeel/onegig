@@ -25,14 +25,24 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized: Missing token" }, 401);
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: ud, error: udErr } = await userClient.auth.getUser();
-    if (udErr || !ud.user?.id) return json({ error: "Unauthorized: Invalid token" }, 401);
+    let isAdmin = false;
+    let userId = "";
 
-    const userId = ud.user.id;
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (authHeader === `Bearer ${serviceKey}`) {
+      isAdmin = true;
+      userId = "a3333fba-10dd-43e9-a766-d44b454c902f"; // System admin
+    } else {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: ud, error: udErr } = await userClient.auth.getUser();
+      if (udErr || !ud.user?.id) return json({ error: "Unauthorized: Invalid token" }, 401);
+      userId = ud.user.id;
+      
+      const { data: adminCheck } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
+      isAdmin = !!adminCheck;
+    }
+
     if (!isAdmin) return json({ error: "Forbidden: Admin access required" }, 403);
 
     // Fetch active provider credentials

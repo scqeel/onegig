@@ -20,31 +20,7 @@ jobs:
 
       - name: Deploy edge functions
         run: |
-          supabase functions deploy place-order --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy place-order"
-          supabase functions deploy admin-provider-action --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy admin-provider-action"
-          supabase functions deploy paystack-verify --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy paystack-verify"
-          supabase functions deploy paystack-process --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy paystack-process"
-          supabase functions deploy paystack-initiate --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy paystack-initiate"
-          supabase functions deploy paystack-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy paystack-webhook"
-          supabase functions deploy admin-resolve-payment --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy admin-resolve-payment"
-          supabase functions deploy theteller-initiate --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy theteller-initiate"
-          supabase functions deploy theteller-process --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy theteller-process"
-          supabase functions deploy theteller-verify --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy theteller-verify"
-          supabase functions deploy theteller-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy theteller-webhook"
-          supabase functions deploy send-campaign-sms --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy send-campaign-sms"
-          supabase functions deploy crm-manage --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy crm-manage"
-          supabase functions deploy wallet-pay --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy wallet-pay"
-          supabase functions deploy auth-sms-webhook --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy auth-sms-webhook"
-          supabase functions deploy paystack-reconcile --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy paystack-reconcile"
-          supabase functions deploy paystack-resolve --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy paystack-resolve"
-          supabase functions deploy activate-agent --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy activate-agent"
-          supabase functions deploy admin-convert-agent --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy admin-convert-agent"
-          supabase functions deploy admin-delete-user --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy admin-delete-user"
-          supabase functions deploy admin-make-admin --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy admin-make-admin"
-          supabase functions deploy admin-user-manage --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy admin-user-manage"
-          supabase functions deploy debug-db --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy debug-db"
-          supabase functions deploy process-withdrawal --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy process-withdrawal"
-          supabase functions deploy request-withdrawal --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt || echo "Failed to deploy request-withdrawal"
+          supabase functions deploy admin-provider-action --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
@@ -53,6 +29,6 @@ jobs:
           supabase secrets set \
             DEVELOPER_API_KEY=${{ secrets.DEVELOPER_API_KEY }} \
             DEVELOPER_API_BASE_URL=https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api \
-            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} || echo "Failed to set secrets"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

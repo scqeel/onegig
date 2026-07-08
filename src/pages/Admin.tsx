@@ -1853,10 +1853,19 @@ function IntegrationsSection() {
     queryFn: async () => {
       const { data } = await supabase.from("app_settings").select("value").eq("key", "data_providers").maybeSingle();
       if (data?.value) {
-        setConfig(data.value);
+        const val = data.value;
+        setConfig({
+          ...val,
+          active_data: val.active_data || val.active || "swiftdata",
+          active_airtime: val.active_airtime || val.active || "swft",
+          active_utility: val.active_utility || val.active || "swft",
+        });
       } else {
         setConfig({
           active: "swft",
+          active_data: "swiftdata",
+          active_airtime: "swft",
+          active_utility: "swft",
           providers: {
             swft:   { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "swft_live_74686859a45448bea75376f0a64f97ed" },
             mtopup: { name: "MTopUp",        base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
@@ -1976,7 +1985,7 @@ function IntegrationsSection() {
 
   if (isLoading || !config) return <LoadingCard text="Loading integrations…" />;
 
-  const isSwiftActive = config.active === "swft" || config.active === "swiftdata";
+  const isSwiftActive = config.active_data === "swft" || config.active_data === "swiftdata" || config.active === "swft" || config.active === "swiftdata";
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1990,14 +1999,77 @@ function IntegrationsSection() {
             Save Changes
           </Button>
         </div>
+
+        {/* Dynamic Provider Routing Toggles */}
+        <div className="border-b border-border/40 bg-card/10 p-6 space-y-4">
+          <h3 className="text-sm font-black uppercase tracking-wider text-primary">Service Fulfillment Routing</h3>
+          <p className="text-xs text-muted-foreground -mt-2">Dynamically switch which provider API is active for each type of service purchase.</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data Packages</label>
+              <select
+                value={config.active_data || "swiftdata"}
+                onChange={(e) => setConfig((prev: any) => ({ ...prev, active_data: e.target.value }))}
+                className="w-full h-11 rounded-xl border border-slate-800 bg-[#0b1021] px-3.5 text-xs text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+              >
+                {Object.entries(config.providers).map(([key, p]: [string, any]) => (
+                  <option key={key} value={key}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Airtime Top-ups</label>
+              <select
+                value={config.active_airtime || "swft"}
+                onChange={(e) => setConfig((prev: any) => ({ ...prev, active_airtime: e.target.value }))}
+                className="w-full h-11 rounded-xl border border-slate-800 bg-[#0b1021] px-3.5 text-xs text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+              >
+                {Object.entries(config.providers).map(([key, p]: [string, any]) => (
+                  <option key={key} value={key}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Utility Bills</label>
+              <select
+                value={config.active_utility || "swft"}
+                onChange={(e) => setConfig((prev: any) => ({ ...prev, active_utility: e.target.value }))}
+                className="w-full h-11 rounded-xl border border-slate-800 bg-[#0b1021] px-3.5 text-xs text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+              >
+                {Object.entries(config.providers).map(([key, p]: [string, any]) => (
+                  <option key={key} value={key}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
         <div className="space-y-6 p-6">
           {Object.entries(config.providers).map(([key, provider]: [string, any]) => {
+            const isActiveForData = (config.active_data || config.active) === key;
+            const isActiveForAirtime = (config.active_airtime || config.active) === key;
+            const isActiveForUtility = (config.active_utility || config.active) === key;
+            const isActiveAny = isActiveForData || isActiveForAirtime || isActiveForUtility;
             const isActive = config.active === key;
+
             return (
-              <div key={key} className={`relative overflow-hidden rounded-2xl border p-6 transition-all ${isActive ? "border-primary/50 bg-primary/5" : "border-border/40 bg-background/50"}`}>
-                {isActive && (
-                  <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full bg-primary/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Active
+              <div key={key} className={`relative overflow-hidden rounded-2xl border p-6 transition-all ${isActiveAny ? "border-primary/50 bg-primary/5" : "border-border/40 bg-background/50"}`}>
+                {isActiveAny && (
+                  <div className="absolute right-4 top-4 flex flex-col gap-1.5 items-end">
+                    {isActiveForData && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-400 border border-indigo-500/30">
+                        Active for Data
+                      </span>
+                    )}
+                    {isActiveForAirtime && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30">
+                        Active for Airtime
+                      </span>
+                    )}
+                    {isActiveForUtility && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-sky-400 border border-sky-500/30">
+                        Active for Utilities
+                      </span>
+                    )}
                   </div>
                 )}
                 <h3 className="text-lg font-bold">{provider.name}</h3>
@@ -2013,8 +2085,18 @@ function IntegrationsSection() {
                   </div>
                 </div>
                 {!isActive && (
-                  <Button variant="outline" onClick={() => saveConfig({ ...config, active: key })} className="mt-5 h-10 rounded-xl border-primary/20 font-bold text-primary hover:bg-primary hover:text-primary-foreground">
-                    Set as Active Provider
+                  <Button 
+                    variant="outline" 
+                    onClick={() => saveConfig({ 
+                      ...config, 
+                      active: key,
+                      active_data: key,
+                      active_airtime: key,
+                      active_utility: key
+                    })} 
+                    className="mt-5 h-10 rounded-xl border-primary/20 font-bold text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    Set Active Globally
                   </Button>
                 )}
               </div>

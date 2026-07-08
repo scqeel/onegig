@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const config = (dpData?.value as any) ?? {};
-    const activeProviderKey = config?.active || "swft";
+    const activeProviderKey = config?.active_data || config?.active || "swiftdata";
     const providerConfig = config?.providers?.[activeProviderKey] ?? {};
 
     const PROVIDER_BASE_URL = providerConfig.base_url || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";

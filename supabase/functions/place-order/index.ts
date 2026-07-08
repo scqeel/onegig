@@ -100,12 +100,16 @@ async function deliverData(
     .maybeSingle();
 
   const config = (dpData?.value as any) ?? {};
-  const activeProviderKey = args.force_provider || config?.active || "mtopup";
   
-  // Fallback airtime/bills from "swiftdata" (Reseller REST API) to "swft" (Developer API)
-  let effectiveProviderKey = activeProviderKey;
-  if (activeProviderKey === "swiftdata" && (args.type === "airtime" || args.type === "bill")) {
-    effectiveProviderKey = "swft";
+  let effectiveProviderKey = args.force_provider || config?.active || "mtopup";
+  if (!args.force_provider) {
+    if (args.type === "airtime") {
+      effectiveProviderKey = config.active_airtime || config.active || "swft";
+    } else if (args.type === "bill") {
+      effectiveProviderKey = config.active_utility || config.active || "swft";
+    } else {
+      effectiveProviderKey = config.active_data || config.active || "swiftdata";
+    }
   }
 
   const providerConfig = config?.providers?.[effectiveProviderKey] ?? {};

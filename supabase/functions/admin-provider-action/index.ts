@@ -1,4 +1,3 @@
-// Trigger redeployment 8
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -26,24 +25,14 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized: Missing token" }, 401);
 
-    let isAdmin = false;
-    let userId = "";
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: ud, error: udErr } = await userClient.auth.getUser();
+    if (udErr || !ud.user?.id) return json({ error: "Unauthorized: Invalid token" }, 401);
 
-    const urlObj = new URL(req.url);
-    if (authHeader === `Bearer ${serviceKey}` || req.headers.get("x-bypass-key") === "onegig-super-secret-12345" || urlObj.searchParams.get("bypass_key") === "onegig-super-secret-12345") {
-      isAdmin = true;
-      userId = "a3333fba-10dd-43e9-a766-d44b454c902f"; // System admin
-    } else {
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: ud, error: udErr } = await userClient.auth.getUser();
-      if (udErr || !ud.user?.id) return json({ error: "Unauthorized: Invalid token" }, 401);
-      userId = ud.user.id;
-      
-      const { data: adminCheck } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
-      isAdmin = !!adminCheck;
-    }
+    const userId = ud.user.id;
+    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
 
     if (!isAdmin) return json({ error: "Forbidden: Admin access required" }, 403);
 

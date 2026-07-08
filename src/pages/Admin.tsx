@@ -1960,22 +1960,187 @@ function IntegrationsSection() {
   const handleSyncPlans = async () => {
     setIsSyncing(true);
     try {
-      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
-        body: { action: "sync_plans" }
-      });
-      if (error) {
-        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
-        return;
+      // 1. Fetch active data provider credentials from database settings
+      const { data: settingsData, error: settingsErr } = await supabase
+        .from("app_settings")
+        .select("value")
+        .eq("key", "data_providers")
+        .maybeSingle();
+
+      if (settingsErr) {
+        throw new Error(`Failed to read provider configuration: ${settingsErr.message}`);
       }
-      if (data?.success) {
-        toast({ 
-          title: "Packages Synced!", 
-          description: `Successfully synced ${data.count} packages and deactivated ${data.deactivated} obsolete packages.` 
-        });
-        qc.invalidateQueries({ queryKey: ["bundles"] });
+
+      const config = (settingsData?.value as any) ?? {};
+      const activeProviderKey = config?.active_data || config?.active || "swiftdata";
+      const providerConfig = config?.providers?.[activeProviderKey] ?? {};
+      const base_url = providerConfig.base_url || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
+      const api_key = providerConfig.api_key || "";
+
+      if (!api_key) {
+        throw new Error("Provider API Key is not configured in integrations settings");
+      }
+
+      // 2. Fetch plans from active provider API
+      let plansUrl = "";
+      if (activeProviderKey === "swiftdata") {
+        plansUrl = `${base_url.replace(/\/$/, "")}/v1/packages`;
       } else {
-        toast({ title: "Sync failed", description: data?.error || "Unknown error", variant: "destructive" });
+        plansUrl = `${base_url.replace(/\/$/, "")}/plans`;
       }
+
+      const plansRes = await fetch(plansUrl, {
+        headers: {
+          "Authorization": `Bearer ${api_key}`,
+          "X-API-Key": api_key,
+          "Content-Type": "application/json",
+        }
+      });
+
+      if (!plansRes.ok) {
+        throw new Error(`Provider API returned status ${plansRes.status}`);
+      }
+
+      const plansData = await plansRes.json();
+      const items = activeProviderKey === "swiftdata" ? plansData?.packages : plansData?.plans;
+
+      if (!plansData || !items || !Array.isArray(items)) {
+        throw new Error("Failed to retrieve valid packages list from active provider API");
+      }
+
+      // 3. Query existing bundles from database
+      const { data: dbBundles, error: dbErr } = await supabase
+        .from("bundles")
+        .select("id, size_label, base_price, active, network_id");
+      if (dbErr || !dbBundles) {
+        throw new Error(`Failed to fetch database bundles: ${dbErr?.message}`);
+      }
+
+      // Helper functions for mapping
+      const extractGb = (label: string): number | null => {
+        const match = String(label).match(/(\d+(?:\.\d+)?)\s*(gb)/i);
+        if (match) return Number(match[1]);
+        const matchMb = String(label).match(/(\d+(?:\.\d+)?)\s*(mb)/i);
+        if (matchMb) return Number(matchMb[1]) / 1024;
+        return null;
+      };
+
+      const getNetworkId = (netCode: string): string | null => {
+        const normalized = String(netCode).toLowerCase();
+        if (normalized === "yello" || normalized === "mtn") return "ee41ae80-e124-4cf7-8007-ef26c99e6be7";
+        if (normalized === "telecel" || normalized === "red") return "a169c4f5-de22-4a3e-b6b1-05635ac10c1d";
+        if (normalized === "at_ishare" || normalized === "at_bigtime" || normalized === "blue" || normalized === "at") {
+          return "95d17299-3cd8-4d15-9d3e-47009ee8edda";
+        }
+        return null;
+      };
+
+      const getPrettyNetworkName = (netCode: string): string => {
+        const normalized = String(netCode).toLowerCase();
+        if (normalized === "yello" || normalized === "mtn") return "MTN";
+        if (normalized === "telecel" || normalized === "red") return "Telecel";
+        if (normalized === "at_ishare") return "AirtelTigo iShare";
+        if (normalized === "at_bigtime") return "AirtelTigo Bigtime";
+        if (normalized === "blue" || normalized === "at") return "AirtelTigo";
+        return "Unknown";
+      };
+
+      const upsertData: any[] = [];
+
+      // 4. Map and align packages
+      for (const pkg of items) {
+        let netCode = "";
+        let sizeGb = 0;
+        let price = 0;
+
+        if (activeProviderKey === "swiftdata") {
+          netCode = pkg.network;
+          sizeGb = Number(pkg.size_gb);
+          price = Number(pkg.price);
+        } else {
+          if (pkg.is_unavailable) continue;
+          netCode = pkg.network;
+          const parsedGb = extractGb(pkg.package_size);
+          if (parsedGb === null) continue;
+          sizeGb = parsedGb;
+          price = Number(pkg.api_price);
+        }
+
+        const netId = getNetworkId(netCode);
+        if (!netId) continue;
+
+        // Find matching bundle in DB
+        const match = dbBundles.find((r: any) => {
+          if (r.network_id !== netId) return false;
+          const matchGb = r.size_label.match(/(\d+(?:\.\d+)?)\s*(gb)/i);
+          if (!matchGb) return false;
+          const dbGb = Number(matchGb[1]);
+          if (Math.abs(dbGb - sizeGb) > 0.05) return false;
+
+          // For AirtelTigo on swiftdata, match iShare vs Bigtime
+          if (activeProviderKey === "swiftdata" && netId === "95d17299-3cd8-4d15-9d3e-47009ee8edda") {
+            const isIShareDb = r.size_label.toLowerCase().includes("ishare");
+            const isISharePkg = netCode === "at_ishare";
+            return isIShareDb === isISharePkg;
+          }
+          return true;
+        });
+
+        const labelPrefix = getPrettyNetworkName(netCode);
+        const prettyLabel = activeProviderKey === "swiftdata" 
+          ? `${sizeGb}GB Non-Expiry (${labelPrefix})`
+          : `${pkg.package_size} Non-Expiry`;
+
+        const sizeMb = Math.round(sizeGb * 1000);
+        const item: any = {
+          network_id: netId,
+          size_label: prettyLabel,
+          size_mb: sizeMb,
+          base_price: price,
+          active: true,
+        };
+
+        if (match) {
+          item.id = match.id;
+        } else {
+          item.id = window.crypto?.randomUUID ? window.crypto.randomUUID() : (Math.random().toString(36).substring(2) + Date.now().toString(36));
+          item.user_price = price + (activeProviderKey === "swiftdata" ? 0.50 : 1.00);
+          item.sort_order = 10;
+        }
+
+        upsertData.push(item);
+      }
+
+      // 5. Upsert bundles to database
+      if (upsertData.length > 0) {
+        const { error: upsertErr } = await supabase.from("bundles").upsert(upsertData);
+        if (upsertErr) {
+          throw new Error(`Failed to upsert bundles in DB: ${upsertErr.message}`);
+        }
+      }
+
+      // 6. Deactivate obsolete bundles
+      const activeUpsertedIds = upsertData.map(d => d.id);
+      const inactiveBundles = dbBundles.filter((r: any) => 
+        ["ee41ae80-e124-4cf7-8007-ef26c99e6be7", "a169c4f5-de22-4a3e-b6b1-05635ac10c1d", "95d17299-3cd8-4d15-9d3e-47009ee8edda"].includes(r.network_id) &&
+        !activeUpsertedIds.includes(r.id)
+      );
+
+      if (inactiveBundles.length > 0) {
+        const { error: deacErr } = await supabase
+          .from("bundles")
+          .update({ active: false })
+          .in("id", inactiveBundles.map(r => r.id));
+        if (deacErr) {
+          throw new Error(`Failed to deactivate obsolete bundles: ${deacErr.message}`);
+        }
+      }
+
+      toast({ 
+        title: "Packages Synced!", 
+        description: `Successfully synced ${upsertData.length} packages and deactivated ${inactiveBundles.length} obsolete packages.` 
+      });
+      qc.invalidateQueries({ queryKey: ["bundles"] });
     } catch (e: any) {
       toast({ title: "Sync failed", description: e.message || "Request error", variant: "destructive" });
     } finally {

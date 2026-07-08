@@ -63,22 +63,54 @@ Deno.serve(async (req) => {
     };
 
     if (action === "get_balance") {
-      // Fetch balance and wallets breakdown
-      const balRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/balance`, { headers });
-      const walletRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/wallets`, { headers });
+      let mainBalance = 0;
+      let apiBalance = 0;
+      let currency = "GHS";
 
-      const balanceData = await balRes.json().catch(() => ({ success: false }));
-      const walletsData = await walletRes.json().catch(() => ({ success: false }));
+      if (activeProviderKey === "swiftdata") {
+        const swiftRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/balance`, { headers });
+        const swiftData = await swiftRes.json().catch(() => null);
+        if (swiftData?.success) {
+          mainBalance = Number(swiftData.balance);
+          currency = swiftData.currency || "GHS";
+        }
+        
+        // Fetch swft balance as API balance since we use it for airtime/bills
+        const swftConfig = config?.providers?.["swft"] ?? {};
+        const swftUrl = swftConfig.base_url || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
+        const swftKey = swftConfig.api_key || "";
+        if (swftKey) {
+          const swftRes = await fetch(`${swftUrl.replace(/\/$/, "")}/balance`, {
+            headers: {
+              "Authorization": `Bearer ${swftKey}`,
+              "X-API-Key": swftKey,
+              "Content-Type": "application/json",
+            }
+          });
+          const swftData = await swftRes.json().catch(() => null);
+          if (swftData?.success) {
+            apiBalance = Number(swftData.api_balance ?? swftData.balance);
+          }
+        }
+      } else {
+        const balRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/balance`, { headers });
+        const balanceData = await balRes.json().catch(() => null);
+        if (balanceData?.success) {
+          mainBalance = Number(balanceData.balance);
+          apiBalance = Number(balanceData.api_balance);
+          currency = balanceData.currency || "GHS";
+        }
+      }
 
       return json({
         success: true,
         balance: {
           success: true,
-          mainBalance: balanceData.balance !== undefined ? balanceData.balance : balanceData.mainBalance,
-          apiBalance: balanceData.api_balance !== undefined ? balanceData.api_balance : balanceData.apiBalance,
-          currency: balanceData.currency
+          mainBalance,
+          apiBalance,
+          currency
         },
-        wallets: walletsData,
+        wallets: []
       });
 
     } else if (action === "get_plans") {
@@ -208,9 +240,26 @@ Deno.serve(async (req) => {
         return json({ error: "from, to, and positive amount are required" }, 400);
       }
 
-      const res = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/wallet/transfer`, {
+      let transferUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/wallet/transfer`;
+      let transferHeaders = headers;
+
+      if (activeProviderKey === "swiftdata") {
+        const swftConfig = config?.providers?.["swft"] ?? {};
+        const swftUrl = swftConfig.base_url || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
+        const swftKey = swftConfig.api_key || "";
+        if (swftKey) {
+          transferUrl = `${swftUrl.replace(/\/$/, "")}/wallet/transfer`;
+          transferHeaders = {
+            "Authorization": `Bearer ${swftKey}`,
+            "X-API-Key": swftKey,
+            "Content-Type": "application/json",
+          };
+        }
+      }
+
+      const res = await fetch(transferUrl, {
         method: "POST",
-        headers,
+        headers: transferHeaders,
         body: JSON.stringify({ from, to, amount: Number(amount) }),
       });
 
@@ -218,7 +267,24 @@ Deno.serve(async (req) => {
       return json({ success: res.status === 200, ...data });
 
     } else if (action === "service_status") {
-      const res = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/service-status`, { headers });
+      let statusUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/service-status`;
+      let serviceHeaders = headers;
+      
+      if (activeProviderKey === "swiftdata") {
+        const swftConfig = config?.providers?.["swft"] ?? {};
+        const swftUrl = swftConfig.base_url || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
+        const swftKey = swftConfig.api_key || "";
+        if (swftKey) {
+          statusUrl = `${swftUrl.replace(/\/$/, "")}/service-status`;
+          serviceHeaders = {
+            "Authorization": `Bearer ${swftKey}`,
+            "X-API-Key": swftKey,
+            "Content-Type": "application/json",
+          };
+        }
+      }
+
+      const res = await fetch(statusUrl, { headers: serviceHeaders });
       const data = await res.json().catch(() => ({ success: false }));
       return json(data);
 

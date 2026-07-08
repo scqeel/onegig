@@ -97,14 +97,10 @@ async function deliverData(
   const config = (dpData?.value as any) ?? {};
   const activeProviderKey = args.force_provider || config?.active || "mtopup";
   
-  // Route MTN data bundles to "swiftdata" REST API, all others (Telecel, AT, Airtime, Bills) to "swft" (Developer API)
+  // Fallback airtime/bills from "swiftdata" (Reseller REST API) to "swft" (Developer API)
   let effectiveProviderKey = activeProviderKey;
-  if (activeProviderKey === "swiftdata") {
-    const net = String(args.network_code || "MTN").toUpperCase();
-    const isMtnData = args.type !== "airtime" && args.type !== "bill" && net === "MTN";
-    if (!isMtnData) {
-      effectiveProviderKey = "swft";
-    }
+  if (activeProviderKey === "swiftdata" && (args.type === "airtime" || args.type === "bill")) {
+    effectiveProviderKey = "swft";
   }
 
   const providerConfig = config?.providers?.[effectiveProviderKey] ?? {};

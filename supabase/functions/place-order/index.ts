@@ -233,8 +233,11 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as PlaceOrderBody;
-    if (!body?.recipient_phone || !body?.bundle_id) {
-      return json({ error: "recipient_phone and bundle_id are required" }, 400);
+    if (!body?.recipient_phone) {
+      return json({ error: "recipient_phone is required" }, 400);
+    }
+    if (!body?.bundle_id && !body?.retry_order_id) {
+      return json({ error: "bundle_id or retry_order_id is required" }, 400);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -265,58 +268,70 @@ Deno.serve(async (req) => {
     const { data: prof } = await admin.from("profiles").select("phone").eq("id", userId).maybeSingle();
     userPhone = prof?.phone ?? null;
 
-    // Bundle lookup
-    const { data: bundle, error: bErr } = await admin
-      .from("bundles")
-      .select("id, base_price, size_label, size_mb, network_id, networks:networks(code)")
-      .eq("id", body.bundle_id)
-      .maybeSingle();
-    if (bErr || !bundle) return json({ error: "Bundle not found" }, 404);
-
-    // Agent + agent price
+    let bundle: any = null;
     let agentId: string | null = null;
-    let sellPrice = Number(bundle.base_price);
+    let sellPrice = 0;
     let agentProfit = 0;
     let source: "direct" | "agent_store" = "direct";
-
-    if (body.agent_slug) {
-      const { data: agent } = await admin
-        .from("agent_profiles")
-        .select("id, user_id, activation_paid")
-        .eq("store_slug", body.agent_slug)
-        .maybeSingle();
-      if (agent && agent.activation_paid) {
-        agentId = agent.id;
-        source = "agent_store";
-        const { data: ap } = await admin
-          .from("agent_bundle_prices")
-          .select("sell_price")
-          .eq("agent_id", agent.id)
-          .eq("bundle_id", bundle.id)
-          .maybeSingle();
-        if (ap) {
-          sellPrice = Number(ap.sell_price);
-          agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
-        }
-      }
-    }
-
-    const customerPhone = body.customer_phone || userPhone || body.recipient_phone;
-
-    let order: any;
-    let oErr: any;
+    let order: any = null;
+    let oErr: any = null;
 
     if (body.retry_order_id) {
       // Fetch existing order instead of creating new
-      const res = await admin
+      const { data: existingOrder, error: fetchErr } = await admin
         .from("orders")
-        .update({ status: "processing", notes: null })
+        .select("*, bundle:bundles(*, networks(*)), network:networks(*)")
         .eq("id", body.retry_order_id)
-        .select("*")
-        .single();
-      order = res.data;
-      oErr = res.error;
+        .maybeSingle();
+      if (fetchErr || !existingOrder) return json({ error: "Failed to fetch order to retry" }, 404);
+      order = existingOrder;
+      bundle = order.bundle;
+      sellPrice = Number(order.sell_price);
+      agentProfit = Number(order.agent_profit);
+      agentId = order.agent_id;
+      source = order.source;
+
+      // Reset order status to processing
+      const { error: resetErr } = await admin
+        .from("orders")
+        .update({ status: "processing" })
+        .eq("id", order.id);
+      if (resetErr) return json({ error: "Failed to reset order status" }, 500);
     } else {
+      // Bundle lookup for new order
+      const { data: bData, error: bErr } = await admin
+        .from("bundles")
+        .select("id, base_price, size_label, size_mb, network_id, networks:networks(code)")
+        .eq("id", body.bundle_id)
+        .maybeSingle();
+      if (bErr || !bData) return json({ error: "Bundle not found" }, 404);
+      bundle = bData;
+      sellPrice = Number(bundle.base_price);
+
+      if (body.agent_slug) {
+        const { data: agent } = await admin
+          .from("agent_profiles")
+          .select("id, user_id, activation_paid")
+          .eq("store_slug", body.agent_slug)
+          .maybeSingle();
+        if (agent && agent.activation_paid) {
+          agentId = agent.id;
+          source = "agent_store";
+          const { data: ap } = await admin
+            .from("agent_bundle_prices")
+            .select("sell_price")
+            .eq("agent_id", agent.id)
+            .eq("bundle_id", bundle.id)
+            .maybeSingle();
+          if (ap) {
+            sellPrice = Number(ap.sell_price);
+            agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+          }
+        }
+      }
+
+      const customerPhone = body.customer_phone || userPhone || body.recipient_phone;
+
       // Insert new order
       const res = await admin
         .from("orders")
@@ -339,47 +354,64 @@ Deno.serve(async (req) => {
         .single();
       order = res.data;
       oErr = res.error;
-    }
-
-    if (oErr || !order) return json({ error: oErr?.message ?? "Order setup failed" }, 500);
-
-    // Send Processing SMS
-    if (customerPhone) {
-      const isSelf = customerPhone === body.recipient_phone;
-      let waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
-      try {
-        const { data: waRow } = await admin
-          .from("app_settings")
-          .select("value")
-          .eq("key", "whatsapp_group_link")
-          .maybeSingle();
-        if (waRow?.value) {
-          waLink = String(waRow.value).trim();
-        }
-      } catch (err) {
-        console.error("Error fetching whatsapp_group_link:", err);
-      }
-
-      const msg = isSelf 
-        ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
-        : `Your OneGig order of ${bundle.size_label} for ${body.recipient_phone} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
       
-      // Fire and forget
-      sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+      if (oErr || !order) return json({ error: oErr?.message ?? "Order setup failed" }, 500);
+
+      // Send Processing SMS
+      if (customerPhone) {
+        const isSelf = customerPhone === body.recipient_phone;
+        let waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
+        try {
+          const { data: waRow } = await admin
+            .from("app_settings")
+            .select("value")
+            .eq("key", "whatsapp_group_link")
+            .maybeSingle();
+          if (waRow?.value) {
+            waLink = String(waRow.value).trim();
+          }
+        } catch (err) {
+          console.error("Error fetching whatsapp_group_link:", err);
+        }
+
+        const msg = isSelf 
+          ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
+          : `Your OneGig order of ${bundle.size_label} for ${body.recipient_phone} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
+        
+        // Fire and forget
+        sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+      }
     }
+
+    const customerPhone = order.customer_phone || body.customer_phone || body.recipient_phone;
 
     // Deliver via stub adapter
-    const networkCode = (bundle.networks as any)?.code ?? "MTN";
-    
     let delivery;
     if (body.manual_fulfill) {
       delivery = { ok: true, status: "delivered", message: "Manually marked as delivered", provider_ref: `MANUAL-${Date.now()}` };
     } else {
+      // Determine delivery parameters dynamically
+      let orderType: "data" | "airtime" | "bill" = "data";
+      let billType: string | undefined = undefined;
+      let notesText = String(order.notes || "");
+      
+      if (notesText.includes("Utility Bill")) {
+        orderType = "bill";
+        billType = notesText.split(" - ")[0].replace("Utility Bill: ", "").trim();
+      } else if (notesText.includes("Airtime")) {
+        orderType = "airtime";
+      }
+
+      const networkCode = bundle ? ((bundle.networks as any)?.code ?? "MTN") : (order.network?.code ?? "MTN");
+
       delivery = await deliverData(admin, {
-        recipient: body.recipient_phone,
+        recipient: body.recipient_phone || order.recipient_phone,
         network_code: networkCode,
-        size_label: bundle.size_label,
-        size_mb: bundle.size_mb,
+        size_label: bundle?.size_label,
+        size_mb: bundle?.size_mb,
+        amount: sellPrice,
+        bill_type: billType,
+        type: orderType,
         force_provider: body.force_provider,
         request_id: order.id,
       });
@@ -389,11 +421,23 @@ Deno.serve(async (req) => {
       ? (delivery.status === "fulfilled" || delivery.status === "delivered" ? "delivered" : "processing")
       : "failed";
 
+    // Build final notes
+    let notesPrefix = "";
+    if (order.notes) {
+      notesPrefix = order.notes.split(" - ")[0] + " - ";
+    } else if (order.bundle_id === null) {
+      if (order.network_id) {
+        notesPrefix = "Airtime Top-up - ";
+      } else {
+        notesPrefix = "Utility Bill - ";
+      }
+    }
+
     await admin
       .from("orders")
       .update({
         status: finalStatus,
-        notes: delivery.message || (delivery.provider_ref ? `Provider Ref: ${delivery.provider_ref}` : null),
+        notes: `${notesPrefix}${delivery.message || (delivery.provider_ref ? `Provider Ref: ${delivery.provider_ref}` : "Pending")}`,
       })
       .eq("id", order.id);
 

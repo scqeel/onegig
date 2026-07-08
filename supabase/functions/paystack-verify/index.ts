@@ -590,6 +590,13 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     networkId = netRow?.id || null;
   }
 
+  let initialNotes = null;
+  if (orderType === "bill") {
+    initialNotes = `Utility Bill: ${payload.bill_type || "ECG"}`;
+  } else if (orderType === "airtime") {
+    initialNotes = "Airtime Top-up";
+  }
+
   const { data: order, error: oErr } = await admin
     .from("orders")
     .insert({
@@ -608,6 +615,7 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       status: "processing",
       payment_status: "paid",
       payment_reference: paymentReference || null,
+      notes: initialNotes,
     })
     .select("*")
     .single();
@@ -673,7 +681,7 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     .from("orders")
     .update({ 
       status: finalStatus, 
-      notes: delivery.message || (delivery.provider_ref ? `Provider Ref: ${delivery.provider_ref}` : null) 
+      notes: `${initialNotes ? initialNotes + " - " : ""}${delivery.message || (delivery.provider_ref ? `Provider Ref: ${delivery.provider_ref}` : "Pending")}`
     })
     .eq("id", order.id);
 

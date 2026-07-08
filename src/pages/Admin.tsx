@@ -951,7 +951,7 @@ function OrdersSection() {
     queryFn: async () => {
       let query = supabase
         .from("orders")
-        .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, bundle:bundles(size_label), network:networks(name, logo_emoji), agent:agent_profiles!orders_agent_id_fkey(store_name)")
+        .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label), network:networks(name, logo_emoji), agent:agent_profiles!orders_agent_id_fkey(store_name)")
         .order("created_at", { ascending: false });
 
       if (dateFilter === "today") {
@@ -1003,12 +1003,12 @@ function OrdersSection() {
   });
 
   const retryOrder = async (order: any, manualFulfill: boolean = false) => {
-    if (!order.bundle_id || !order.recipient_phone) return;
+    if (!order.recipient_phone) return;
     setRetryId(order.id);
     const { error } = await supabase.functions.invoke("place-order", {
       body: { 
         recipient_phone: order.recipient_phone, 
-        bundle_id: order.bundle_id, 
+        bundle_id: order.bundle_id || null, 
         force_provider: "swft", 
         retry_order_id: order.id,
         manual_fulfill: manualFulfill
@@ -1159,11 +1159,15 @@ function OrdersSection() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 text-lg leading-none border border-border/30">
-                          {o.network?.logo_emoji ?? "📦"}
+                          {o.bundle ? (o.network?.logo_emoji ?? "📦") : (o.notes?.includes("Utility") ? "⚡" : "📱")}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{o.bundle?.size_label ?? "—"}</p>
-                          <p className="text-[10px] text-muted-foreground/90 font-medium">{o.network?.name}</p>
+                          <p className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
+                            {o.bundle?.size_label ?? (o.notes?.split(" - ")[0] ?? "Order")}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground/90 font-medium">
+                            {o.network?.name ?? (o.notes?.includes("Utility") ? "Utility Payment" : "System")}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -1241,11 +1245,15 @@ function OrdersSection() {
                   <div className="flex items-center justify-between border-b border-border/30 pb-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/70 border border-border/30 text-lg leading-none">
-                        {o.network?.logo_emoji ?? "📦"}
+                        {o.bundle ? (o.network?.logo_emoji ?? "📦") : (o.notes?.includes("Utility") ? "⚡" : "📱")}
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-foreground leading-tight">{o.bundle?.size_label ?? "—"}</p>
-                        <p className="text-[10px] text-muted-foreground/80 font-medium">{o.network?.name}</p>
+                        <p className="text-sm font-bold text-foreground leading-tight">
+                          {o.bundle?.size_label ?? (o.notes?.split(" - ")[0] ?? "Order")}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground/80 font-medium">
+                          {o.network?.name ?? (o.notes?.includes("Utility") ? "Utility Payment" : "System")}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right">

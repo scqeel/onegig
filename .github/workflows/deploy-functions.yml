@@ -42,6 +42,7 @@ jobs:
           supabase functions deploy admin-make-admin --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy admin-user-manage --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy debug-db --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy admin-provider-action --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy process-withdrawal --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
           supabase functions deploy request-withdrawal --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
         env:

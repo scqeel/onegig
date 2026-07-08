@@ -134,9 +134,16 @@ Deno.serve(async (req) => {
       }
 
       const plansRes = await fetch(plansUrl, { headers });
-      const plansData = await plansRes.json().catch(() => null);
-      if (!plansData || (activeProviderKey === "swiftdata" ? !plansData.packages : !plansData.plans)) {
-        return json({ error: "Failed to fetch plans from active provider API" }, 400);
+      const rawText = await plansRes.text();
+      let plansData: any = null;
+      try {
+        plansData = rawText ? JSON.parse(rawText) : null;
+      } catch (err) {
+        return json({ error: `JSON Parse failed: ${err.message}. Raw: ${rawText.slice(0, 100)}` }, 400);
+      }
+
+      if (!plansRes.ok || !plansData || (activeProviderKey === "swiftdata" ? !plansData.packages : !plansData.plans)) {
+        return json({ error: `Fetch failed with status ${plansRes.status}. Body: ${rawText.slice(0, 150)}` }, 400);
       }
 
       // Fetch existing bundles

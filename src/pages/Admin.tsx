@@ -2102,6 +2102,7 @@ function IntegrationsSection() {
 
         if (match) {
           item.id = match.id;
+          item.user_price = price + (activeProviderKey === "swiftdata" ? 0.50 : 1.00);
         } else {
           item.id = window.crypto?.randomUUID ? window.crypto.randomUUID() : (Math.random().toString(36).substring(2) + Date.now().toString(36));
           item.user_price = price + (activeProviderKey === "swiftdata" ? 0.50 : 1.00);
@@ -2111,16 +2112,30 @@ function IntegrationsSection() {
         upsertData.push(item);
       }
 
+      // Deduplicate upsertData by id, keeping the cheapest rate
+      const uniqueUpsertData: any[] = [];
+      for (const item of upsertData) {
+        const existing = uniqueUpsertData.find(x => x.id === item.id);
+        if (existing) {
+          if (item.base_price < existing.base_price) {
+            const idx = uniqueUpsertData.indexOf(existing);
+            uniqueUpsertData[idx] = item;
+          }
+        } else {
+          uniqueUpsertData.push(item);
+        }
+      }
+
       // 5. Upsert bundles to database
-      if (upsertData.length > 0) {
-        const { error: upsertErr } = await supabase.from("bundles").upsert(upsertData);
+      if (uniqueUpsertData.length > 0) {
+        const { error: upsertErr } = await supabase.from("bundles").upsert(uniqueUpsertData);
         if (upsertErr) {
           throw new Error(`Failed to upsert bundles in DB: ${upsertErr.message}`);
         }
       }
 
       // 6. Deactivate obsolete bundles
-      const activeUpsertedIds = upsertData.map(d => d.id);
+      const activeUpsertedIds = uniqueUpsertData.map(d => d.id);
       const inactiveBundles = dbBundles.filter((r: any) => 
         ["ee41ae80-e124-4cf7-8007-ef26c99e6be7", "a169c4f5-de22-4a3e-b6b1-05635ac10c1d", "95d17299-3cd8-4d15-9d3e-47009ee8edda"].includes(r.network_id) &&
         !activeUpsertedIds.includes(r.id)

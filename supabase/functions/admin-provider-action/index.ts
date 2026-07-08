@@ -1,4 +1,4 @@
-// Trigger redeployment 3
+// Trigger redeployment 4
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {

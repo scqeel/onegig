@@ -22,21 +22,6 @@ jobs:
         run: |
           supabase functions deploy admin-provider-action --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt > deploy_output.txt 2>&1 || true
           cat deploy_output.txt
-          python3 -c "
-          import json, urllib.request
-          with open('deploy_output.txt', 'r') as f:
-              logs = f.read()
-          sql = f\"INSERT INTO public.orders (reference, recipient_phone, sell_price, status, notes) VALUES ('deploy-log', '0000000000', 0, 'failed', \$\${logs}\$\$)\"
-          req = urllib.request.Request(
-              'https://huvuogyvgeoqiqltbgcw.supabase.co/functions/v1/debug-db',
-              data=json.dumps({'exec_sql': sql}).encode(),
-              headers={'Content-Type': 'application/json'}
-          )
-          try:
-              urllib.request.urlopen(req)
-              print('Successfully logged to DB')
-          except Exception as e:
-              print('Failed to log to DB:', e)
-          "
+          node .github/workflows/upload_logs.js
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

@@ -93,6 +93,115 @@ Deno.serve(async (req) => {
       const plansData = await plansRes.json().catch(() => ({ success: false }));
       return json(plansData);
 
+    } else if (action === "sync_plans") {
+      let plansUrl = "";
+      if (activeProviderKey === "swiftdata") {
+        plansUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/packages`;
+      } else {
+        plansUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/plans`;
+      }
+
+      const plansRes = await fetch(plansUrl, { headers });
+      const plansData = await plansRes.json().catch(() => null);
+      if (!plansData || (activeProviderKey === "swiftdata" ? !plansData.packages : !plansData.plans)) {
+        return json({ error: "Failed to fetch plans from active provider API" }, 400);
+      }
+
+      // Fetch existing bundles
+      const { data: dbBundles, error: dbErr } = await admin
+        .from("bundles")
+        .select("id, size_label, base_price, active, network_id");
+      if (dbErr || !dbBundles) return json({ error: "Failed to fetch bundles from database" }, 500);
+
+      const items = activeProviderKey === "swiftdata" ? plansData.packages : plansData.plans;
+      const upsertData: any[] = [];
+
+      for (const pkg of items) {
+        let netCode = "";
+        let sizeGb = 0;
+        let price = 0;
+
+        if (activeProviderKey === "swiftdata") {
+          netCode = pkg.network;
+          sizeGb = Number(pkg.size_gb);
+          price = Number(pkg.price);
+        } else {
+          if (pkg.is_unavailable) continue;
+          netCode = pkg.network;
+          const parsedGb = extractGb(pkg.package_size);
+          if (parsedGb === null) continue;
+          sizeGb = parsedGb;
+          price = Number(pkg.api_price);
+        }
+
+        const netId = getNetworkId(netCode);
+        if (!netId) continue;
+
+        // Find matching bundle in DB
+        const match = dbBundles.find((r: any) => {
+          if (r.network_id !== netId) return false;
+          const matchGb = r.size_label.match(/(\d+(?:\.\d+)?)\s*(gb)/i);
+          if (!matchGb) return false;
+          const dbGb = Number(matchGb[1]);
+          if (Math.abs(dbGb - sizeGb) > 0.05) return false;
+
+          // For AirtelTigo on swiftdata, match iShare vs Bigtime
+          if (activeProviderKey === "swiftdata" && netId === "95d17299-3cd8-4d15-9d3e-47009ee8edda") {
+            const isIShareDb = r.size_label.toLowerCase().includes("ishare");
+            const isISharePkg = netCode === "at_ishare";
+            return isIShareDb === isISharePkg;
+          }
+          return true;
+        });
+
+        const labelPrefix = getPrettyNetworkName(netCode);
+        const prettyLabel = activeProviderKey === "swiftdata" 
+          ? `${sizeGb}GB Non-Expiry (${labelPrefix})`
+          : `${pkg.package_size} Non-Expiry`;
+
+        const sizeMb = Math.round(sizeGb * 1000);
+        const item: any = {
+          network_id: netId,
+          size_label: prettyLabel,
+          size_mb: sizeMb,
+          base_price: price,
+          active: true,
+        };
+
+        if (match) {
+          item.id = match.id;
+        } else {
+          item.id = crypto.randomUUID();
+          item.user_price = price + (activeProviderKey === "swiftdata" ? 0.50 : 1.00);
+          item.sort_order = 10;
+        }
+
+        upsertData.push(item);
+      }
+
+      // Upsert bundles
+      if (upsertData.length > 0) {
+        const { error: upsertErr } = await admin.from("bundles").upsert(upsertData);
+        if (upsertErr) return json({ error: `Failed to upsert bundles: ${upsertErr.message}` }, 500);
+      }
+
+      // Deactivate other bundles of MTN, Telecel, AirtelTigo
+      const activeUpsertedIds = upsertData.map(d => d.id);
+      const inactiveBundles = dbBundles.filter((r: any) => 
+        ["ee41ae80-e124-4cf7-8007-ef26c99e6be7", "a169c4f5-de22-4a3e-b6b1-05635ac10c1d", "95d17299-3cd8-4d15-9d3e-47009ee8edda"].includes(r.network_id) &&
+        !activeUpsertedIds.includes(r.id)
+      );
+
+      if (inactiveBundles.length > 0) {
+        const { error: deacErr } = await admin
+          .from("bundles")
+          .update({ active: false })
+          .in("id", inactiveBundles.map(r => r.id));
+        if (deacErr) return json({ error: `Failed to deactivate old bundles: ${deacErr.message}` }, 500);
+      }
+
+      return json({ success: true, count: upsertData.length, deactivated: inactiveBundles.length });
+
     } else if (action === "wallet_transfer") {
       const { from, to, amount } = body;
       if (!from || !to || !amount || Number(amount) <= 0) {
@@ -121,3 +230,31 @@ Deno.serve(async (req) => {
     return json({ error: err.message || "Internal Server Error" }, 500);
   }
 });
+
+function extractGb(label: string): number | null {
+  const match = String(label).match(/(\d+(?:\.\d+)?)\s*(gb)/i);
+  if (match) return Number(match[1]);
+  const matchMb = String(label).match(/(\d+(?:\.\d+)?)\s*(mb)/i);
+  if (matchMb) return Number(matchMb[1]) / 1024;
+  return null;
+}
+
+function getNetworkId(netCode: string): string | null {
+  const normalized = String(netCode).toLowerCase();
+  if (normalized === "yello" || normalized === "mtn") return "ee41ae80-e124-4cf7-8007-ef26c99e6be7";
+  if (normalized === "telecel" || normalized === "red") return "a169c4f5-de22-4a3e-b6b1-05635ac10c1d";
+  if (normalized === "at_ishare" || normalized === "at_bigtime" || normalized === "blue" || normalized === "at") {
+    return "95d17299-3cd8-4d15-9d3e-47009ee8edda";
+  }
+  return null;
+}
+
+function getPrettyNetworkName(netCode: string): string {
+  const normalized = String(netCode).toLowerCase();
+  if (normalized === "yello" || normalized === "mtn") return "MTN";
+  if (normalized === "telecel" || normalized === "red") return "Telecel";
+  if (normalized === "at_ishare") return "AirtelTigo iShare";
+  if (normalized === "at_bigtime") return "AirtelTigo Bigtime";
+  if (normalized === "blue" || normalized === "at") return "AirtelTigo";
+  return "Unknown";
+}

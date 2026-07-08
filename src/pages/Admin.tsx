@@ -1947,6 +1947,33 @@ function IntegrationsSection() {
     }
   };
 
+  const [isSyncing, setIsSyncing] = useState(false);
+  const handleSyncPlans = async () => {
+    setIsSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+        body: { action: "sync_plans" }
+      });
+      if (error) {
+        toast({ title: "Sync failed", description: error.message, variant: "destructive" });
+        return;
+      }
+      if (data?.success) {
+        toast({ 
+          title: "Packages Synced!", 
+          description: `Successfully synced ${data.count} packages and deactivated ${data.deactivated} obsolete packages.` 
+        });
+        qc.invalidateQueries({ queryKey: ["bundles"] });
+      } else {
+        toast({ title: "Sync failed", description: data?.error || "Unknown error", variant: "destructive" });
+      }
+    } catch (e: any) {
+      toast({ title: "Sync failed", description: e.message || "Request error", variant: "destructive" });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   if (isLoading || !config) return <LoadingCard text="Loading integrations…" />;
 
   const isSwiftActive = config.active === "swft" || config.active === "swiftdata";
@@ -2006,9 +2033,21 @@ function IntegrationsSection() {
                 <h3 className="text-lg font-bold text-white">SwiftData Wallet Balances</h3>
                 <p className="text-xs text-muted-foreground">Live Main and API wallets balance tracking</p>
               </div>
-              <Button size="icon" variant="ghost" onClick={fetchSwiftDataState} disabled={loadingBalances} className="rounded-xl h-9 w-9">
-                <RefreshCw className={cn("h-4 w-4 text-slate-400", loadingBalances && "animate-spin")} />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={handleSyncPlans} 
+                  disabled={isSyncing} 
+                  className="rounded-xl h-9 gap-1.5 border-primary/20 bg-primary/5 px-3 text-xs font-bold text-primary hover:bg-primary hover:text-white"
+                >
+                  <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
+                  Sync Packages
+                </Button>
+                <Button size="icon" variant="ghost" onClick={fetchSwiftDataState} disabled={loadingBalances} className="rounded-xl h-9 w-9">
+                  <RefreshCw className={cn("h-4 w-4 text-slate-400", loadingBalances && "animate-spin")} />
+                </Button>
+              </div>
             </div>
 
             {/* Wallet cards */}

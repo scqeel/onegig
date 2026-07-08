@@ -101,7 +101,14 @@ async function deliverData(
 
   const config = (dpData?.value as any) ?? {};
   const activeProviderKey = args.force_provider || config?.active || "mtopup";
-  const providerConfig = config?.providers?.[activeProviderKey] ?? {};
+  
+  // Fallback airtime/bills from "swiftdata" (Reseller REST API) to "swft" (Developer API)
+  let effectiveProviderKey = activeProviderKey;
+  if (activeProviderKey === "swiftdata" && (args.type === "airtime" || args.type === "bill")) {
+    effectiveProviderKey = "swft";
+  }
+
+  const providerConfig = config?.providers?.[effectiveProviderKey] ?? {};
 
   const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
   const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "";
@@ -110,7 +117,18 @@ async function deliverData(
   let endpoint = "";
   let payload: any = {};
 
-  if (activeProviderKey === "swiftdata" || activeProviderKey === "swft") {
+  if (effectiveProviderKey === "swiftdata") {
+    // New Reseller REST API (Data purchases only)
+    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;
+    const net = toSwiftDataNetwork(args.network_code || "MTN", args.size_label);
+    const sizeGb = toSizeGb(args.size_label, args.size_mb || 0);
+    payload = {
+      phone: normalizePhone(args.recipient),
+      size_gb: sizeGb,
+      network: net,
+      reference: requestId
+    };
+  } else if (effectiveProviderKey === "swft") {
     if (args.type === "airtime") {
       endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/airtime`;
       payload = {

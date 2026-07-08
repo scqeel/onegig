@@ -192,6 +192,27 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
       return;
     }
 
+    const payingPhone = payWithSameNumber ? phone : momoNumber;
+    if (paymentMethod === "momo" && (!payingPhone || payingPhone.replace(/\D/g, "").length < 9)) {
+      toast({ title: "Enter mobile money number", variant: "destructive" });
+      setPhase("error");
+      setErrorMsg("Mobile money number is required.");
+      return;
+    }
+
+    const detectNetwork = (p: string) => {
+      let num = p.replace(/\D/g, "");
+      if (num.startsWith("233")) num = "0" + num.substring(3);
+      const pfx = num.substring(0, 3);
+      if (["024", "054", "055", "059", "025", "053"].includes(pfx)) return "MTN";
+      if (["020", "050"].includes(pfx)) return "TELECEL";
+      if (["027", "057", "026", "056"].includes(pfx)) return "AT";
+      return "MTN";
+    };
+
+    const resolvedMomoNetwork = payWithSameNumber ? detectNetwork(phone) : momoNetwork;
+    const resolvedMomoNumber = payWithSameNumber ? rawPhone : momoNumber.replace(/\D/g, "");
+
     // Direct mobile money checkout
     setAuthMessage("Initializing secure payment prompt...");
     const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
@@ -202,8 +223,8 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
         amount: amt,
         network_code: network,
         agent_slug: agentSlug ?? null,
-        momo_number: momoNumber.replace(/\D/g, ""),
-        momo_network: momoNetwork === "TELECEL" ? "VDF" : (momoNetwork === "AT" ? "ATL" : "MTN"),
+        momo_number: resolvedMomoNumber,
+        momo_network: resolvedMomoNetwork === "TELECEL" ? "VDF" : (resolvedMomoNetwork === "AT" ? "ATL" : "MTN"),
       },
     });
 

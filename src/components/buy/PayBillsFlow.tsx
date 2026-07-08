@@ -270,6 +270,27 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
       return;
     }
 
+    const payingPhone = payWithSameNumber ? receiptPhone : momoNumber;
+    if (paymentMethod === "momo" && (!payingPhone || payingPhone.replace(/\D/g, "").length < 9)) {
+      toast({ title: "Enter mobile money number", variant: "destructive" });
+      setPhase("error");
+      setErrorMsg("Mobile money number is required.");
+      return;
+    }
+
+    const detectNetwork = (p: string) => {
+      let num = p.replace(/\D/g, "");
+      if (num.startsWith("233")) num = "0" + num.substring(3);
+      const pfx = num.substring(0, 3);
+      if (["024", "054", "055", "059", "025", "053"].includes(pfx)) return "MTN";
+      if (["020", "050"].includes(pfx)) return "TELECEL";
+      if (["027", "057", "026", "056"].includes(pfx)) return "AT";
+      return "MTN";
+    };
+
+    const resolvedMomoNetwork = payWithSameNumber ? detectNetwork(receiptPhone) : momoNetwork;
+    const resolvedMomoNumber = payWithSameNumber ? rawReceiptPhone : momoNumber.replace(/\D/g, "");
+
     // Direct Mobile Money Payment
     setAuthMessage("Initializing secure payment prompt...");
     const { data, error } = await supabase.functions.invoke(`${activeGateway}-process`, {
@@ -281,8 +302,8 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
         bill_type: billType,
         sender_name: customerName,
         agent_slug: agentSlug ?? null,
-        momo_number: payWithSameNumber ? receiptPhone.replace(/\D/g, "") : momoNumber.replace(/\D/g, ""),
-        momo_network: payWithSameNumber ? "MTN" : momoNetwork,
+        momo_number: resolvedMomoNumber,
+        momo_network: resolvedMomoNetwork === "TELECEL" ? "VDF" : (resolvedMomoNetwork === "AT" ? "ATL" : "MTN"),
       },
     });
 

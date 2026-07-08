@@ -361,7 +361,8 @@ export function BuyDataFlow({
       return payWithRedirect();
     }
 
-    if (!payWithWallet && (!momoNumber || momoNumber.replace(/\D/g, "").length < 9)) {
+    const payingPhone = payWithSameNumber ? phone : momoNumber;
+    if (!payWithWallet && (!payingPhone || payingPhone.replace(/\D/g, "").length < 9)) {
       toast({ title: "Enter mobile money number", variant: "destructive" });
       return;
     }

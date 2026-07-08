@@ -91,82 +91,79 @@ Deno.serve(async (req) => {
     let payload: Record<string, unknown> = {};
 
     if (body.purpose === "order") {
-      if (!body.bundle_id || !body.recipient_phone) {
-        return json({ error: "bundle_id and recipient_phone are required" }, 400);
-      }
+      const type = (body as any).type || "data";
 
-      const { data: bundle, error: bundleErr } = await admin
-        .from("bundles")
-        .select("id, base_price, user_price, size_label, network_id")
-        .eq("id", body.bundle_id)
-        .maybeSingle();
-
-      if (bundleErr || !bundle) return json({ error: "Bundle not found" }, 404);
-
-      amount = Number(bundle.user_price ?? bundle.base_price);
-      let source: "direct" | "agent_store" = "direct";
-
-      if (userId) {
-        const { data: roleRow } = await admin
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", userId)
-          .eq("role", "agent")
-          .maybeSingle();
-        if (roleRow?.role === "agent") {
-          amount = Number(bundle.base_price);
+      if (type === "data") {
+        if (!body.bundle_id || !body.recipient_phone) {
+          return json({ error: "bundle_id and recipient_phone are required" }, 400);
         }
-      }
 
-      if (body.agent_slug) {
-        const { data: agent } = await admin
-          .from("agent_profiles")
-          .select("id, activation_paid, user_id")
-          .eq("store_slug", body.agent_slug)
+        const { data: bundle, error: bundleErr } = await admin
+          .from("bundles")
+          .select("id, base_price, user_price, size_label, network_id")
+          .eq("id", body.bundle_id)
           .maybeSingle();
 
-        if (agent) {
-          source = "agent_store";
-          if (agent.activation_paid) {
-            const { data: ap } = await admin
-              .from("agent_bundle_prices")
-              .select("sell_price")
-              .eq("agent_id", agent.id)
-              .eq("bundle_id", bundle.id)
-              .maybeSingle();
-            if (ap?.sell_price != null) amount = Number(ap.sell_price);
+        if (bundleErr || !bundle) return json({ error: "Bundle not found" }, 404);
+
+        amount = Number(bundle.user_price ?? bundle.base_price);
+        let source: "direct" | "agent_store" = "direct";
+
+        if (userId) {
+          const { data: roleRow } = await admin
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userId)
+            .eq("role", "agent")
+            .maybeSingle();
+          if (roleRow?.role === "agent") {
+            amount = Number(bundle.base_price);
           }
         }
-      }
 
-      // Secure Server-side Coupon Validation
-      let discountAmount = 0;
-      if (body.coupon_code) {
-        const cleanCouponCode = String(body.coupon_code).trim().toUpperCase();
-        const { data: coupon } = await admin
-          .from("coupons")
-          .select("*")
-          .eq("code", cleanCouponCode)
-          .eq("active", true)
-          .maybeSingle();
+        if (body.agent_slug) {
+          const { data: agentProfile } = await admin
+            .from("agent_profiles")
+            .select("id, activation_paid")
+            .eq("store_slug", body.agent_slug)
+            .maybeSingle();
 
-        if (coupon) {
-          if (Number(coupon.current_uses) < Number(coupon.max_uses)) {
+          if (agentProfile) {
+            source = "agent_store";
+            if (agentProfile.activation_paid) {
+              const { data: ap } = await admin
+                .from("agent_bundle_prices")
+                .select("sell_price")
+                .eq("agent_id", agentProfile.id)
+                .eq("bundle_id", bundle.id)
+                .maybeSingle();
+              if (ap) amount = Number(ap.sell_price);
+            }
+          }
+        }
+
+        let discountAmount = 0;
+        if (body.coupon_code) {
+          const { data: coupon } = await admin
+            .from("coupons")
+            .select("*")
+            .eq("code", String(body.coupon_code).trim().toUpperCase())
+            .eq("active", true)
+            .maybeSingle();
+
+          if (coupon && Number(coupon.current_uses) < Number(coupon.max_uses)) {
             let isValidForStore = true;
-            if (coupon.agent_id) {
-              if (body.agent_slug) {
-                const { data: agentProfile } = await admin
-                  .from("agent_profiles")
-                  .select("id")
-                  .eq("store_slug", body.agent_slug)
-                  .maybeSingle();
-                
-                if (!agentProfile || agentProfile.id !== coupon.agent_id) {
-                  isValidForStore = false;
-                }
-              } else {
+            if (coupon.agent_id && body.agent_slug) {
+              const { data: agentProfile } = await admin
+                .from("agent_profiles")
+                .select("id")
+                .eq("store_slug", body.agent_slug)
+                .maybeSingle();
+              if (!agentProfile || agentProfile.id !== coupon.agent_id) {
                 isValidForStore = false;
               }
+            } else if (coupon.agent_id && !body.agent_slug) {
+              isValidForStore = false;
             }
 
             if (isValidForStore) {
@@ -174,51 +171,73 @@ Deno.serve(async (req) => {
             }
           }
         }
-      }
 
-      let loyaltyDiscount = 0;
-      if (body.points_redeemed && body.points_redeemed > 0 && userId && body.agent_slug) {
-        const { data: agentProfile } = await admin
-          .from("agent_profiles")
-          .select("id")
-          .eq("store_slug", body.agent_slug)
-          .maybeSingle();
-
-        if (agentProfile) {
-          const { data: loyaltyRow } = await admin
-            .from("loyalty_points")
-            .select("points_balance")
-            .eq("user_id", userId)
-            .eq("agent_id", agentProfile.id)
+        let loyaltyDiscount = 0;
+        if (body.points_redeemed && body.points_redeemed > 0 && userId && body.agent_slug) {
+          const { data: agentProfile } = await admin
+            .from("agent_profiles")
+            .select("id")
+            .eq("store_slug", body.agent_slug)
             .maybeSingle();
 
-          const pointsAvailable = loyaltyRow?.points_balance ?? 0;
-          const maxPointsToDeduct = Math.floor(pointsAvailable / 10);
-          
-          if (maxPointsToDeduct > 0) {
-            loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
-            loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
+          if (agentProfile) {
+            const { data: loyaltyRow } = await admin
+              .from("loyalty_points")
+              .select("points_balance")
+              .eq("user_id", userId)
+              .eq("agent_id", agentProfile.id)
+              .maybeSingle();
+
+            const pointsAvailable = loyaltyRow?.points_balance ?? 0;
+            const maxPointsToDeduct = Math.floor(pointsAvailable / 10);
+            
+            if (maxPointsToDeduct > 0) {
+              loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
+              loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
+            }
           }
         }
+
+        const baseAmount = Math.max(1, amount - discountAmount - loyaltyDiscount);
+        const fee = baseAmount * 0.03;
+        amount = baseAmount + fee;
+
+        payload = {
+          type,
+          bundle_id: body.bundle_id,
+          recipient_phone: body.recipient_phone,
+          agent_slug: body.agent_slug ?? null,
+          source,
+          base_amount: baseAmount,
+          fee,
+          coupon_code: body.coupon_code || null,
+          coupon_discount: discountAmount,
+          subscribe: body.subscribe || false,
+          frequency: body.frequency || null,
+          points_redeemed: loyaltyDiscount > 0 ? loyaltyDiscount : null,
+        };
+      } else {
+        // airtime or bill
+        if (!body.recipient_phone || !body.amount || Number(body.amount) <= 0) {
+          return json({ error: "recipient_phone and positive amount are required" }, 400);
+        }
+
+        const baseAmount = Number(body.amount);
+        const fee = baseAmount * 0.03;
+        amount = baseAmount + fee;
+
+        payload = {
+          type,
+          recipient_phone: body.recipient_phone,
+          agent_slug: body.agent_slug ?? null,
+          source: body.agent_slug ? "agent_store" : "direct",
+          base_amount: baseAmount,
+          fee,
+          network_code: (body as any).network_code,
+          bill_type: (body as any).bill_type,
+          sender_name: (body as any).sender_name,
+        };
       }
-
-      const baseAmount = Math.max(1, amount - discountAmount - loyaltyDiscount);
-      const fee = baseAmount * 0.03;
-      amount = baseAmount + fee;
-
-      payload = {
-        bundle_id: body.bundle_id,
-        recipient_phone: body.recipient_phone,
-        agent_slug: body.agent_slug ?? null,
-        source,
-        base_amount: baseAmount,
-        fee,
-        coupon_code: body.coupon_code || null,
-        coupon_discount: discountAmount,
-        subscribe: body.subscribe || false,
-        frequency: body.frequency || null,
-        points_redeemed: loyaltyDiscount > 0 ? loyaltyDiscount : null,
-      };
     }
 
     if (body.purpose === "agent_activation") {

@@ -1,17 +1,50 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, CheckCircle, Search, ShieldCheck, Users, Zap } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, CheckCircle, Search, ShieldCheck, Users, Zap, Smartphone, Tv } from "lucide-react";
 import { BuyDataFlow } from "@/components/buy/BuyDataFlow";
+import { BuyAirtimeFlow } from "@/components/buy/BuyAirtimeFlow";
+import { PayBillsFlow } from "@/components/buy/PayBillsFlow";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const TRUST_ITEMS = [
-  { icon: Zap, title: "Instant delivery", desc: "Data lands on your line within seconds of payment." },
+  { icon: Zap, title: "Instant delivery", desc: "Transactions complete on your line within seconds." },
   { icon: ShieldCheck, title: "Secure Payments", desc: "PCI-DSS certified checkout. We never store card details." },
-  { icon: CheckCircle, title: "No account needed", desc: "Buy as a guest — just a phone number and email." },
+  { icon: CheckCircle, title: "No account needed", desc: "Buy as a guest — just enter your details." },
   { icon: Users, title: "10,000+ happy customers", desc: "Trusted by resellers and everyday buyers across Ghana." },
 ];
 
 export default function PublicBuyPage() {
+  const [activeTab, setActiveTab] = useState<"data" | "airtime" | "bill">(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab")?.toLowerCase();
+    if (tab === "airtime" || tab === "bill" || tab === "data") return tab as any;
+    return "data";
+  });
+
+  const getHeaderInfo = () => {
+    switch (activeTab) {
+      case "airtime":
+        return {
+          title: "Buy Airtime",
+          desc: "Instant top-ups for MTN, Telecel, and AirtelTigo. No registration required."
+        };
+      case "bill":
+        return {
+          title: "Pay Utility Bills",
+          desc: "Pay DSTV, GOTV, StarTimes & ECG Prepaid instantly with secure validation."
+        };
+      default:
+        return {
+          title: "Buy Mobile Data",
+          desc: "Pick a network, choose a bundle, and pay with MoMo or card. Done in under 60 seconds."
+        };
+    }
+  };
+
+  const header = getHeaderInfo();
+
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Nav ── */}
@@ -44,9 +77,9 @@ export default function PublicBuyPage() {
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to home
           </Link>
-          <h1 className="text-3xl font-bold text-white md:text-4xl">Buy Mobile Data</h1>
-          <p className="mt-2 max-w-lg text-sm text-white/50">
-            Pick a network, choose a bundle, and pay with MoMo or card. Done in under 60 seconds.
+          <h1 className="text-3xl font-bold text-white md:text-4xl transition-all duration-300">{header.title}</h1>
+          <p className="mt-2 max-w-lg text-sm text-white/50 transition-all duration-300">
+            {header.desc}
           </p>
         </div>
       </div>
@@ -58,22 +91,37 @@ export default function PublicBuyPage() {
           {/* ── Main flow ── */}
           <div className="space-y-5">
             <div className="overflow-hidden rounded-[2rem] glass-card">
-              <div className="border-b border-border/40 bg-secondary/20 dark:bg-slate-900/20 px-6 py-5 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-extrabold text-foreground dark:text-white flex items-center gap-1.5">
-                    Select a bundle and pay
-                    <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground dark:text-slate-400">No account required · Instant delivery</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="h-2.5 w-2.5 rounded-full bg-red-400/80" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-yellow-400/80" />
-                  <div className="h-2.5 w-2.5 rounded-full bg-green-400/80" />
-                </div>
+              {/* Tab Switcher Headers */}
+              <div className="border-b border-border/40 bg-secondary/10 dark:bg-slate-900/10 p-2 flex gap-1">
+                {[
+                  { id: "data", label: "Buy Data", icon: Zap },
+                  { id: "airtime", label: "Buy Airtime", icon: Smartphone },
+                  { id: "bill", label: "Pay Bills", icon: Tv }
+                ].map((t) => {
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id as any)}
+                      className={cn(
+                        "flex-1 py-3 px-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-xs md:text-sm transition-all duration-200",
+                        activeTab === t.id
+                          ? "bg-slate-950 text-white shadow-float border border-slate-800"
+                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/20 dark:hover:bg-slate-900/20"
+                      )}
+                    >
+                      <Icon className={cn("h-4 w-4", activeTab === t.id ? "text-primary" : "text-slate-400")} />
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
               </div>
+
+              {/* Tab Content */}
               <div className="p-6 md:p-8">
-                <BuyDataFlow />
+                {activeTab === "data" && <BuyDataFlow />}
+                {activeTab === "airtime" && <BuyAirtimeFlow />}
+                {activeTab === "bill" && <PayBillsFlow />}
               </div>
             </div>
 

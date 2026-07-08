@@ -82,12 +82,17 @@ async function deliverData(
   admin: ReturnType<typeof createClient>,
   args: {
     recipient: string;
-    network_code: string;
+    network_code?: string;
     size_label?: string | null;
-    size_mb: number;
+    size_mb?: number;
+    amount?: number;
+    bill_type?: string;
+    sender_name?: string;
+    type?: "data" | "airtime" | "bill";
     force_provider?: string;
+    request_id?: string;
   }
-): Promise<{ ok: boolean; provider_ref?: string; message?: string }> {
+): Promise<{ ok: boolean; provider_ref?: string; status?: string; message?: string }> {
   const { data: dpData } = await admin
     .from("app_settings")
     .select("value")
@@ -101,39 +106,72 @@ async function deliverData(
   const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
   const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "";
 
-  const requestId = crypto.randomUUID();
+  const requestId = args.request_id || crypto.randomUUID();
   let endpoint = "";
   let payload: any = {};
 
-  if (activeProviderKey === "swiftdata") {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;
-    payload = {
-      phone: normalizePhone(args.recipient),
-      network: toSwiftDataNetwork(args.network_code, args.size_label),
-      size_gb: toSizeGb(args.size_label, args.size_mb),
-      reference: requestId,
-    };
-  } else if (activeProviderKey === "swft") {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
-    const plan = toPlanId(args.size_label, args.size_mb).toLowerCase();
-    const net = toProviderNetwork(args.network_code);
-    let prefix = "yellow";
-    if (net === "TELECEL") prefix = "red";
-    if (net === "AT") prefix = "blue";
-    
-    payload = {
-      package_id: `${prefix}_${plan}`,
-      phone: normalizePhone(args.recipient),
-      request_id: requestId,
-    };
+  if (activeProviderKey === "swiftdata" || activeProviderKey === "swft") {
+    if (args.type === "airtime") {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/airtime`;
+      payload = {
+        network: toProviderNetwork(args.network_code || "MTN"),
+        phone: normalizePhone(args.recipient),
+        amount: Number(args.amount),
+        request_id: requestId,
+        allow_duplicate: true
+      };
+    } else if (args.type === "bill") {
+      if (args.bill_type === "ECG") {
+        endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/ecg`;
+        payload = {
+          phoneNumber: normalizePhone(args.recipient),
+          accountNumber: args.recipient,
+          amount: Number(args.amount)
+        };
+      } else {
+        endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/bills/pay`;
+        payload = {
+          customerNumber: args.recipient,
+          billType: args.bill_type,
+          amount: Number(args.amount),
+          senderName: args.sender_name || "CUSTOMER"
+        };
+      }
+    } else {
+      // Default: Data bundle
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
+      const plan = toPlanId(args.size_label, args.size_mb || 0).toLowerCase();
+      const net = toProviderNetwork(args.network_code || "MTN");
+      let prefix = "yellow";
+      if (net === "TELECEL") prefix = "red";
+      if (net === "AT") prefix = "blue";
+      
+      payload = {
+        package_id: `${prefix}_${plan}`,
+        phone: normalizePhone(args.recipient),
+        request_id: requestId,
+        allow_duplicate: true
+      };
+    }
   } else {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
-    payload = {
-      network: toProviderNetwork(args.network_code),
-      plan_id: toPlanId(args.size_label, args.size_mb),
-      phone: normalizePhone(args.recipient),
-      request_id: requestId,
-    };
+    // MTopUp / fallback provider
+    if (args.type === "airtime") {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
+      payload = {
+        network: toProviderNetwork(args.network_code || "MTN"),
+        amount: Number(args.amount),
+        phone: normalizePhone(args.recipient),
+        request_id: requestId
+      };
+    } else {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
+      payload = {
+        network: toProviderNetwork(args.network_code || "MTN"),
+        plan_id: toPlanId(args.size_label, args.size_mb || 0),
+        phone: normalizePhone(args.recipient),
+        request_id: requestId
+      };
+    }
   }
 
   const response = await fetch(endpoint, {
@@ -142,6 +180,7 @@ async function deliverData(
       "X-API-Key": PROVIDER_API_KEY,
       "Authorization": `Bearer ${PROVIDER_API_KEY}`,
       "Content-Type": "application/json",
+      "X-Idempotency-Key": requestId
     },
     body: JSON.stringify(payload),
   });
@@ -164,7 +203,8 @@ async function deliverData(
 
   return {
     ok: true,
-    provider_ref: parsed?.order?.reference || parsed?.request_id || parsed?.reference || requestId,
+    status: parsed?.status || "delivered",
+    provider_ref: parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId,
     message: parsed?.message || null,
   };
 }
@@ -315,7 +355,7 @@ Deno.serve(async (req) => {
     
     let delivery;
     if (body.manual_fulfill) {
-      delivery = { ok: true, message: "Manually marked as delivered", provider_ref: `MANUAL-${Date.now()}` };
+      delivery = { ok: true, status: "delivered", message: "Manually marked as delivered", provider_ref: `MANUAL-${Date.now()}` };
     } else {
       delivery = await deliverData(admin, {
         recipient: body.recipient_phone,
@@ -323,15 +363,19 @@ Deno.serve(async (req) => {
         size_label: bundle.size_label,
         size_mb: bundle.size_mb,
         force_provider: body.force_provider,
+        request_id: order.id,
       });
     }
 
-    const finalStatus = delivery.ok ? "delivered" : "failed";
+    const finalStatus = delivery.ok
+      ? (delivery.status === "fulfilled" || delivery.status === "delivered" ? "delivered" : "processing")
+      : "failed";
+
     await admin
       .from("orders")
       .update({
         status: finalStatus,
-        notes: delivery.message ?? null,
+        notes: delivery.message || (delivery.provider_ref ? `Provider Ref: ${delivery.provider_ref}` : null),
       })
       .eq("id", order.id);
 

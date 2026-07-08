@@ -72,11 +72,18 @@ async function deliverData(
   admin: ReturnType<typeof createClient>,
   args: {
     recipient: string;
-    network_code: string;
+    network_code?: string;
     size_label?: string | null;
-    size_mb: number;
+    size_mb?: number;
+    amount?: number;
+    bill_type?: string;
+    sender_name?: string;
+    type?: "data" | "airtime" | "bill";
+    force_provider?: string;
+    request_id?: string;
+    customer_phone?: string;
   }
-): Promise<{ ok: boolean; provider_ref?: string; message?: string }> {
+): Promise<{ ok: boolean; provider_ref?: string; status?: string; message?: string }> {
   const { data: dpData } = await admin
     .from("app_settings")
     .select("value")
@@ -84,45 +91,78 @@ async function deliverData(
     .maybeSingle();
 
   const config = (dpData?.value as any) ?? {};
-  const activeProviderKey = config?.active ?? "mtopup";
+  const activeProviderKey = args.force_provider || config?.active || "mtopup";
   const providerConfig = config?.providers?.[activeProviderKey] ?? {};
 
   const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
   const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "";
 
-  const requestId = crypto.randomUUID();
+  const requestId = args.request_id || crypto.randomUUID();
   let endpoint = "";
   let payload: any = {};
 
-  if (activeProviderKey === "swiftdata") {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;
-    payload = {
-      phone: normalizePhone(args.recipient),
-      network: toSwiftDataNetwork(args.network_code, args.size_label),
-      size_gb: toSizeGb(args.size_label, args.size_mb),
-      reference: requestId,
-    };
-  } else if (activeProviderKey === "swft") {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
-    const plan = toPlanId(args.size_label, args.size_mb).toLowerCase();
-    const net = toProviderNetwork(args.network_code);
-    let prefix = "yellow";
-    if (net === "TELECEL") prefix = "red";
-    if (net === "AT") prefix = "blue";
-    
-    payload = {
-      package_id: `${prefix}_${plan}`,
-      phone: normalizePhone(args.recipient),
-      request_id: requestId,
-    };
+  if (activeProviderKey === "swiftdata" || activeProviderKey === "swft") {
+    if (args.type === "airtime") {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/airtime`;
+      payload = {
+        network: toProviderNetwork(args.network_code || "MTN"),
+        phone: normalizePhone(args.recipient),
+        amount: Number(args.amount),
+        request_id: requestId,
+        allow_duplicate: true
+      };
+    } else if (args.type === "bill") {
+      if (args.bill_type === "ECG") {
+        endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/ecg`;
+        payload = {
+          phoneNumber: normalizePhone(args.customer_phone || args.recipient),
+          accountNumber: args.recipient,
+          amount: Number(args.amount)
+        };
+      } else {
+        endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/bills/pay`;
+        payload = {
+          customerNumber: args.recipient,
+          billType: args.bill_type,
+          amount: Number(args.amount),
+          senderName: args.sender_name || "CUSTOMER"
+        };
+      }
+    } else {
+      // Default: Data bundle
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
+      const plan = toPlanId(args.size_label, args.size_mb || 0).toLowerCase();
+      const net = toProviderNetwork(args.network_code || "MTN");
+      let prefix = "yellow";
+      if (net === "TELECEL") prefix = "red";
+      if (net === "AT") prefix = "blue";
+      
+      payload = {
+        package_id: `${prefix}_${plan}`,
+        phone: normalizePhone(args.recipient),
+        request_id: requestId,
+        allow_duplicate: true
+      };
+    }
   } else {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
-    payload = {
-      network: toProviderNetwork(args.network_code),
-      plan_id: toPlanId(args.size_label, args.size_mb),
-      phone: normalizePhone(args.recipient),
-      request_id: requestId,
-    };
+    // MTopUp / fallback provider
+    if (args.type === "airtime") {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
+      payload = {
+        network: toProviderNetwork(args.network_code || "MTN"),
+        amount: Number(args.amount),
+        phone: normalizePhone(args.recipient),
+        request_id: requestId
+      };
+    } else {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/airtime`;
+      payload = {
+        network: toProviderNetwork(args.network_code || "MTN"),
+        plan_id: toPlanId(args.size_label, args.size_mb || 0),
+        phone: normalizePhone(args.recipient),
+        request_id: requestId
+      };
+    }
   }
 
   const response = await fetch(endpoint, {
@@ -131,6 +171,7 @@ async function deliverData(
       "X-API-Key": PROVIDER_API_KEY,
       "Authorization": `Bearer ${PROVIDER_API_KEY}`,
       "Content-Type": "application/json",
+      "X-Idempotency-Key": requestId
     },
     body: JSON.stringify(payload),
   });
@@ -153,7 +194,8 @@ async function deliverData(
 
   return {
     ok: true,
-    provider_ref: parsed?.order?.reference || parsed?.request_id || parsed?.reference || requestId,
+    status: parsed?.status || "delivered",
+    provider_ref: parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId,
     message: parsed?.message || null,
   };
 }
@@ -312,7 +354,10 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
   const customerUserId = payment.user_id || null;
   const paymentReference = String(payment.reference || "").trim();
 
-  if (!bundleId || !recipient) throw new Error("Invalid order payment payload");
+  const orderType = payload.type || "data";
+
+  if (!recipient) throw new Error("Recipient phone is required");
+  if (orderType === "data" && !bundleId) throw new Error("Invalid order payment payload: Missing bundle ID");
 
   if (paymentReference) {
     const { data: existingByPaymentRef } = await admin
@@ -323,125 +368,153 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     if (existingByPaymentRef?.id) return existingByPaymentRef.id;
   }
 
-  const { data: bundle, error: bErr } = await admin
-    .from("bundles")
-    .select("id, base_price, user_price, size_label, size_mb, network_id, networks:networks(code)")
-    .eq("id", bundleId)
-    .maybeSingle();
+  let bundle: any = null;
+  if (orderType === "data") {
+    const { data: bData, error: bErr } = await admin
+      .from("bundles")
+      .select("id, base_price, user_price, size_label, size_mb, network_id, networks:networks(code)")
+      .eq("id", bundleId)
+      .maybeSingle();
 
-  if (bErr || !bundle) throw new Error("Bundle not found");
+    if (bErr || !bData) throw new Error("Bundle not found");
+    bundle = bData;
+  }
 
   let agentId: string | null = null;
   let parentAgentId: string | null = null;
   let grandparentAgentId: string | null = null;
-  let sellPrice = Number(payload.base_amount ?? payment.amount ?? bundle.user_price ?? bundle.base_price);
+  let sellPrice = Number(payload.base_amount ?? payment.amount);
+  let basePrice = sellPrice;
   let agentProfit = 0;
   let parentAgentProfit = 0;
   let grandparentAgentProfit = 0;
   let source: "direct" | "agent_store" = "direct";
 
-  const couponCode = payload.coupon_code || null;
-  const couponDiscount = Number(payload.coupon_discount || 0);
-  let isGlobalCoupon = true;
+  if (orderType === "data" && bundle) {
+    sellPrice = Number(payload.base_amount ?? payment.amount ?? bundle.user_price ?? bundle.base_price);
+    basePrice = Number(bundle.base_price);
 
-  if (couponCode) {
-    const { data: couponToIncrement } = await admin
-      .from("coupons")
-      .select("id, current_uses, agent_id")
-      .eq("code", couponCode)
-      .maybeSingle();
+    // Coupon settlement resolution
+    const couponCode = payload.coupon_code || null;
+    const couponDiscount = Number(payload.coupon_discount || 0);
+    let isGlobalCoupon = true;
 
-    if (couponToIncrement) {
-      await admin
+    if (couponCode) {
+      // 1. Fetch coupon details to verify store-specific vs global
+      const { data: couponToIncrement } = await admin
         .from("coupons")
-        .update({ current_uses: (couponToIncrement.current_uses || 0) + 1 })
-        .eq("id", couponToIncrement.id);
-      
-      if (couponToIncrement.agent_id) {
-        isGlobalCoupon = false;
+        .select("id, current_uses, agent_id")
+        .eq("code", couponCode)
+        .maybeSingle();
+
+      if (couponToIncrement) {
+        // 2. Increment coupon uses in database
+        await admin
+          .from("coupons")
+          .update({ current_uses: (couponToIncrement.current_uses || 0) + 1 })
+          .eq("id", couponToIncrement.id);
+        
+        if (couponToIncrement.agent_id) {
+          isGlobalCoupon = false;
+        }
       }
     }
-  }
 
-  if (agentSlug) {
+    if (agentSlug) {
+      const { data: agent } = await admin
+        .from("agent_profiles")
+        .select("id, user_id, activation_paid, parent_agent_id")
+        .eq("store_slug", agentSlug)
+        .maybeSingle();
+
+      if (agent) {
+        agentId = agent.id;
+        parentAgentId = agent.parent_agent_id;
+        source = "agent_store";
+        if (agent.activation_paid) {
+          const { data: ap } = await admin
+            .from("agent_bundle_prices")
+            .select("sell_price")
+            .eq("agent_id", agent.id)
+            .eq("bundle_id", bundle.id)
+            .maybeSingle();
+          if (ap) {
+            sellPrice = Number(ap.sell_price);
+            
+            let parentSellPrice = Number(bundle.base_price);
+            if (parentAgentId) {
+              // Check for custom wholesale override first
+              const { data: override } = await admin
+                .from("sub_agent_wholesale_overrides")
+                .select("wholesale_price")
+                .eq("sub_agent_id", agent.id)
+                .eq("bundle_id", bundle.id)
+                .maybeSingle();
+
+              if (override?.wholesale_price) {
+                parentSellPrice = Number(override.wholesale_price);
+              } else {
+                const { data: parentAp } = await admin
+                  .from("agent_bundle_prices")
+                  .select("sell_price")
+                  .eq("agent_id", parentAgentId)
+                  .eq("bundle_id", bundle.id)
+                  .maybeSingle();
+                if (parentAp) {
+                  parentSellPrice = Number(parentAp.sell_price);
+                }
+              }
+              agentProfit = Math.max(0, sellPrice - parentSellPrice);
+              parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
+            } else {
+              agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
+            }
+
+            if (parentAgentId) {
+              const { data: parentAgent } = await admin
+                .from("agent_profiles")
+                .select("id, parent_agent_id")
+                .eq("id", parentAgentId)
+                .maybeSingle();
+              if (parentAgent?.parent_agent_id) {
+                grandparentAgentId = parentAgent.parent_agent_id;
+              }
+            }
+
+            if (grandparentAgentId) {
+              const totalProfitPool = Math.max(0, sellPrice - Number(bundle.base_price));
+              agentProfit = Number((totalProfitPool * 0.65).toFixed(2));
+              parentAgentProfit = Number((totalProfitPool * 0.25).toFixed(2));
+              grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
+            }
+
+            // Apply Coupon discounts to agent profits and sell prices
+            if (couponDiscount > 0) {
+              if (!isGlobalCoupon) {
+                // Sponsored by the store agent - deduct from their margin
+                agentProfit = Math.max(0, agentProfit - couponDiscount);
+              }
+              sellPrice = Math.max(0, sellPrice - couponDiscount);
+            }
+          }
+        }
+      }
+    } else {
+      // Direct purchase discount adjustment
+      if (couponDiscount > 0) {
+        sellPrice = Math.max(0, sellPrice - couponDiscount);
+      }
+    }
+  } else if (agentSlug) {
     const { data: agent } = await admin
       .from("agent_profiles")
-      .select("id, user_id, activation_paid, parent_agent_id")
+      .select("id, parent_agent_id")
       .eq("store_slug", agentSlug)
       .maybeSingle();
-
     if (agent) {
       agentId = agent.id;
       parentAgentId = agent.parent_agent_id;
       source = "agent_store";
-      if (agent.activation_paid) {
-        const { data: ap } = await admin
-          .from("agent_bundle_prices")
-          .select("sell_price")
-          .eq("agent_id", agent.id)
-          .eq("bundle_id", bundle.id)
-          .maybeSingle();
-        if (ap) {
-          sellPrice = Number(ap.sell_price);
-          
-          let parentSellPrice = Number(bundle.base_price);
-          if (parentAgentId) {
-            const { data: override } = await admin
-              .from("sub_agent_wholesale_overrides")
-              .select("wholesale_price")
-              .eq("sub_agent_id", agent.id)
-              .eq("bundle_id", bundle.id)
-              .maybeSingle();
-
-            if (override?.wholesale_price) {
-              parentSellPrice = Number(override.wholesale_price);
-            } else {
-              const { data: parentAp } = await admin
-                .from("agent_bundle_prices")
-                .select("sell_price")
-                .eq("agent_id", parentAgentId)
-                .eq("bundle_id", bundle.id)
-                .maybeSingle();
-              if (parentAp) {
-                parentSellPrice = Number(parentAp.sell_price);
-              }
-            }
-            agentProfit = Math.max(0, sellPrice - parentSellPrice);
-            parentAgentProfit = Math.max(0, parentSellPrice - Number(bundle.base_price));
-          } else {
-            agentProfit = Math.max(0, sellPrice - Number(bundle.base_price));
-          }
-
-          if (parentAgentId) {
-            const { data: parentAgent } = await admin
-              .from("agent_profiles")
-              .select("id, parent_agent_id")
-              .eq("id", parentAgentId)
-              .maybeSingle();
-            if (parentAgent?.parent_agent_id) {
-              grandparentAgentId = parentAgent.parent_agent_id;
-            }
-          }
-
-          if (grandparentAgentId) {
-            const totalProfitPool = Math.max(0, sellPrice - Number(bundle.base_price));
-            agentProfit = Number((totalProfitPool * 0.65).toFixed(2));
-            parentAgentProfit = Number((totalProfitPool * 0.25).toFixed(2));
-            grandparentAgentProfit = Number((totalProfitPool * 0.10).toFixed(2));
-          }
-
-          if (couponDiscount > 0) {
-            if (!isGlobalCoupon) {
-              agentProfit = Math.max(0, agentProfit - couponDiscount);
-            }
-            sellPrice = Math.max(0, sellPrice - couponDiscount);
-          }
-        }
-      }
-    }
-  } else {
-    if (couponDiscount > 0) {
-      sellPrice = Math.max(0, sellPrice - couponDiscount);
     }
   }
 
@@ -451,18 +524,29 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     customerPhone = prof?.phone ?? recipient;
   }
 
+  let networkId = bundle?.network_id || null;
+  if (!networkId && orderType === "airtime") {
+    const networkCode = payload.network_code || "MTN";
+    const { data: netRow } = await admin
+      .from("networks")
+      .select("id")
+      .eq("code", networkCode)
+      .maybeSingle();
+    networkId = netRow?.id || null;
+  }
+
   const { data: order, error: oErr } = await admin
     .from("orders")
     .insert({
       customer_user_id: customerUserId || null,
       customer_phone: customerPhone,
       recipient_phone: recipient,
-      network_id: bundle.network_id || null,
-      bundle_id: bundle.id || null,
+      network_id: networkId,
+      bundle_id: bundle?.id || null,
       agent_id: agentId || null,
       parent_agent_id: parentAgentId || null,
       source,
-      base_price: bundle.base_price,
+      base_price: basePrice,
       sell_price: sellPrice,
       agent_profit: agentProfit,
       parent_agent_profit: parentAgentProfit,
@@ -485,7 +569,9 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     throw new Error(oErr?.message ?? "Order create failed");
   }
 
-  if (customerPhone) {
+  const sizeLabel = orderType === "data" ? bundle?.size_label : (orderType === "airtime" ? "Airtime Top-up" : (payload.bill_type || "Bill Payment"));
+
+  if (customerPhone && orderType !== "airtime") {
     const isSelf = customerPhone === recipient;
     let waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
     try {
@@ -502,27 +588,47 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     }
 
     const msg = isSelf 
-      ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
-      : `Your OneGig order of ${bundle.size_label} for ${recipient} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
+      ? `Your OneGig order for ${sizeLabel} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
+      : `Your OneGig order of ${sizeLabel} for ${recipient} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
     
     sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
   }
 
-  const networkCode = (bundle.networks as any)?.code ?? "MTN";
+  const networkCode = orderType === "data" ? ((bundle?.networks as any)?.code ?? "MTN") : (payload.network_code || "MTN");
   const delivery = await deliverData(admin, {
     recipient,
     network_code: networkCode,
-    size_label: bundle.size_label,
-    size_mb: bundle.size_mb,
+    size_label: orderType === "data" ? bundle?.size_label : undefined,
+    size_mb: orderType === "data" ? bundle?.size_mb : undefined,
+    amount: sellPrice,
+    bill_type: payload.bill_type,
+    sender_name: payload.sender_name,
+    type: orderType,
+    request_id: order.id,
+    customer_phone: payload.customer_phone,
   });
 
-  const finalStatus = delivery.ok ? "delivered" : "failed";
+  const finalStatus = delivery.ok
+    ? (delivery.status === "fulfilled" || delivery.status === "delivered" ? "delivered" : "processing")
+    : "failed";
+
   await admin
     .from("orders")
-    .update({ status: finalStatus, notes: delivery.message ?? null })
+    .update({ 
+      status: finalStatus, 
+      notes: delivery.message || (delivery.provider_ref ? `Provider Ref: ${delivery.provider_ref}` : null) 
+    })
     .eq("id", order.id);
 
-  if (delivery.ok) {
+  if (delivery.ok && finalStatus === "delivered") {
+    if (customerPhone) {
+      let detailText = bundle ? bundle.size_label : (orderType === "airtime" ? `GHS ${sellPrice} Airtime` : `${payload.bill_type} Bill Payment`);
+      sendSMS({
+        to: customerPhone,
+        message: `Your OneGig purchase of ${detailText} for ${recipient} was successfully delivered! Thank you for choosing OneGig.`,
+      }).catch((err) => console.error("Success SMS Error:", err));
+    }
+
     if (agentId && agentProfit > 0) {
       const { data: agentRow } = await admin.from("agent_profiles").select("user_id").eq("id", agentId).maybeSingle();
       if (agentRow?.user_id) {

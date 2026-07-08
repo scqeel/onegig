@@ -57,3 +57,18 @@ entrypoint = "./functions/paystack-reconcile/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/auth-sms-webhook/index.ts"
+
+[functions.admin-provider-action]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/admin-provider-action/index.ts"
+
+[functions.payment-lookup]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/payment-lookup/index.ts"
+
+[functions.swiftdata-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/swiftdata-webhook/index.ts"

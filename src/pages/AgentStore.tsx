@@ -229,6 +229,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   // Order state
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkRow | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<BundleRow | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "non-expiry" | "monthly">("all");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
@@ -1511,77 +1512,120 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                     No active bundles available.
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {bundles.map((b, idx) => {
-                      const active = selectedBundle?.id === b.id;
-                      const isPopular = idx === 1 || idx === 4;
-                      const sellPrice = priceFor(b);
-                      const netStyle = getNetStyle(selectedNetwork.code);
-
-                      return (
+                  <>
+                    {/* Category Filter Sub-tabs */}
+                    <div className="mb-4 flex gap-1 p-1 bg-slate-100 dark:bg-[#0b0f19]/30 border border-slate-200 dark:border-white/5 rounded-2xl max-w-sm">
+                      {[
+                        { id: "all", label: "All" },
+                        { id: "non-expiry", label: "Non-Expiry" },
+                        { id: "monthly", label: "Regular/Monthly" }
+                      ].map((cat) => (
                         <button
+                          key={cat.id}
                           type="button"
-                          key={b.id}
-                          onClick={() => {
-                            setSelectedBundle(b);
-                            setCheckoutOpen(true);
-                          }}
+                          onClick={() => setCategoryFilter(cat.id as any)}
                           className={cn(
-                            "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
-                            active ? netStyle.cardActive : netStyle.cardIdle
+                            "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all duration-200",
+                            categoryFilter === cat.id
+                              ? "bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-white/10"
+                              : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                           )}
                         >
-                          {isPopular && !active && (
-                            <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm z-10">
-                              Popular
-                            </span>
-                          )}
-
-                          <div className="flex w-full justify-between items-start mb-5">
-                            {selectedNetwork.code.toUpperCase() === 'MTN' ? (
-                              <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
-                                <span className="text-[10px] font-black">MTN</span>
-                              </div>
-                            ) : selectedNetwork.code.toUpperCase() === 'TELECEL' ? (
-                              <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
-                                <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
-                                  <span className="text-[10px] font-bold text-white">t</span>
-                                </div>
-                              </div>
-                            ) : (selectedNetwork.code.toUpperCase() === 'AIRTELTIGO' || selectedNetwork.code.toUpperCase() === 'AT') ? (
-                              <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
-                                <span className="text-[10px] font-black text-white">AT</span>
-                              </div>
-                            ) : (
-                              <div className="flex h-6 items-center justify-center">
-                                <span className="text-[10px] font-black uppercase">{selectedNetwork.name}</span>
-                              </div>
-                            )}
-                            
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                            </div>
-                          </div>
-
-                          <span className="text-3xl font-black leading-none tracking-tight">
-                            {b.size_label}
-                          </span>
-                          <span className={cn("mt-1 text-xs font-medium opacity-80")}>
-                            {selectedNetwork.name} Bundle
-                          </span>
-                          
-                          <div className="mt-6 flex w-full items-end justify-between">
-                            <span className={cn("text-xl font-black tracking-tight")}>
-                              {formatGHS(sellPrice)}
-                            </span>
-                            <span className="text-[10px] font-semibold opacity-75">
-                              1-5 min
-                            </span>
-                          </div>
+                          {cat.label}
                         </button>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+
+                    {bundles.filter(b => {
+                      const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
+                      if (categoryFilter === "non-expiry") return isNonExpiry;
+                      if (categoryFilter === "monthly") return !isNonExpiry;
+                      return true;
+                    }).length === 0 ? (
+                      <div className="text-center text-xs text-slate-400 py-10 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 w-full">
+                        No bundles match the selected category.
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {bundles
+                          .filter(b => {
+                            const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
+                            if (categoryFilter === "non-expiry") return isNonExpiry;
+                            if (categoryFilter === "monthly") return !isNonExpiry;
+                            return true;
+                          })
+                          .map((b, idx) => {
+                            const active = selectedBundle?.id === b.id;
+                            const isPopular = idx === 1 || idx === 4;
+                            const sellPrice = priceFor(b);
+                            const netStyle = getNetStyle(selectedNetwork.code);
+
+                            return (
+                              <button
+                                type="button"
+                                key={b.id}
+                                onClick={() => {
+                                  setSelectedBundle(b);
+                                  setCheckoutOpen(true);
+                                }}
+                                className={cn(
+                                  "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
+                                  active ? netStyle.cardActive : netStyle.cardIdle
+                                )}
+                              >
+                                {isPopular && !active && (
+                                  <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-sm z-10">
+                                    Popular
+                                  </span>
+                                )}
+
+                                <div className="flex w-full justify-between items-start mb-5">
+                                  {selectedNetwork.code.toUpperCase() === 'MTN' ? (
+                                    <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
+                                      <span className="text-[10px] font-black">MTN</span>
+                                    </div>
+                                  ) : selectedNetwork.code.toUpperCase() === 'TELECEL' ? (
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
+                                      <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
+                                        <span className="text-[10px] font-bold text-white">t</span>
+                                      </div>
+                                    </div>
+                                  ) : (selectedNetwork.code.toUpperCase() === 'AIRTELTIGO' || selectedNetwork.code.toUpperCase() === 'AT') ? (
+                                    <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
+                                      <span className="text-[10px] font-black text-white">AT</span>
+                                    </div>
+                                  ) : (
+                                    <div className="flex h-6 items-center justify-center">
+                                      <span className="text-[10px] font-black uppercase">{selectedNetwork.name}</span>
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                  </div>
+                                </div>
+
+                                <span className="text-3xl font-black leading-none tracking-tight">
+                                  {b.size_label}
+                                </span>
+                                <span className={cn("mt-1 text-xs font-medium opacity-80")}>
+                                  {selectedNetwork.name} Bundle
+                                </span>
+                                
+                                <div className="mt-6 flex w-full items-end justify-between">
+                                  <span className={cn("text-xl font-black tracking-tight")}>
+                                    {formatGHS(sellPrice)}
+                                  </span>
+                                  <span className="text-[10px] font-semibold opacity-75">
+                                    1-5 min
+                                  </span>
+                                </div>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

@@ -68,6 +68,7 @@ export default function AgentStorePage() {
   // Order state
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkRow | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<BundleRow | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "non-expiry" | "monthly">("all");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
@@ -889,43 +890,84 @@ export default function AgentStorePage() {
                 ) : bundles.length === 0 ? (
                   <p className="text-center text-xs text-slate-400 py-4">No active bundles loaded in databases.</p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {bundles.map((b, idx) => {
-                      const active = selectedBundle?.id === b.id;
-                      const isPopular = idx === 1;
-                      const sellPrice = priceFor(b);
-
-                      return (
+                  <>
+                    {/* Category Filter Sub-tabs */}
+                    <div className="mb-4 flex gap-1 p-1 bg-slate-100 dark:bg-[#0b0f19]/30 border border-slate-200 dark:border-white/5 rounded-2xl max-w-sm">
+                      {[
+                        { id: "all", label: "All" },
+                        { id: "non-expiry", label: "Non-Expiry" },
+                        { id: "monthly", label: "Regular/Monthly" }
+                      ].map((cat) => (
                         <button
-                          key={b.id}
-                          onClick={() => {
-                            setSelectedBundle(b);
-                            setCheckoutOpen(true);
-                          }}
-                          className={`relative flex flex-col text-left p-3.5 rounded-2xl border transition-all duration-300 ${
-                            active
-                              ? "bg-slate-950 text-white border-rose-500"
-                              : "bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700"
-                          }`}
-                        >
-                          {isPopular && (
-                            <span className="absolute -top-2 left-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm">
-                              Popular
-                            </span>
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setCategoryFilter(cat.id as any)}
+                          className={cn(
+                            "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all duration-200",
+                            categoryFilter === cat.id
+                              ? "bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-white/10"
+                              : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
                           )}
-                          <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
-                            {selectedNetwork.name}
-                          </span>
-                          <span className="text-xl font-black tracking-tight leading-none mb-2">
-                            {b.size_label}
-                          </span>
-                          <span className={`text-xs font-black mt-auto ${active ? "text-rose-400" : "text-slate-800 dark:text-white"}`}>
-                            {formatGHS(sellPrice)}
-                          </span>
+                        >
+                          {cat.label}
                         </button>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+
+                    {bundles.filter(b => {
+                      const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
+                      if (categoryFilter === "non-expiry") return isNonExpiry;
+                      if (categoryFilter === "monthly") return !isNonExpiry;
+                      return true;
+                    }).length === 0 ? (
+                      <p className="text-center text-xs text-slate-400 py-4">No active bundles match the selected category.</p>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {bundles
+                          .filter(b => {
+                            const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
+                            if (categoryFilter === "non-expiry") return isNonExpiry;
+                            if (categoryFilter === "monthly") return !isNonExpiry;
+                            return true;
+                          })
+                          .map((b, idx) => {
+                            const active = selectedBundle?.id === b.id;
+                            const isPopular = idx === 1;
+                            const sellPrice = priceFor(b);
+
+                            return (
+                              <button
+                                key={b.id}
+                                onClick={() => {
+                                  setSelectedBundle(b);
+                                  setCheckoutOpen(true);
+                                }}
+                                className={`relative flex flex-col text-left p-3.5 rounded-2xl border transition-all duration-300 ${
+                                  active
+                                    ? "bg-slate-950 text-white border-rose-500"
+                                    : "bg-slate-50/50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700"
+                                }`}
+                              >
+                                {isPopular && (
+                                  <span className="absolute -top-2 left-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-sm">
+                                    Popular
+                                  </span>
+                                )}
+                                <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">
+                                  {selectedNetwork.name}
+                                </span>
+                                <span className="text-xl font-black tracking-tight leading-none mb-2">
+                                  {b.size_label}
+                                </span>
+                                <span className={`text-xs font-black mt-auto ${active ? "text-rose-400" : "text-slate-800 dark:text-white"}`}>
+                                  {formatGHS(sellPrice)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}

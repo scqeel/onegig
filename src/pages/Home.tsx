@@ -413,6 +413,39 @@ export default function HomePage() {
                 Ghana's fastest mobile data platform — MTN, Telecel & AirtelTigo bundles at wholesale rates. No signup, no wait times.
               </p>
 
+              {/* Real-time Gateway status bar */}
+              <div className={`mt-6 w-full max-w-md bg-white/[0.02] border border-white/5 rounded-3xl p-4 flex flex-col gap-3.5 animate-fade-up ${HD.para} backdrop-blur-md`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                    </span>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-white/80">ISP Gateways Status</span>
+                  </div>
+                  <span className="text-[9px] text-white/40 font-mono tracking-widest uppercase">Real-time</span>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { name: "MTN (AT)", gateway: "MTN gateway", speed: "1-2m", status: "Operational" },
+                    { name: "Telecel", gateway: "TELECEL gateway", speed: "<1m", status: "Operational" },
+                    { name: "AirtelTigo", gateway: "TELECEL gateway", speed: "2m", status: "Operational" }
+                  ].map((gateway) => (
+                    <div key={gateway.name} className="bg-black/30 border border-white/[0.03] p-3 rounded-2xl text-center shadow-inner">
+                      <span className="text-[9px] font-black text-slate-400 block uppercase leading-none mb-1.5">{gateway.name}</span>
+                      <span className="text-[10px] font-black text-emerald-400 block uppercase tracking-wider">Active</span>
+                      <span className="text-[9px] font-bold text-white/50 block mt-1">{gateway.speed} speed</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-white/60 border-t border-white/5 pt-2.5 px-1">
+                  <span>Speed: <strong className="text-emerald-400">Excellent ⚡</strong></span>
+                  <span>Latest Delivery: <strong>2 min ago</strong></span>
+                </div>
+              </div>
+
               <div className={`mt-8 flex flex-col sm:flex-row gap-3 w-full sm:w-auto animate-fade-up ${HD.btns}`}>
                 <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold bg-white text-slate-950 hover:bg-slate-100 hover:scale-[1.01] shadow-[0_12px_30px_-6px_rgba(139,92,246,0.3)] transition-all">
                   <Link to="/buy">Buy Data Now <ArrowRight className="ml-2 h-5 w-5" /></Link>
@@ -478,11 +511,13 @@ export default function HomePage() {
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {network.bundles.map((b, i) => {
                       const isBest = i === 0;
+                      const netCode = network.id === "mtn" ? "MTN" : (network.id === "telecel" ? "TELECEL" : "AT");
                       return (
-                        <div
+                        <Link
                           key={b.label}
+                          to={`/buy?network=${netCode}&bundleLabel=${encodeURIComponent(b.label)}`}
                           className={cn(
-                            "group flex items-center justify-between rounded-2xl border px-4 py-3.5 transition-all duration-200 cursor-pointer active:scale-[0.99]",
+                            "group flex items-center justify-between rounded-2xl border px-4 py-3.5 transition-all duration-200 cursor-pointer active:scale-[0.99] block",
                             isBest
                               ? `${network.rowHighlight} border-primary/20 dark:border-primary/30 shadow-[0_4px_12px_rgba(139,92,246,0.04)]`
                               : "border-slate-100 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-950/60"
@@ -506,7 +541,7 @@ export default function HomePage() {
                             "text-sm font-black tracking-tight",
                             isBest ? network.priceColor : "text-slate-900 dark:text-white"
                           )}>{b.price}</span>
-                        </div>
+                        </Link>
                       );
                     })}
                   </div>

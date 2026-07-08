@@ -4,7 +4,7 @@ import {
   Activity, BellRing, CheckCircle2, Clock, Cog, DollarSign, Globe2,
   Loader2, Package, RefreshCw, RotateCcw, Search, Settings, Shield,
   ShieldCheck, ShoppingCart, Trash2, TrendingUp, UserCog, Users,
-  Wallet, XCircle, Zap, Megaphone, Gift,
+  Wallet, XCircle, Zap, Megaphone, Gift, AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1831,6 +1831,15 @@ function IntegrationsSection() {
   const qc = useQueryClient();
   const [config, setConfig] = useState<any>(null);
 
+  // SwiftData Control Panel State
+  const [balances, setBalances] = useState<any>(null);
+  const [loadingBalances, setLoadingBalances] = useState(false);
+  const [gatewayStatus, setGatewayStatus] = useState<any>(null);
+  const [loadingStatus, setLoadingStatus] = useState(false);
+  const [transferAmount, setTransferAmount] = useState("");
+  const [transferDirection, setTransferDirection] = useState<"main_to_api" | "api_to_main">("main_to_api");
+  const [isTransferring, setIsTransferring] = useState(false);
+
   const { isLoading } = useQuery({
     queryKey: ["admin-integrations"],
     queryFn: async () => {
@@ -1850,6 +1859,37 @@ function IntegrationsSection() {
     },
   });
 
+  const fetchSwiftDataState = async () => {
+    setLoadingBalances(true);
+    setLoadingStatus(true);
+    try {
+      const { data: balData, error: balErr } = await supabase.functions.invoke("admin-provider-action", {
+        body: { action: "get_balance" }
+      });
+      if (!balErr && balData?.success) {
+        setBalances(balData);
+      }
+
+      const { data: statusData, error: statusErr } = await supabase.functions.invoke("admin-provider-action", {
+        body: { action: "service_status" }
+      });
+      if (!statusErr && statusData) {
+        setGatewayStatus(statusData);
+      }
+    } catch (e) {
+      console.error("Error fetching SwiftData info:", e);
+    } finally {
+      setLoadingBalances(false);
+      setLoadingStatus(false);
+    }
+  };
+
+  useEffect(() => {
+    if (config?.active === "swft" || config?.active === "swiftdata") {
+      fetchSwiftDataState();
+    }
+  }, [config]);
+
   const saveConfig = async (newConfig: any) => {
     const { error } = await supabase.from("app_settings").upsert({ key: "data_providers", value: newConfig });
     if (error) { toast({ title: "Save failed", description: error.message, variant: "destructive" }); return; }
@@ -1865,7 +1905,43 @@ function IntegrationsSection() {
     }));
   };
 
+  const handleTransfer = async () => {
+    const amt = Number(transferAmount);
+    if (isNaN(amt) || amt <= 0) {
+      toast({ title: "Invalid amount", description: "Please enter a valid transfer amount.", variant: "destructive" });
+      return;
+    }
+
+    setIsTransferring(true);
+    try {
+      const from = transferDirection === "main_to_api" ? "main" : "api";
+      const to = transferDirection === "main_to_api" ? "api" : "main";
+
+      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+        body: { action: "wallet_transfer", from, to, amount: amt }
+      });
+
+      if (error || !data?.success) {
+        toast({
+          title: "Transfer Failed",
+          description: data?.error || error?.message || "An error occurred during the transfer.",
+          variant: "destructive"
+        });
+      } else {
+        toast({ title: "Transfer Successful", description: `Successfully transferred GHS ${amt.toFixed(2)}.` });
+        setTransferAmount("");
+        fetchSwiftDataState();
+      }
+    } catch (e: any) {
+      toast({ title: "Transfer Error", description: e.message, variant: "destructive" });
+    } finally {
+      setIsTransferring(false);
+    }
+  };
+
   if (isLoading || !config) return <LoadingCard text="Loading integrations…" />;
+
+  const isSwiftActive = config.active === "swft" || config.active === "swiftdata";
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1911,6 +1987,131 @@ function IntegrationsSection() {
           })}
         </div>
       </div>
+
+      {/* SwiftData Control Panel */}
+      {isSwiftActive && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Balances & Transfer */}
+          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-border/45 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">SwiftData Wallet Balances</h3>
+                <p className="text-xs text-muted-foreground">Live Main and API wallets balance tracking</p>
+              </div>
+              <Button size="icon" variant="ghost" onClick={fetchSwiftDataState} disabled={loadingBalances} className="rounded-xl h-9 w-9">
+                <RefreshCw className={cn("h-4 w-4 text-slate-400", loadingBalances && "animate-spin")} />
+              </Button>
+            </div>
+
+            {/* Wallet cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-[#0b1021] border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Main Wallet</span>
+                <span className="text-xl font-bold text-white mt-2">
+                  {balances?.balance?.mainBalance !== undefined 
+                    ? formatGHS(Number(balances.balance.mainBalance)) 
+                    : (loadingBalances ? "..." : "GHS 0.00")}
+                </span>
+              </div>
+              <div className="bg-[#0b1021] border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">API (Fulfillment)</span>
+                <span className="text-xl font-bold text-emerald-400 mt-2">
+                  {balances?.balance?.apiBalance !== undefined 
+                    ? formatGHS(Number(balances.balance.apiBalance)) 
+                    : (loadingBalances ? "..." : "GHS 0.00")}
+                </span>
+              </div>
+            </div>
+
+            {/* Transfer form */}
+            <div className="border-t border-border/40 pt-4 space-y-4">
+              <h4 className="text-sm font-bold text-slate-200">Inter-Wallet Transfer</h4>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Direction</label>
+                  <select
+                    value={transferDirection}
+                    onChange={(e) => setTransferDirection(e.target.value as any)}
+                    className="h-10 w-full rounded-xl bg-[#080c1a] border border-slate-800 px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  >
+                    <option value="main_to_api">Main ➔ API Wallet</option>
+                    <option value="api_to_main">API ➔ Main Wallet</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (GHS)</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Transfer amount..."
+                    value={transferAmount}
+                    onChange={(e) => setTransferAmount(e.target.value)}
+                    className="h-10 rounded-xl bg-[#080c1a] border-slate-800 text-xs"
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={handleTransfer} 
+                disabled={isTransferring || !transferAmount} 
+                className="w-full h-10 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs"
+              >
+                {isTransferring ? "Executing Transfer..." : "Transfer Funds"}
+              </Button>
+            </div>
+          </div>
+
+          {/* ISP Gateways Status */}
+          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft p-6 space-y-6">
+            <div className="flex items-center justify-between border-b border-border/45 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white">ISP Gateway Statuses</h3>
+                <p className="text-xs text-muted-foreground">Real-time status of downstream ISP networks</p>
+              </div>
+              <Button size="icon" variant="ghost" onClick={fetchSwiftDataState} disabled={loadingStatus} className="rounded-xl h-9 w-9">
+                <RefreshCw className={cn("h-4 w-4 text-slate-400", loadingStatus && "animate-spin")} />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              {[
+                { name: "MTN Ghana", key: "MTN Ghana", gateway: "MTN gateway" },
+                { name: "Telecel (Vodafone)", key: "Telecel (Vodafone)", gateway: "TELECEL gateway" },
+                { name: "AirtelTigo (AT)", key: "AirtelTigo (AT)", gateway: "AT_PREMIUM gateway" }
+              ].map((isp) => {
+                const gatewayInfo = gatewayStatus?.gateways?.[isp.key];
+                const status = gatewayInfo?.status || "Unknown";
+                const isOp = status?.toLowerCase() === "operational" || status?.toLowerCase() === "active";
+                
+                return (
+                  <div key={isp.name} className="flex items-center justify-between p-3.5 bg-[#0b1021] border border-slate-800 rounded-xl">
+                    <div>
+                      <span className="text-sm font-semibold text-white block">{isp.name}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">{isp.gateway}</span>
+                    </div>
+                    {loadingStatus ? (
+                      <span className="h-2 w-10 rounded bg-slate-800 animate-pulse" />
+                    ) : (
+                      <span className={cn(
+                        "text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full",
+                        isOp ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                      )}>
+                        {status}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-3.5 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-300 leading-relaxed">
+                If an ISP gateway is listed as down, deliveries to that network may experience delays. Resellers will be automatically notified in their dashboards.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

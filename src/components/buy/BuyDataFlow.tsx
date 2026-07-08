@@ -20,6 +20,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+const isSamePhoneNumber = (num1: string, num2: string) => {
+  const clean1 = num1.replace(/\D/g, "");
+  const clean2 = num2.replace(/\D/g, "");
+  if (!clean1 || !clean2) return false;
+  return clean1.slice(-9) === clean2.slice(-9);
+};
+
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
 
 interface Props {
@@ -163,6 +170,7 @@ export function BuyDataFlow({
   const [network, setNetwork] = useState<NetworkRow | null>(null);
   const { data: bundles = [] } = useBundles(network?.id ?? null);
   const [bundle, setBundle] = useState<BundleRow | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<"all" | "non-expiry" | "monthly">("all");
   const [phone, setPhone] = useState(defaultPhone || "");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
@@ -176,6 +184,7 @@ export function BuyDataFlow({
   const [isVerifying, setIsVerifying] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
   const [payWithWallet, setPayWithWallet] = useState(false);
+  const [payWithSameNumber, setPayWithSameNumber] = useState(true);
 
   // Recipient Validation States
   const [recipientAccountName, setRecipientAccountName] = useState<string | null>(null);
@@ -198,14 +207,45 @@ export function BuyDataFlow({
     }
   }, [checkoutOpen, profile?.id]);
 
+  // Pre-select network from URL query string
   useEffect(() => {
-    if (!network && networks.length) setNetwork(networks[0]);
-    if (network && network.code) setMomoNetwork(network.code);
+    const params = new URLSearchParams(window.location.search);
+    const urlNet = params.get("network");
+    if (networks.length && !network) {
+      if (urlNet) {
+        const foundNet = networks.find(n => n.code.toUpperCase() === urlNet.toUpperCase());
+        if (foundNet) {
+          setNetwork(foundNet);
+          return;
+        }
+      }
+      setNetwork(networks[0]);
+    }
   }, [networks, network]);
+
+  // Pre-select bundle from URL query string once loaded
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlBundle = params.get("bundleLabel");
+    if (urlBundle && bundles.length && !bundle) {
+      const foundBundle = bundles.find(b => 
+        b.size_label.toLowerCase().includes(urlBundle.toLowerCase()) ||
+        urlBundle.toLowerCase().includes(b.size_label.toLowerCase())
+      );
+      if (foundBundle) {
+        setBundle(foundBundle);
+        setCheckoutOpen(true);
+      }
+    }
+  }, [bundles, bundle]);
+
+  useEffect(() => {
+    if (network && network.code) setMomoNetwork(network.code);
+  }, [network]);
 
   useEffect(() => {
     const num = momoNumber.replace(/\D/g, "");
-    if (num.length >= 10 && checkoutOpen && !payWithWallet) {
+    if (num.length >= 10 && checkoutOpen && !payWithWallet && !payWithSameNumber) {
       setAccountName(null);
       setIsVerifying(true);
       const timer = setTimeout(async () => {
@@ -243,6 +283,17 @@ export function BuyDataFlow({
     }
 
     setRecipientNetworkError(null);
+    if (num.length >= 3) {
+      const pfxNet = getNetworkFromPrefix(num);
+      if (pfxNet && networks.length) {
+        const found = networks.find(n => n.code.toUpperCase() === pfxNet || (pfxNet === "AT" && n.code.toUpperCase() === "AIRTELTIGO") || (pfxNet === "AIRTELTIGO" && n.code.toUpperCase() === "AT"));
+        if (found && (!network || network.id !== found.id)) {
+          setNetwork(found);
+          setBundle(null);
+        }
+      }
+    }
+
     if (num.length >= 3 && network) {
       const pfxNet = getNetworkFromPrefix(num);
       const expectedNet = network.code.toUpperCase();
@@ -349,8 +400,8 @@ export function BuyDataFlow({
         recipient_phone: phone.replace(/\D/g, ""),
         bundle_id: bundle.id,
         agent_slug: agentSlug ?? null,
-        momo_number: momoNumber,
-        momo_network: momoNetwork,
+        momo_number: payWithSameNumber ? phone.replace(/\D/g, "") : momoNumber.replace(/\D/g, ""),
+        momo_network: payWithSameNumber ? (network?.code || "MTN") : momoNetwork,
         email: profile?.email || "guest@mtopup.shop",
       },
     });
@@ -433,7 +484,7 @@ export function BuyDataFlow({
           agent_slug: agentSlug ?? null,
           email: profile?.email || "guest@mtopup.shop",
           return_url: window.location.origin + `/track`,
-          momo_number: momoNumber,
+          momo_number: payWithSameNumber ? phone.replace(/\D/g, "") : momoNumber.replace(/\D/g, ""),
         },
       });
 
@@ -862,81 +913,124 @@ export function BuyDataFlow({
             {network ? "No bundles available for this network." : "Select a network above."}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-            {bundles.map((b, i) => {
-              const active = bundle?.id === b.id;
-              const isPopular = i === 1;
-              const isBestValue = i === bundles.length - 1 && bundles.length > 2;
-              return (
+          <>
+            {/* Category Filter Sub-tabs */}
+            <div className="mb-4 flex gap-1 p-1 bg-[#0b0f19]/30 border border-white/5 rounded-2xl max-w-sm">
+              {[
+                { id: "all", label: "All" },
+                { id: "non-expiry", label: "Non-Expiry" },
+                { id: "monthly", label: "Regular/Monthly" }
+              ].map((cat) => (
                 <button
+                  key={cat.id}
                   type="button"
-                  key={b.id}
-                  onClick={() => {
-                    setBundle(b);
-                    setCheckoutOpen(true);
-                  }}
+                  onClick={() => setCategoryFilter(cat.id as any)}
                   className={cn(
-                    "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
-                    active ? netStyle.cardActive : netStyle.cardIdle
+                    "flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-200",
+                    categoryFilter === cat.id
+                      ? "bg-slate-900 text-white shadow-sm border border-white/10"
+                      : "text-slate-400 hover:text-white"
                   )}
                 >
-                  {/* Badges */}
-                  {isPopular && !active && (
-                    <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-soft z-10">
-                      Popular
-                    </span>
-                  )}
-                  {isBestValue && !active && (
-                    <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-success-foreground shadow-soft z-10">
-                      Best Value
-                    </span>
-                  )}
-
-                  <div className="flex w-full justify-between items-start mb-5">
-                    {network?.code.toUpperCase() === 'MTN' ? (
-                      <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
-                        <span className="text-[10px] font-black">MTN</span>
-                      </div>
-                    ) : network?.code.toUpperCase() === 'TELECEL' ? (
-                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
-                        <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
-                          <span className="text-[10px] font-bold text-white">t</span>
-                        </div>
-                      </div>
-                    ) : (network?.code.toUpperCase() === 'AIRTELTIGO' || network?.code.toUpperCase() === 'AT') ? (
-                      <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
-                        <span className="text-[10px] font-black text-white">AT</span>
-                      </div>
-                    ) : (
-                      <div className="flex h-6 items-center justify-center">
-                        <span className="text-[10px] font-black uppercase">{network?.name}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                    </div>
-                  </div>
-
-                  <span className="text-3xl font-black leading-none tracking-tight">
-                    {b.size_label}
-                  </span>
-                  <span className={cn("mt-1 text-xs font-medium opacity-80")}>
-                    {network?.name} Bundle
-                  </span>
-                  
-                  <div className="mt-6 flex w-full items-end justify-between">
-                    <span className={cn("text-xl font-black tracking-tight")}>
-                      {formatGHS(priceFor(b))}
-                    </span>
-                    <span className="text-[10px] font-semibold opacity-75">
-                      1-5 min
-                    </span>
-                  </div>
+                  {cat.label}
                 </button>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+
+            {bundles.filter(b => {
+              const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
+              if (categoryFilter === "non-expiry") return isNonExpiry;
+              if (categoryFilter === "monthly") return !isNonExpiry;
+              return true;
+            }).length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border py-8 text-center text-sm text-muted-foreground">
+                No bundles match the selected filter.
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                {bundles
+                  .filter(b => {
+                    const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
+                    if (categoryFilter === "non-expiry") return isNonExpiry;
+                    if (categoryFilter === "monthly") return !isNonExpiry;
+                    return true;
+                  })
+                  .map((b, i) => {
+                    const active = bundle?.id === b.id;
+                    const isPopular = i === 1;
+                    const isBestValue = i === bundles.length - 1 && bundles.length > 2;
+                    return (
+                      <button
+                        type="button"
+                        key={b.id}
+                        onClick={() => {
+                          setBundle(b);
+                          setCheckoutOpen(true);
+                        }}
+                        className={cn(
+                          "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
+                          active ? netStyle.cardActive : netStyle.cardIdle
+                        )}
+                      >
+                        {/* Badges */}
+                        {isPopular && !active && (
+                          <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-soft z-10">
+                            Popular
+                          </span>
+                        )}
+                        {isBestValue && !active && (
+                          <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-success-foreground shadow-soft z-10">
+                            Best Value
+                          </span>
+                        )}
+
+                        <div className="flex w-full justify-between items-start mb-5">
+                          {network?.code.toUpperCase() === 'MTN' ? (
+                            <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
+                              <span className="text-[10px] font-black">MTN</span>
+                            </div>
+                          ) : network?.code.toUpperCase() === 'TELECEL' ? (
+                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
+                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
+                                <span className="text-[10px] font-bold text-white">t</span>
+                              </div>
+                            </div>
+                          ) : (network?.code.toUpperCase() === 'AIRTELTIGO' || network?.code.toUpperCase() === 'AT') ? (
+                            <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
+                              <span className="text-[10px] font-black text-white">AT</span>
+                            </div>
+                          ) : (
+                            <div className="flex h-6 items-center justify-center">
+                              <span className="text-[10px] font-black uppercase">{network?.name}</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                          </div>
+                        </div>
+
+                        <span className="text-3xl font-black leading-none tracking-tight">
+                          {b.size_label}
+                        </span>
+                        <span className={cn("mt-1 text-xs font-medium opacity-80")}>
+                          {network?.name} Bundle
+                        </span>
+                        
+                        <div className="mt-6 flex w-full items-end justify-between">
+                          <span className={cn("text-xl font-black tracking-tight")}>
+                            {formatGHS(priceFor(b))}
+                          </span>
+                          <span className="text-[10px] font-semibold opacity-75">
+                            1-5 min
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            )}
+          </>
         )}
       </section>
 
@@ -1035,44 +1129,96 @@ export function BuyDataFlow({
 
               {/* Momo inputs are hidden if paying with wallet */}
               {!payWithWallet && (
-                <div className="space-y-1.5 pt-0.5 animate-in fade-in duration-300">
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                    Payment Number (MoMo)
-                  </label>
-                  <div className="flex gap-2">
-                    <div className="relative w-[95px] shrink-0">
-                      <select 
-                        className="w-full h-12 rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-3.5 pr-7 text-xs font-semibold shadow-inner outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white/80 dark:focus:bg-slate-950/80 transition-all cursor-pointer appearance-none"
-                        value={momoNetwork}
-                        onChange={(e) => setMomoNetwork(e.target.value)}
+                <div className="space-y-3 pt-0.5 animate-in fade-in duration-300">
+                  {/* Toggle for same number vs different number */}
+                  <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.04]">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                      MoMo Payment Number
+                    </span>
+                    <div className="flex gap-1.5 bg-slate-100/50 dark:bg-slate-950/40 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPayWithSameNumber(true);
+                          setMomoNumber("");
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all duration-300",
+                          payWithSameNumber
+                            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                            : "text-slate-400 dark:text-slate-500 hover:text-slate-600"
+                        )}
                       >
-                        <option value="MTN">MTN</option>
-                        <option value="TELECEL">Telecel</option>
-                        <option value="AIRTELTIGO">AT</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
-                    </div>
-                    <div className="relative flex-1 group">
-                      <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
-                      <Input
-                        inputMode="tel"
-                        value={momoNumber}
-                        onChange={(e) => setMomoNumber(e.target.value)}
-                        placeholder="e.g. 024 123 4567"
-                        className="h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-sm transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0"
-                      />
-                      {isVerifying && (
-                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                          <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                        </div>
-                      )}
+                        Same Number
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPayWithSameNumber(false);
+                          if (network?.code) setMomoNetwork(network.code);
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all duration-300",
+                          !payWithSameNumber
+                            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+                            : "text-slate-400 dark:text-slate-500 hover:text-slate-600"
+                        )}
+                      >
+                        Different
+                      </button>
                     </div>
                   </div>
-                  
-                  {accountName && !isVerifying && (
-                    <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                      <span className="truncate">{accountName}</span>
+
+                  {payWithSameNumber ? (
+                    <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-100/50 dark:border-white/[0.04] flex items-center gap-2">
+                      <Smartphone className="h-4 w-4 text-primary shrink-0" />
+                      <span>Request prompt on recipient number: <span className="font-mono text-slate-800 dark:text-white">{phone}</span></span>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 pt-0.5 animate-in slide-in-from-top-2 duration-300">
+                      <div className="flex gap-2">
+                        <div className="relative w-[95px] shrink-0">
+                          <select 
+                            className="w-full h-12 rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-3.5 pr-7 text-xs font-semibold shadow-inner outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white/80 dark:focus:bg-slate-950/80 transition-all cursor-pointer appearance-none"
+                            value={momoNetwork}
+                            onChange={(e) => setMomoNetwork(e.target.value)}
+                          >
+                            <option value="MTN">MTN</option>
+                            <option value="TELECEL">Telecel</option>
+                            <option value="AIRTELTIGO">AT</option>
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                        </div>
+                        <div className="relative flex-1 group">
+                          <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
+                          <Input
+                            inputMode="tel"
+                            value={momoNumber}
+                            onChange={(e) => setMomoNumber(e.target.value)}
+                            placeholder="e.g. 024 123 4567"
+                            className="h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-sm transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0 animate-in fade-in"
+                          />
+                          {isVerifying && (
+                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
+                              <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {accountName && !isVerifying && (
+                        <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                          <span className="truncate">{accountName}</span>
+                        </div>
+                      )}
+
+                      {isSamePhoneNumber(phone, momoNumber) && (
+                        <div className="mt-1.5 text-[10px] font-bold px-3 py-2 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                          <span className="shrink-0 text-red-500">⚠️</span>
+                          <span className="leading-tight">Recipient number cannot be the same as the paying MoMo number. Please use a different number to pay.</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1135,7 +1281,13 @@ export function BuyDataFlow({
                     !bundle ||
                     phone.replace(/\D/g, "").length < 9 ||
                     !!recipientNetworkError ||
-                    (!payWithWallet && (momoNumber.replace(/\D/g, "").length < 9 || isVerifying || accountName === "Unknown Account" || accountName === "Account not found"))
+                    (!payWithWallet && !payWithSameNumber && (
+                      momoNumber.replace(/\D/g, "").length < 9 || 
+                      isVerifying || 
+                      accountName === "Unknown Account" || 
+                      accountName === "Account not found" ||
+                      isSamePhoneNumber(phone, momoNumber)
+                    ))
                   }
                   className={cn(
                     "h-12 w-full rounded-[1.25rem] text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg transition-all active:scale-[0.97] hover:scale-[1.01] duration-300 flex items-center justify-center gap-1.5",

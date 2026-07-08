@@ -134,146 +134,172 @@ Deno.serve(async (req) => {
     let payload: Record<string, unknown> = {};
 
     if (body.purpose === "order") {
-      if (!body.bundle_id || !body.recipient_phone) {
-        return json({ error: "bundle_id and recipient_phone are required" }, 400);
-      }
+      const type = (body as any).type || "data";
 
-      // Query bundle, user role, agent profile, and coupon in parallel
-      const bundlePromise = admin
-        .from("bundles")
-        .select("id, base_price, user_price, size_label, network_id")
-        .eq("id", body.bundle_id)
-        .maybeSingle();
+      if (type === "data") {
+        if (!body.bundle_id || !body.recipient_phone) {
+          return json({ error: "bundle_id and recipient_phone are required" }, 400);
+        }
 
-      const rolePromise = userId
-        ? admin
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", userId)
-            .eq("role", "agent")
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null });
+        // Query bundle, user role, agent profile, and coupon in parallel
+        const bundlePromise = admin
+          .from("bundles")
+          .select("id, base_price, user_price, size_label, network_id")
+          .eq("id", body.bundle_id)
+          .maybeSingle();
 
-      const agentPromise = body.agent_slug
-        ? admin
-            .from("agent_profiles")
-            .select("id, activation_paid, user_id")
-            .eq("store_slug", body.agent_slug)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null });
+        const rolePromise = userId
+          ? admin
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", userId)
+              .eq("role", "agent")
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
 
-      const couponPromise = body.coupon_code
-        ? admin
-            .from("coupons")
-            .select("*")
-            .eq("code", String(body.coupon_code).trim().toUpperCase())
-            .eq("active", true)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null });
+        const agentPromise = body.agent_slug
+          ? admin
+              .from("agent_profiles")
+              .select("id, activation_paid, user_id")
+              .eq("store_slug", body.agent_slug)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
 
-      const [bundleRes, roleRes, agentRes, couponRes] = await Promise.all([
-        bundlePromise,
-        rolePromise,
-        agentPromise,
-        couponPromise,
-      ]);
+        const couponPromise = body.coupon_code
+          ? admin
+              .from("coupons")
+              .select("*")
+              .eq("code", String(body.coupon_code).trim().toUpperCase())
+              .eq("active", true)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
 
-      const bundle = bundleRes.data;
-      if (bundleRes.error || !bundle) return json({ error: "Bundle not found" }, 404);
+        const [bundleRes, roleRes, agentRes, couponRes] = await Promise.all([
+          bundlePromise,
+          rolePromise,
+          agentPromise,
+          couponPromise,
+        ]);
 
-      amount = Number(bundle.user_price ?? bundle.base_price);
-      let source: "direct" | "agent_store" = "direct";
+        const bundle = bundleRes.data;
+        if (bundleRes.error || !bundle) return json({ error: "Bundle not found" }, 404);
 
-      const roleRow = roleRes.data;
-      if (roleRow?.role === "agent") {
-        amount = Number(bundle.base_price);
-      }
+        amount = Number(bundle.user_price ?? bundle.base_price);
+        let source: "direct" | "agent_store" = "direct";
 
-      const agent = agentRes.data;
-      if (agent) {
-        source = "agent_store";
-      }
+        const roleRow = roleRes.data;
+        if (roleRow?.role === "agent") {
+          amount = Number(bundle.base_price);
+        }
 
-      // Now query agent bundle price if agent is active, and loyalty points if points are redeemed
-      const agentPricePromise = (agent && agent.activation_paid)
-        ? admin
-            .from("agent_bundle_prices")
-            .select("sell_price")
-            .eq("agent_id", agent.id)
-            .eq("bundle_id", bundle.id)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null });
+        const agent = agentRes.data;
+        if (agent) {
+          source = "agent_store";
+        }
 
-      const loyaltyPromise = (body.points_redeemed && body.points_redeemed > 0 && userId && agent)
-        ? admin
-            .from("loyalty_points")
-            .select("points_balance")
-            .eq("user_id", userId)
-            .eq("agent_id", agent.id)
-            .maybeSingle()
-        : Promise.resolve({ data: null, error: null });
+        // Now query agent bundle price if agent is active, and loyalty points if points are redeemed
+        const agentPricePromise = (agent && agent.activation_paid)
+          ? admin
+              .from("agent_bundle_prices")
+              .select("sell_price")
+              .eq("agent_id", agent.id)
+              .eq("bundle_id", bundle.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
 
-      const [agentPriceRes, loyaltyRes] = await Promise.all([
-        agentPricePromise,
-        loyaltyPromise,
-      ]);
+        const loyaltyPromise = (body.points_redeemed && body.points_redeemed > 0 && userId && agent)
+          ? admin
+              .from("loyalty_points")
+              .select("points_balance")
+              .eq("user_id", userId)
+              .eq("agent_id", agent.id)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
 
-      if (agentPriceRes.data?.sell_price != null) {
-        amount = Number(agentPriceRes.data.sell_price);
-      }
+        const [agentPriceRes, loyaltyRes] = await Promise.all([
+          agentPricePromise,
+          loyaltyPromise,
+        ]);
 
-      // Secure Server-side Coupon Validation
-      let discountAmount = 0;
-      const coupon = couponRes.data;
-      if (coupon) {
-        if (Number(coupon.current_uses) < Number(coupon.max_uses)) {
-          let isValidForStore = true;
-          if (coupon.agent_id) {
-            if (agent) {
-              if (agent.id !== coupon.agent_id) {
+        if (agentPriceRes.data?.sell_price != null) {
+          amount = Number(agentPriceRes.data.sell_price);
+        }
+
+        // Secure Server-side Coupon Validation
+        let discountAmount = 0;
+        const coupon = couponRes.data;
+        if (coupon) {
+          if (Number(coupon.current_uses) < Number(coupon.max_uses)) {
+            let isValidForStore = true;
+            if (coupon.agent_id) {
+              if (agent) {
+                if (agent.id !== coupon.agent_id) {
+                  isValidForStore = false;
+                }
+              } else {
                 isValidForStore = false;
               }
-            } else {
-              isValidForStore = false;
+            }
+
+            if (isValidForStore) {
+              discountAmount = Math.min(amount, Number(coupon.discount_amount));
             }
           }
+        }
 
-          if (isValidForStore) {
-            discountAmount = Math.min(amount, Number(coupon.discount_amount));
+        let loyaltyDiscount = 0;
+        const loyaltyRow = loyaltyRes.data;
+        if (loyaltyRow && body.points_redeemed) {
+          const pointsAvailable = loyaltyRow.points_balance ?? 0;
+          const maxPointsToDeduct = Math.floor(pointsAvailable / 10); // max discount in GHS
+          
+          if (maxPointsToDeduct > 0) {
+            loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
+            // Cap discount so that the customer pays at least GHS 1.00 before transaction fee
+            loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
           }
         }
-      }
 
-      let loyaltyDiscount = 0;
-      const loyaltyRow = loyaltyRes.data;
-      if (loyaltyRow && body.points_redeemed) {
-        const pointsAvailable = loyaltyRow.points_balance ?? 0;
-        const maxPointsToDeduct = Math.floor(pointsAvailable / 10); // max discount in GHS
-        
-        if (maxPointsToDeduct > 0) {
-          loyaltyDiscount = Math.min(body.points_redeemed, maxPointsToDeduct);
-          // Cap discount so that the customer pays at least GHS 1.00 before transaction fee
-          loyaltyDiscount = Math.min(loyaltyDiscount, amount - discountAmount - 1);
+        const baseAmount = Math.max(1, amount - discountAmount - loyaltyDiscount);
+        const fee = baseAmount * 0.03;
+        amount = baseAmount + fee; // Add 3% payment fee
+
+        payload = {
+          type,
+          bundle_id: body.bundle_id,
+          recipient_phone: body.recipient_phone,
+          agent_slug: body.agent_slug ?? null,
+          source,
+          base_amount: baseAmount,
+          fee,
+          coupon_code: body.coupon_code || null,
+          coupon_discount: discountAmount,
+          subscribe: body.subscribe || false,
+          frequency: body.frequency || null,
+          points_redeemed: loyaltyDiscount > 0 ? loyaltyDiscount : null,
+        };
+      } else {
+        // airtime or bill
+        if (!body.recipient_phone || !body.amount || Number(body.amount) <= 0) {
+          return json({ error: "recipient_phone and positive amount are required" }, 400);
         }
+
+        const baseAmount = Number(body.amount);
+        const fee = baseAmount * 0.03;
+        amount = baseAmount + fee; // Add 3% payment fee
+
+        payload = {
+          type,
+          recipient_phone: body.recipient_phone,
+          agent_slug: body.agent_slug ?? null,
+          source: body.agent_slug ? "agent_store" : "direct",
+          base_amount: baseAmount,
+          fee,
+          network_code: (body as any).network_code,
+          bill_type: (body as any).bill_type,
+          sender_name: (body as any).sender_name,
+        };
       }
-
-      const baseAmount = Math.max(1, amount - discountAmount - loyaltyDiscount);
-      const fee = baseAmount * 0.03;
-      amount = baseAmount + fee; // Add 3% payment fee
-
-      payload = {
-        bundle_id: body.bundle_id,
-        recipient_phone: body.recipient_phone,
-        agent_slug: body.agent_slug ?? null,
-        source,
-        base_amount: baseAmount,
-        fee,
-        coupon_code: body.coupon_code || null,
-        coupon_discount: discountAmount,
-        subscribe: body.subscribe || false,
-        frequency: body.frequency || null,
-        points_redeemed: loyaltyDiscount > 0 ? loyaltyDiscount : null,
-      };
     }
 
     if (body.purpose === "agent_activation") {

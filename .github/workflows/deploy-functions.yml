@@ -20,15 +20,15 @@ jobs:
 
       - name: Deploy edge functions
         run: |
-          supabase functions deploy admin-provider-action --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt
+          supabase functions deploy admin-provider-action --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} --no-verify-jwt > deploy_output.txt 2>&1 || true
+          cat deploy_output.txt
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Set provider secrets
+      - name: Commit and push deploy logs
         run: |
-          supabase secrets set \
-            DEVELOPER_API_KEY=${{ secrets.DEVELOPER_API_KEY }} \
-            DEVELOPER_API_BASE_URL=https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api \
-            --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} || echo "Failed to set secrets"
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add deploy_output.txt
+          git commit -m "chore: upload deploy logs [skip ci]" || echo "No changes to commit"
+          git push origin main || echo "Failed to push"

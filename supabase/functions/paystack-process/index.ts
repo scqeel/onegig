@@ -279,14 +279,14 @@ Deno.serve(async (req) => {
           points_redeemed: loyaltyDiscount > 0 ? loyaltyDiscount : null,
         };
       } else {
-        // airtime or bill
+        // airtime or bill (No extra processing fees charged)
         if (!body.recipient_phone || !body.amount || Number(body.amount) <= 0) {
           return json({ error: "recipient_phone and positive amount are required" }, 400);
         }
 
         const baseAmount = Number(body.amount);
-        const fee = baseAmount * 0.03;
-        amount = baseAmount + fee; // Add 3% payment fee
+        const fee = 0; // 0% fee on airtime and utilities
+        amount = baseAmount;
 
         payload = {
           type,
@@ -294,7 +294,7 @@ Deno.serve(async (req) => {
           agent_slug: body.agent_slug ?? null,
           source: body.agent_slug ? "agent_store" : "direct",
           base_amount: baseAmount,
-          fee,
+          fee: 0,
           network_code: (body as any).network_code,
           bill_type: (body as any).bill_type,
           sender_name: (body as any).sender_name,

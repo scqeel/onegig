@@ -441,18 +441,21 @@ export default function HomePage() {
               </p>
 
               {/* Instant Interactive Quick Order Console */}
-              <div className="w-full max-w-lg rounded-3xl border border-purple-500/30 bg-[#0a0f1e]/90 p-4.5 shadow-2xl backdrop-blur-2xl space-y-3.5">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-purple-400 animate-pulse" /> Express Direct Order
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                    ⚡ Under 35s Delivery
+              <div className="w-full max-w-lg rounded-[2rem] border border-purple-500/30 bg-[#090d1c]/95 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-200">
+                      Express Direct Console
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/30 shadow-sm">
+                    ⚡ Instant Delivery Ready
                   </span>
                 </div>
 
-                {/* Instant Network Selection Buttons */}
-                <div className="grid grid-cols-4 gap-1.5">
+                {/* Network Segmented Switcher Pills */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {NETWORKS.map((n) => {
                     const active = activeNetwork === n.id;
                     return (
@@ -461,35 +464,49 @@ export default function HomePage() {
                         key={n.id}
                         onClick={() => setActiveNetwork(n.id)}
                         className={cn(
-                          "flex flex-col items-center justify-center p-2.5 rounded-2xl border text-xs font-black transition-all duration-300",
+                          "flex items-center justify-center gap-2 p-2.5 rounded-2xl border text-xs font-black transition-all duration-300 cursor-pointer",
                           active
-                            ? `${n.activeClass} scale-[1.03] ring-2 ring-purple-500/40`
-                            : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-white"
+                            ? `${n.activeClass} scale-[1.02] shadow-md ring-2 ring-purple-500/30`
+                            : "border-slate-800 bg-slate-950/70 text-slate-400 hover:border-slate-700 hover:text-white"
                         )}
                       >
-                        <span className="text-base">{n.emoji}</span>
-                        <span className="text-[10px] truncate">{n.name}</span>
+                        <span className="text-sm shrink-0">{n.emoji}</span>
+                        <span className="truncate text-[11px]">{n.id === "result_checkers" ? "Checkers" : n.name}</span>
                       </button>
                     );
                   })}
                 </div>
 
-                {/* Quick Action Button Bar */}
-                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                {/* Selected Package Quick Preview */}
+                <div className="flex items-center justify-between rounded-2xl border border-slate-800/80 bg-slate-950/80 px-4 py-3 text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-lg">{network.emoji}</span>
+                    <div>
+                      <span className="font-extrabold text-white block">{network.name} Popular Bundle</span>
+                      <span className="text-[11px] text-slate-400 font-medium">{network.bundles[0]?.label} — <strong className="text-emerald-400 font-extrabold">{network.bundles[0]?.price}</strong></span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-white/5 px-2 py-1 rounded-md border border-white/10">
+                    Wholesale
+                  </span>
+                </div>
+
+                {/* Action Button Bar */}
+                <div className="grid sm:grid-cols-12 gap-2.5 pt-1">
                   <Button
                     asChild
                     size="lg"
-                    className="flex-1 h-13 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-purple-500/30 transition-all hover:scale-[1.01]"
+                    className="sm:col-span-8 h-13 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-purple-500/25 transition-all hover:scale-[1.01]"
                   >
                     <Link to={`/buy?network=${network.id.toUpperCase()}`}>
-                      Order {network.name} Now <ArrowRight className="ml-2 h-4 w-4" />
+                      Buy {network.name} Now <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
                   <Button
                     asChild
                     variant="outline"
                     size="lg"
-                    className="h-13 rounded-2xl border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800 hover:text-white font-bold text-xs px-5 backdrop-blur-xl"
+                    className="sm:col-span-4 h-13 rounded-2xl border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800 hover:text-white font-bold text-xs px-4 backdrop-blur-xl"
                   >
                     <Link to="/track">Track Order 📦</Link>
                   </Button>

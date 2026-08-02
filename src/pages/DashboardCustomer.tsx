@@ -1,6 +1,22 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { 
+  History, 
+  BriefcaseBusiness, 
+  Gift, 
+  User, 
+  LogOut, 
+  ShoppingCart, 
+  Search, 
+  Smartphone, 
+  ArrowRight, 
+  Loader2, 
+  Calendar, 
+  Check, 
+  Copy, 
+  ExternalLink 
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";

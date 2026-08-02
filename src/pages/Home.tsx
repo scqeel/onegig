@@ -407,81 +407,82 @@ export default function HomePage() {
             
             {/* Left Content Column */}
             <div className="w-full text-center lg:col-span-6 lg:text-left flex flex-col items-center lg:items-start">
-              {/* Badge */}
-              <div className={`mb-6 sm:mb-8 animate-hero-badge ${HD.badge} w-fit`}>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/80 backdrop-blur-md">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-400" />
+              {/* Animated Live Pill */}
+              <div className={`mb-6 animate-hero-badge ${HD.badge} w-fit`}>
+                <span className="inline-flex items-center gap-2.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-black text-purple-300 backdrop-blur-xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
                   </span>
-                  Ghana's #1 wholesale data platform
-                  <span className="rounded-full bg-primary/25 px-2 py-0.5 text-[9px] font-black tracking-wider text-white">LIVE</span>
+                  <span>Ghana's #1 Instant Data & Result Checkers Platform</span>
+                  <span className="rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm">
+                    LIVE
+                  </span>
                 </span>
               </div>
 
-              <h1 className="text-4xl sm:text-5xl font-black leading-[1.05] tracking-tight md:text-6xl lg:text-[4.25rem] text-white">
-                <span className={`block animate-fade-up ${HD.l1}`}>Buy data.</span>
-                <span className={`block hero-gradient-text-v2 animate-fade-up ${HD.l2}`}>Save more.</span>
-                <span className={`block text-white/40 font-bold animate-fade-up ${HD.l3}`}>Deliver instantly.</span>
+              {/* Main Headline */}
+              <h1 className="text-4xl sm:text-5xl font-black leading-[1.04] tracking-tight md:text-6xl lg:text-[4.25rem] text-white">
+                <span className={`block animate-fade-up ${HD.l1}`}>Buy Data.</span>
+                <span className={`block bg-gradient-to-r from-purple-400 via-fuchsia-300 to-indigo-300 bg-clip-text text-transparent animate-fade-up ${HD.l2}`}>Save Huge.</span>
+                <span className={`block text-white/50 font-extrabold animate-fade-up ${HD.l3}`}>Instant Delivery ⚡</span>
               </h1>
 
-              <p className={`mt-5 max-w-md text-base sm:text-lg leading-relaxed text-white/50 animate-fade-up ${HD.para}`}>
-                Ghana's fastest mobile data platform — MTN, Telecel & AirtelTigo bundles at wholesale rates. No signup, no wait times.
+              <p className={`mt-5 max-w-md text-base sm:text-lg leading-relaxed text-slate-300/80 animate-fade-up ${HD.para} font-medium`}>
+                Ghana's fastest wholesale platform — MTN Non-Expiry, Telecel, AirtelTigo, and WAEC Result Checkers at wholesale prices. No account needed.
               </p>
 
-              {/* Real-time Gateway status bar */}
-              <div className={`mt-6 w-full max-w-md bg-white/[0.02] border border-white/5 rounded-3xl p-4 flex flex-col gap-3.5 animate-fade-up ${HD.para} backdrop-blur-md`}>
-                <div className="flex items-center justify-between">
+              {/* Real-time Telecom Gateway Status widget */}
+              <div className={`mt-6 w-full max-w-md bg-slate-950/60 border border-slate-800/80 rounded-3xl p-4.5 flex flex-col gap-3 animate-fade-up ${HD.para} backdrop-blur-xl shadow-2xl`}>
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
                   <div className="flex items-center gap-2">
                     <span className="relative flex h-2 w-2">
                       <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                     </span>
-                    <span className="text-[11px] font-black uppercase tracking-widest text-white/80">ISP Gateways Status</span>
+                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-200">Telecom API Gateway Status</span>
                   </div>
-                  <span className="text-[9px] text-white/40 font-mono tracking-widest uppercase">Real-time</span>
+                  <span className="text-[10px] text-emerald-400 font-mono font-bold tracking-widest uppercase bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    Active 🟢
+                  </span>
                 </div>
                 
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { name: "MTN (AT)", gateway: "MTN gateway", speed: "1-2m", status: "Operational" },
-                    { name: "Telecel", gateway: "TELECEL gateway", speed: "<1m", status: "Operational" },
-                    { name: "AirtelTigo", gateway: "TELECEL gateway", speed: "2m", status: "Operational" }
+                    { name: "MTN (Yello)", speed: "< 45s", status: "Active" },
+                    { name: "Telecel", speed: "< 30s", status: "Active" },
+                    { name: "AirtelTigo", speed: "< 30s", status: "Active" }
                   ].map((gateway) => (
-                    <div key={gateway.name} className="bg-black/30 border border-white/[0.03] p-3 rounded-2xl text-center shadow-inner">
-                      <span className="text-[9px] font-black text-slate-400 block uppercase leading-none mb-1.5">{gateway.name}</span>
-                      <span className="text-[10px] font-black text-emerald-400 block uppercase tracking-wider">Active</span>
-                      <span className="text-[9px] font-bold text-white/50 block mt-1">{gateway.speed} speed</span>
+                    <div key={gateway.name} className="bg-slate-900/80 border border-slate-800 p-2.5 rounded-2xl text-center shadow-inner">
+                      <span className="text-[10px] font-black text-slate-300 block uppercase truncate mb-1">{gateway.name}</span>
+                      <span className="text-[10px] font-bold text-emerald-400 block">{gateway.speed} speed</span>
                     </div>
                   ))}
-                </div>
-
-                <div className="flex items-center justify-between text-[10px] text-white/60 border-t border-white/5 pt-2.5 px-1">
-                  <span>Speed: <strong className="text-emerald-400">Excellent ⚡</strong></span>
-                  <span>Latest Delivery: <strong>2 min ago</strong></span>
                 </div>
               </div>
 
               {/* DataHub Live MTN Order Delivery Widget */}
               <MtnStatusWidget className="mt-4 w-full max-w-md" />
 
-              <div className={`mt-8 flex flex-col sm:flex-row gap-3 w-full sm:w-auto animate-fade-up ${HD.btns}`}>
-                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold bg-white text-slate-950 hover:bg-slate-100 hover:scale-[1.01] shadow-[0_12px_30px_-6px_rgba(139,92,246,0.3)] transition-all">
+              {/* Action Buttons */}
+              <div className={`mt-7 flex flex-col sm:flex-row gap-3.5 w-full sm:w-auto animate-fade-up ${HD.btns}`}>
+                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-black bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-xl shadow-purple-500/25 transition-all hover:scale-[1.02]">
                   <Link to="/buy">Buy Data Now <ArrowRight className="ml-2 h-5 w-5" /></Link>
                 </Button>
-                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-semibold border border-white/10 text-white/80 bg-white/[0.04] hover:bg-white/10 hover:text-white backdrop-blur-md transition-all hover:scale-[1.01]">
+                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold border border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 hover:text-white backdrop-blur-xl transition-all hover:scale-[1.02]">
                   <Link to="/auth?intent=agent">Become an Agent <ChevronRight className="ml-1 h-5 w-5" /></Link>
                 </Button>
               </div>
 
-              <div className={`mt-8 flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2.5 animate-fade-up ${HD.pips}`}>
+              {/* Pips */}
+              <div className={`mt-7 flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 animate-fade-up ${HD.pips}`}>
                 {[
-                  { icon: CheckCircle, text: "No account needed" },
-                  { icon: Zap,         text: "Under 60s delivery" },
-                  { icon: ShieldCheck, text: "Secured payments" },
+                  { icon: CheckCircle, text: "No signup required" },
+                  { icon: Zap,         text: "< 60s fast delivery" },
+                  { icon: ShieldCheck, text: "MoMo & Card accepted" },
                 ].map(({ icon: Icon, text }) => (
-                  <span key={text} className="inline-flex items-center gap-2 text-xs sm:text-sm text-white/40">
-                    <Icon className="h-4 w-4 text-green-400/80" /> {text}
+                  <span key={text} className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-400">
+                    <Icon className="h-4 w-4 text-emerald-400" /> {text}
                   </span>
                 ))}
               </div>
@@ -489,13 +490,13 @@ export default function HomePage() {
 
             {/* Right Interactive Cockpit Column */}
             <div className={`w-full max-w-md lg:col-span-6 lg:max-w-none relative animate-slide-right ${HD.card}`}>
-              <div className="pointer-events-none absolute inset-0 -m-6 rounded-3xl bg-primary/10 blur-3xl animate-float-pulse" />
+              <div className="pointer-events-none absolute inset-0 -m-6 rounded-3xl bg-purple-600/15 blur-3xl animate-float-pulse" />
 
-              <div className="relative overflow-hidden rounded-[2.25rem] border border-white/[0.08] bg-white/[0.02] p-2 sm:p-2.5 shadow-[0_24px_64px_rgba(0,0,0,0.6)] backdrop-blur-3xl">
-                <div className="rounded-[1.75rem] bg-white/95 dark:bg-slate-900/95 p-5 sm:p-6 shadow-inner backdrop-blur-md">
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-800 bg-[#0a0f1d]/90 p-3 sm:p-4 shadow-2xl backdrop-blur-2xl">
+                <div className="rounded-[2rem] bg-slate-950 p-5 sm:p-6 border border-slate-800/80 shadow-inner">
 
                   {/* Network selection tabs */}
-                  <div className="mb-6 flex gap-1.5 rounded-2xl bg-slate-100/80 dark:bg-slate-950/50 p-1">
+                  <div className="mb-6 grid grid-cols-4 gap-1 rounded-2xl bg-slate-900/90 p-1 border border-slate-800">
                     {NETWORKS.map((n) => {
                       const active = activeNetwork === n.id;
                       return (
@@ -504,13 +505,13 @@ export default function HomePage() {
                           key={n.id}
                           onClick={() => setActiveNetwork(n.id)}
                           className={cn(
-                            "flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-xs font-black tracking-tight transition-all duration-300",
+                            "flex items-center justify-center gap-1 rounded-xl py-2.5 text-[11px] font-black tracking-tight transition-all duration-300",
                             active
                               ? n.activeClass
-                              : "text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                              : "text-slate-400 hover:text-white hover:bg-slate-800/50"
                           )}
                         >
-                          <span className="text-sm shrink-0">{n.emoji}</span>
+                          <span className="text-xs shrink-0">{n.emoji}</span>
                           <span className="truncate">{n.name}</span>
                         </button>
                       );
@@ -520,7 +521,7 @@ export default function HomePage() {
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className={`h-2.5 w-2.5 rounded-full ${network.dotColor} animate-pulse`} />
-                      <p className="text-sm font-black text-slate-900 dark:text-white">{network.name} Active Bundles</p>
+                      <p className="text-sm font-black text-white">{network.name} Active Bundles</p>
                     </div>
                     <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-tight uppercase ${network.tagColor}`}>
                       {network.tag}
@@ -530,7 +531,7 @@ export default function HomePage() {
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {network.bundles.map((b, i) => {
                       const isBest = i === 0;
-                      const netCode = network.id === "mtn" ? "MTN" : (network.id === "telecel" ? "TELECEL" : "AT");
+                      const netCode = network.id === "mtn" ? "MTN" : (network.id === "telecel" ? "TELECEL" : (network.id === "result_checkers" ? "RESULT_CHECKER" : "AT"));
                       return (
                         <Link
                           key={b.label}
@@ -538,51 +539,51 @@ export default function HomePage() {
                           className={cn(
                             "group flex items-center justify-between rounded-2xl border px-4 py-3.5 transition-all duration-200 cursor-pointer active:scale-[0.99] block",
                             isBest
-                              ? `${network.rowHighlight} border-primary/20 dark:border-primary/30 shadow-[0_4px_12px_rgba(139,92,246,0.04)]`
-                              : "border-slate-100 dark:border-slate-800/80 bg-white/50 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-950/60"
+                              ? `${network.rowHighlight} border-purple-500/40 shadow-lg shadow-purple-500/10`
+                              : "border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-slate-700"
                           )}
                         >
                           <div className="flex items-center gap-3">
                             <div className={cn(
                               "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors",
-                              isBest ? "bg-primary/10 text-primary" : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                              isBest ? "bg-purple-500/20 text-purple-300" : "bg-slate-800 text-slate-400"
                             )}>
                               <Smartphone className="h-4 w-4" />
                             </div>
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-sm font-black text-slate-900 dark:text-white leading-tight">{b.label}</span>
+                              <span className="text-sm font-black text-white leading-tight">{b.label}</span>
                               {isBest && (
-                                <span className="text-[9px] font-black uppercase tracking-wider text-primary leading-none"> reseller choice </span>
+                                <span className="text-[9px] font-black uppercase tracking-wider text-purple-400 leading-none"> Reseller Choice </span>
                               )}
                             </div>
                           </div>
                           <span className={cn(
                             "text-sm font-black tracking-tight",
-                            isBest ? network.priceColor : "text-slate-900 dark:text-white"
+                            isBest ? network.priceColor : "text-white"
                           )}>{b.price}</span>
                         </Link>
                       );
                     })}
                   </div>
 
-                  <Button asChild className="mt-5 h-12 w-full rounded-2xl gradient-primary font-bold shadow-[0_8px_20px_rgba(139,92,246,0.25)] hover:shadow-[0_12px_28px_rgba(139,92,246,0.35)] text-sm transition-all active:scale-[0.98]">
-                    <Link to="/buy">Order Now <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
+                  <Button asChild className="mt-5 h-13 w-full rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 font-black shadow-xl shadow-purple-500/20 text-sm transition-all hover:scale-[1.01] active:scale-[0.98]">
+                    <Link to="/buy">Order {network.name} Now <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
                   </Button>
 
-                  <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                    <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
-                    <span>Secure processing by PCI-DSS platform</span>
+                  <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-extrabold text-slate-400">
+                    <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                    <span>Instant Telecom Dispatch · 256-Bit Encrypted</span>
                   </div>
                 </div>
               </div>
 
               {/* Floating badges with glassmorphic backing & hover effects */}
-              <div className={`absolute -right-2 -top-4 flex items-center gap-1.5 rounded-full border border-slate-200/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-lg backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb1} hover:scale-105 transition-transform`}>
-                <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                <span className="text-xs font-black text-slate-900 dark:text-white">4.8</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">· 3.2k reviews</span>
+              <div className={`absolute -right-2 -top-4 flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-slate-900/90 px-3.5 py-2 shadow-xl backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb1} hover:scale-105 transition-transform`}>
+                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
+                <span className="text-xs font-black text-white">4.9</span>
+                <span className="text-[10px] text-slate-400 font-bold">· 12.4k orders fulfilled</span>
               </div>
-              <div className={`absolute -left-2 bottom-16 flex items-center gap-2 rounded-full border border-slate-200/50 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 px-3.5 py-2 shadow-lg backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb2} hover:scale-105 transition-transform`}>
+              <div className={`absolute -left-2 bottom-16 flex items-center gap-2 rounded-full border border-emerald-500/30 bg-slate-900/90 px-3.5 py-2 shadow-xl backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb2} hover:scale-105 transition-transform`}>
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />

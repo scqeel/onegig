@@ -324,8 +324,8 @@ export default function NumberVerificationPage() {
                 </div>
               </div>
 
-              <div className={`p-4 rounded-xl border text-xs font-semibold ${
-                result.beneficiaryVerified ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-300" : "bg-amber-500/10 border-amber-500/30 text-amber-300"
+              <div className={`p-4 rounded-xl border text-xs font-black shadow-md ${
+                result.beneficiaryVerified ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-950 dark:text-emerald-300 dark:bg-emerald-950/90" : "bg-amber-500/20 border-amber-500/50 text-amber-950 dark:text-amber-300 dark:bg-amber-950/90"
               }`}>
                 <p>{result.beneficiaryMessage}</p>
               </div>

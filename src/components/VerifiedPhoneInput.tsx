@@ -148,16 +148,16 @@ export const VerifiedPhoneInput: React.FC<VerifiedPhoneInputProps> = ({
           )}
           {datahubStatus && (
             <div
-              className={`flex items-center gap-1.5 rounded-xl border p-2 text-xs font-semibold ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black shadow-md ${
                 datahubStatus.verified
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                  : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                  ? "border-emerald-600/50 bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 dark:bg-emerald-950/90 dark:border-emerald-500/40"
+                  : "border-amber-600/50 bg-amber-500/20 text-amber-950 dark:text-amber-300 dark:bg-amber-950/90 dark:border-amber-500/40"
               }`}
             >
               {datahubStatus.verified ? (
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
               )}
               <span>{datahubStatus.message}</span>
             </div>

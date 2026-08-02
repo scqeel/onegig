@@ -42,47 +42,47 @@ function getNetStyle(code: string) {
   const c = code.toUpperCase();
   if (c === "MTN")
     return {
-      idle: "border-yellow-200 bg-yellow-50 hover:border-yellow-400 hover:bg-yellow-100/80",
-      active: "border-yellow-400 bg-yellow-400/90 text-yellow-950 shadow-float",
-      activeRing: "ring-2 ring-yellow-400/40",
-      badge: "bg-yellow-500 text-yellow-950",
-      cardIdle: "border-[#f2c000] bg-[#ffcc00] text-black hover:bg-[#e6b800] transition-colors",
-      cardActive: "border-black bg-[#e6b800] text-black shadow-float ring-2 ring-black",
-      dot: "bg-yellow-400",
-      tagBg: "bg-yellow-100 text-yellow-800 border border-yellow-200",
+      idle: "border-amber-400/40 bg-amber-400/10 text-amber-900 dark:text-amber-300 hover:border-amber-400/80 hover:bg-amber-400/20",
+      active: "border-amber-400 bg-amber-400 text-slate-950 font-black shadow-float",
+      activeRing: "ring-2 ring-amber-400/50",
+      badge: "bg-amber-500 text-slate-950 font-black",
+      cardIdle: "border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-200 hover:bg-amber-500/20 transition-colors",
+      cardActive: "border-amber-400 bg-amber-400 text-slate-950 shadow-float ring-2 ring-amber-400",
+      dot: "bg-amber-400",
+      tagBg: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
     };
   if (c === "TELECEL")
     return {
-      idle: "border-red-200 bg-red-50 hover:border-red-400 hover:bg-red-100/80",
-      active: "border-red-500 bg-red-500/90 text-white shadow-float",
-      activeRing: "ring-2 ring-red-400/40",
-      badge: "bg-red-600 text-white",
-      cardIdle: "border-[#b30000] bg-[#cc0000] text-white hover:bg-[#b30000] transition-colors",
-      cardActive: "border-black bg-[#b30000] text-white shadow-float ring-2 ring-black",
+      idle: "border-red-500/40 bg-red-500/10 text-red-900 dark:text-red-300 hover:border-red-500/80 hover:bg-red-500/20",
+      active: "border-red-500 bg-red-600 text-white font-black shadow-float",
+      activeRing: "ring-2 ring-red-500/50",
+      badge: "bg-red-600 text-white font-black",
+      cardIdle: "border-red-600/30 bg-red-600/10 text-red-950 dark:text-red-200 hover:bg-red-600/20 transition-colors",
+      cardActive: "border-red-500 bg-red-600 text-white shadow-float ring-2 ring-red-500",
       dot: "bg-red-500",
-      tagBg: "bg-red-100 text-red-800 border border-red-200",
+      tagBg: "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800",
     };
   if (c === "AIRTELTIGO" || c === "AT")
     return {
-      idle: "border-purple-200 bg-purple-50 hover:border-purple-400 hover:bg-purple-100/80",
-      active: "border-purple-500 bg-purple-500/90 text-white shadow-float",
-      activeRing: "ring-2 ring-purple-400/40",
-      badge: "bg-purple-600 text-white",
-      cardIdle: "border-[#380b6b] bg-[#4a148c] text-white hover:bg-[#380b6b] transition-colors",
-      cardActive: "border-black bg-[#380b6b] text-white shadow-float ring-2 ring-black",
-      dot: "bg-purple-500",
-      tagBg: "bg-purple-100 text-purple-800 border border-purple-200",
+      idle: "border-blue-500/40 bg-blue-500/10 text-blue-900 dark:text-blue-300 hover:border-blue-500/80 hover:bg-blue-500/20",
+      active: "border-blue-500 bg-blue-600 text-white font-black shadow-float",
+      activeRing: "ring-2 ring-blue-500/50",
+      badge: "bg-blue-600 text-white font-black",
+      cardIdle: "border-blue-600/30 bg-blue-600/10 text-blue-950 dark:text-blue-200 hover:bg-blue-600/20 transition-colors",
+      cardActive: "border-blue-500 bg-blue-600 text-white shadow-float ring-2 ring-blue-500",
+      dot: "bg-blue-500",
+      tagBg: "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
     };
   
   return {
-    idle: "border-blue-200 bg-blue-50 hover:border-blue-400 hover:bg-blue-100/80",
-    active: "border-blue-500 bg-blue-500/90 text-white shadow-float",
-    activeRing: "ring-2 ring-blue-400/40",
-    badge: "bg-blue-600 text-white",
-    cardIdle: "border-blue-600 bg-blue-600 text-white hover:bg-blue-700 transition-colors",
-    cardActive: "border-black bg-blue-700 text-white shadow-float ring-2 ring-black",
-    dot: "bg-blue-500",
-    tagBg: "bg-blue-100 text-blue-800 border border-blue-200",
+    idle: "border-purple-500/40 bg-purple-500/10 text-purple-900 dark:text-purple-300 hover:border-purple-500/80 hover:bg-purple-500/20",
+    active: "border-purple-500 bg-purple-600 text-white font-black shadow-float",
+    activeRing: "ring-2 ring-purple-500/50",
+    badge: "bg-purple-600 text-white font-black",
+    cardIdle: "border-purple-600/30 bg-purple-600/10 text-purple-950 dark:text-purple-200 hover:bg-purple-600/20 transition-colors",
+    cardActive: "border-purple-500 bg-purple-600 text-white shadow-float ring-2 ring-purple-500",
+    dot: "bg-purple-500",
+    tagBg: "bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800",
   };
 }
 

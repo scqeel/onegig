@@ -69,6 +69,27 @@ function toSizeGb(sizeLabel: string | null | undefined, sizeMb: number): number 
   return Number(sizeMb) / 1024;
 }
 
+function toDataHubNetworkKey(networkCode: string, sizeLabel?: string | null): string {
+  const net = String(networkCode || "").toUpperCase();
+  const label = String(sizeLabel || "").toLowerCase();
+  if (net === "MTN") {
+    if (label.includes("express") || label.includes("xpress")) {
+      return "MTN_XPRESS";
+    }
+    return "YELLO";
+  }
+  if (net === "TELECEL" || net === "VODAFONE") {
+    return "TELECEL";
+  }
+  if (net === "AT" || net === "AIRTELTIGO") {
+    if (label.includes("bigtime") || label.includes("big time")) {
+      return "AT_BIGTIME";
+    }
+    return "AT_PREMIUM";
+  }
+  return "YELLO";
+}
+
 async function deliverData(
   admin: ReturnType<typeof createClient>,
   args: {

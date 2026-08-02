@@ -143,15 +143,33 @@ async function deliverData(
   let payload: any = {};
 
   if (effectiveProviderKey === "datahub") {
-    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;
-    const netKey = toDataHubNetworkKey(args.network_code || "MTN", args.size_label);
-    const sizeGb = toSizeGb(args.size_label, args.size_mb || 0);
-    payload = {
-      networkKey: netKey,
-      recipient: normalizePhone(args.recipient),
-      capacity: String(sizeGb),
-      reference: requestId
-    };
+    const netUpper = String(args.network_code || "").toUpperCase();
+    const labelUpper = String(args.size_label || "").toUpperCase();
+
+    if (netUpper === "RESULT_CHECKER" || labelUpper.includes("CHECKER") || labelUpper.includes("VOUCHER")) {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/voucher-purchase`;
+      let vType = "WASSCE";
+      if (labelUpper.includes("BECE")) vType = "BECE";
+      if (labelUpper.includes("CSSPS")) vType = "CSSPS";
+      if (labelUpper.includes("NOVDEC")) vType = "NOVDEC";
+
+      payload = {
+        VoucherType: vType,
+        Recipient: normalizePhone(args.recipient),
+        Quantity: 1,
+        reference: requestId,
+      };
+    } else {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;
+      const netKey = toDataHubNetworkKey(args.network_code || "MTN", args.size_label);
+      const sizeGb = toSizeGb(args.size_label, args.size_mb || 0);
+      payload = {
+        networkKey: netKey,
+        recipient: normalizePhone(args.recipient),
+        capacity: String(sizeGb),
+        reference: requestId,
+      };
+    }
   } else if (effectiveProviderKey === "swiftdata") {
     // New Reseller REST API (Data purchases only)
     endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;

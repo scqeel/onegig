@@ -145,18 +145,25 @@ async function deliverData(
     const netUpper = String(args.network_code || "").toUpperCase();
     const labelUpper = String(args.size_label || "").toUpperCase();
 
-    if (netUpper === "RESULT_CHECKER" || labelUpper.includes("CHECKER") || labelUpper.includes("VOUCHER")) {
+    if (netUpper === "RESULT_CHECKER" || netUpper === "RESULT_CHECKERS" || netUpper === "WAEC" || netUpper === "CHECKER" || labelUpper.includes("CHECKER") || labelUpper.includes("VOUCHER") || labelUpper.includes("PLACEMENT")) {
       endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/voucher-purchase`;
       let vType = "WASSCE";
       if (labelUpper.includes("BECE")) vType = "BECE";
-      if (labelUpper.includes("CSSPS")) vType = "CSSPS";
+      if (labelUpper.includes("CSSPS") || labelUpper.includes("PLACEMENT")) vType = "CSSPS";
       if (labelUpper.includes("NOVDEC")) vType = "NOVDEC";
+
+      const phone = normalizePhone(args.recipient);
 
       payload = {
         VoucherType: vType,
-        Recipient: normalizePhone(args.recipient),
+        voucher_type: vType,
+        Recipient: phone,
+        recipient: phone,
+        phone: phone,
         Quantity: 1,
+        quantity: 1,
         reference: requestId,
+        request_id: requestId,
       };
     } else {
       endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;

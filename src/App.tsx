@@ -25,6 +25,7 @@ import SubAgentDashboardPage from "./pages/SubAgentDashboard.tsx";
 import ReferralsPage from "./pages/Referrals.tsx";
 import NotificationsPage from "./pages/Notifications.tsx";
 import NumberVerificationPage from "./pages/NumberVerificationPage.tsx";
+import AdminRefundsPage from "./pages/AdminRefunds.tsx";
 import { PWAInstallBanner } from "./components/PWAInstallBanner.tsx";
 import { DraggableThemeToggle } from "./components/ui/DraggableThemeToggle.tsx";
 import { useAuth } from "@/contexts/AuthContext";
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/dashboard/referrals" element={<RequireAuth><ReferralsPage /></RequireAuth>} />
                 <Route path="/dashboard/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
                 <Route path="/admin" element={<RequireAuth role="admin"><AdminPage /></RequireAuth>} />
+                <Route path="/admin/refunds" element={<RequireAuth role="admin"><AdminRefundsPage /></RequireAuth>} />
                 <Route path="/agent" element={<RequireAuth role="agent"><AgentDashboardPage /></RequireAuth>} />
                 <Route path="/sub-agent" element={<RequireAuth role="agent"><SubAgentDashboardPage /></RequireAuth>} />
                 <Route path="/store/:slug" element={<AgentStorePage />} />

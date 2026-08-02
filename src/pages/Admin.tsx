@@ -434,9 +434,16 @@ function OverviewSection() {
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Real-time metrics across the OneGig ecosystem.</p>
           </div>
           <div className="flex flex-col gap-4 sm:items-end">
-            <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full self-start sm:self-auto">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">All Systems Operational</span>
+            <div className="flex items-center gap-3">
+              <Link to="/admin/refunds">
+                <Button size="sm" className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-full shadow-lg shadow-purple-500/20">
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Refund Control Center
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">All Systems Operational</span>
+              </div>
             </div>
             <div className="flex gap-6 sm:gap-8">
               <div className="text-left sm:text-right">

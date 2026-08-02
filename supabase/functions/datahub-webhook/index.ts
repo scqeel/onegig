@@ -101,42 +101,70 @@ Deno.serve(async (req) => {
       return json({ ok: true, updated: "delivered", orderId: order.id });
     }
 
-    if (isFailure && order.status !== "failed") {
-      await admin
-        .from("orders")
-        .update({
-          status: "failed",
-          notes: `${order.notes || ""} | DataHub failed: ${dataObj?.statusDescription || status}`,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id);
+    if (isFailure || status === "REFUNDED") {
+      const finalStatus = status === "REFUNDED" ? "refunded" : "failed";
+      if (order.status !== finalStatus && order.status !== "refunded") {
+        await admin
+          .from("orders")
+          .update({
+            status: finalStatus,
+            notes: `${order.notes || ""} | DataHub update: ${dataObj?.statusDescription || status}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", order.id);
 
-      // Refund agent wallet balance if needed
-      if (order.agent_id && order.sell_price > 0) {
-        const { data: agProf } = await admin
-          .from("profiles")
-          .select("wallet_balance")
-          .eq("id", order.agent_id)
-          .single();
-
-        if (agProf) {
-          const newBal = (agProf.wallet_balance || 0) + Number(order.sell_price);
-          await admin
+        // 1. Refund agent wallet if applicable
+        if (order.agent_id && Number(order.sell_price || 0) > 0) {
+          const { data: agProf } = await admin
             .from("profiles")
-            .update({ wallet_balance: newBal })
-            .eq("id", order.agent_id);
+            .select("wallet_balance")
+            .eq("id", order.agent_id)
+            .single();
 
-          await admin.from("wallet_transactions").insert({
-            user_id: order.agent_id,
-            type: "credit",
-            amount: Number(order.sell_price),
-            description: `Refund for failed order #${order.id.slice(0, 8)}`,
-            balance_after: newBal,
-          });
+          if (agProf) {
+            const newBal = Number(agProf.wallet_balance || 0) + Number(order.sell_price);
+            await admin
+              .from("profiles")
+              .update({ wallet_balance: newBal })
+              .eq("id", order.agent_id);
+
+            await admin.from("wallet_transactions").insert({
+              user_id: order.agent_id,
+              type: "credit",
+              amount: Number(order.sell_price),
+              description: `Refund for failed/refunded order #${order.id.slice(0, 8)}`,
+              balance_after: newBal,
+            });
+          }
         }
-      }
 
-      return json({ ok: true, updated: "failed", orderId: order.id });
+        // 2. Refund customer wallet if customer placed order with wallet balance
+        if (order.customer_user_id && order.customer_user_id !== order.agent_id && Number(order.sell_price || 0) > 0) {
+          const { data: custProf } = await admin
+            .from("profiles")
+            .select("wallet_balance")
+            .eq("id", order.customer_user_id)
+            .maybeSingle();
+
+          if (custProf) {
+            const newBal = Number(custProf.wallet_balance || 0) + Number(order.sell_price);
+            await admin
+              .from("profiles")
+              .update({ wallet_balance: newBal })
+              .eq("id", order.customer_user_id);
+
+            await admin.from("wallet_transactions").insert({
+              user_id: order.customer_user_id,
+              type: "credit",
+              amount: Number(order.sell_price),
+              description: `Automated Wallet Refund for order #${order.id.slice(0, 8)}`,
+              balance_after: newBal,
+            });
+          }
+        }
+
+        return json({ ok: true, updated: finalStatus, orderId: order.id });
+      }
     }
 
     return json({ ok: true, status: "unchanged", orderId: order.id });

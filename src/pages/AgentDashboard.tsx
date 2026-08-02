@@ -1263,6 +1263,7 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
   const delivered  = list.filter((o) => o.status === "delivered").length;
   const inProgress = list.filter((o) => ["pending", "processing"].includes(o.status)).length;
   const failed     = list.filter((o) => o.status === "failed").length;
+  const refunded   = list.filter((o) => ["refunded", "refund_requested"].includes(o.status)).length;
   const totalProfit = list
     .filter((o) => o.status === "delivered")
     .reduce((s, o) => s + Number(o.agent_profit ?? 0), 0);
@@ -1271,6 +1272,7 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
   const filtered = list
     .filter((o) => {
       if (statusFilter === "in_progress") return ["pending", "processing"].includes(o.status);
+      if (statusFilter === "refunded") return ["refunded", "refund_requested"].includes(o.status);
       if (statusFilter !== "all") return o.status === statusFilter;
       return true;
     })
@@ -1286,18 +1288,20 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
     { label: "Delivered",   value: "delivered",   count: delivered   },
     { label: "In Progress", value: "in_progress", count: inProgress  },
     { label: "Failed",      value: "failed",      count: failed      },
+    { label: "Refunded",    value: "refunded",    count: refunded    },
   ];
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
       {/* ── Stats row ── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {[
           { label: "Total Orders", value: list.length,        icon: ReceiptText,  iconBg: "bg-primary/10",     iconCl: "text-primary",    valCl: "text-foreground"  },
           { label: "Delivered",    value: delivered,          icon: CheckCircle2, iconBg: "bg-emerald-500/10", iconCl: "text-emerald-500",valCl: "text-emerald-600" },
           { label: "In Progress",  value: inProgress,         icon: Clock,        iconBg: "bg-amber-500/10",   iconCl: "text-amber-500",  valCl: "text-amber-600"   },
           { label: "Failed",       value: failed,             icon: XCircle,      iconBg: "bg-rose-500/10",    iconCl: "text-rose-500",   valCl: "text-rose-600"    },
+          { label: "Refunded",     value: refunded,           icon: RefreshCcw,   iconBg: "bg-purple-500/10",  iconCl: "text-purple-500", valCl: "text-purple-600 dark:text-purple-400" },
           { label: "Displayed Profit", value: formatGHS(totalProfit), icon: TrendingUp, iconBg: "bg-green-500/10", iconCl: "text-green-500",  valCl: "text-green-700 dark:text-green-400" },
         ].map(({ label, value, icon: Icon, iconBg, iconCl, valCl }) => (
           <div key={label} className="rounded-2xl border border-border/50 bg-card p-4 shadow-soft">

@@ -960,7 +960,7 @@ function OrdersSection() {
     queryFn: async () => {
       let query = supabase
         .from("orders")
-        .select("id, reference, provider_ref, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label), network:networks(name, logo_emoji)")
+        .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label), network:networks(name, logo_emoji)")
         .order("created_at", { ascending: false });
 
       if (dateFilter === "today") {
@@ -1020,7 +1020,7 @@ function OrdersSection() {
         body: {
           action: "check_order_status",
           order_id: order.id,
-          reference: order.reference || order.provider_ref
+          reference: order.reference || order.id
         }
       });
 

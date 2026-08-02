@@ -372,11 +372,11 @@ Deno.serve(async (req) => {
         const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("id", order_id).maybeSingle();
         targetOrder = data;
       } else if (ref) {
-        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").or(`reference.eq.${ref},provider_ref.eq.${ref}`).maybeSingle();
+        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("reference", ref).maybeSingle();
         targetOrder = data;
       }
 
-      const lookupRef = ref || targetOrder?.provider_ref || targetOrder?.reference;
+      const lookupRef = ref || targetOrder?.reference;
       if (!lookupRef) {
         return json({ error: "reference, orderNumber, or order_id is required" }, 400);
       }
@@ -408,7 +408,6 @@ Deno.serve(async (req) => {
           .from("orders")
           .update({
             status: mappedStatus,
-            provider_ref: providerRef,
             notes: statusData?.message || statusData?.data?.message || targetOrder.notes || null,
           })
           .eq("id", targetOrder.id);

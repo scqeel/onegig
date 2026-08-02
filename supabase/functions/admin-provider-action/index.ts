@@ -505,6 +505,87 @@ Deno.serve(async (req) => {
       const repData = await repRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
       return json(repData);
 
+    } else if (action === "check_balance") {
+      const bUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/user`;
+      const bRes = await fetch(bUrl, { headers });
+      const bData = await bRes.json().catch(() => ({ success: false, error: "Failed to parse balance response" }));
+      const balance = Number(bData?.data?.walletBalance || bData?.data?.balance || bData?.balance || 0);
+      return json({
+        success: true,
+        balance,
+        currency: "GHS",
+        raw: bData,
+      });
+
+    } else if (action === "retry_order") {
+      const { order_id } = body;
+      if (!order_id) return json({ error: "order_id is required for retry" }, 400);
+
+      const { data: targetOrder, error: oErr } = await admin
+        .from("orders")
+        .select("*, bundle:bundles(*), network:networks(*)")
+        .eq("id", order_id)
+        .maybeSingle();
+
+      if (oErr || !targetOrder) {
+        return json({ error: "Order not found" }, 404);
+      }
+
+      // Reset status to processing
+      await admin.from("orders").update({ status: "processing", notes: "Manual Retry Triggered by Admin" }).eq("id", order_id);
+
+      const netCode = targetOrder.network?.code || "MTN";
+      const sizeLabel = targetOrder.bundle?.size_label || "";
+      const recipient = targetOrder.recipient_phone;
+
+      // Dispatch via DataHub
+      const netKey = (netCode.toUpperCase() === "MTN") ? "yello" : (netCode.toUpperCase() === "TELECEL" ? "red" : "blue");
+      const gbMatch = String(sizeLabel).match(/(\d+(?:\.\d+)?)\s*gb/i);
+      const capacity = gbMatch ? gbMatch[1] : "1";
+
+      const retryUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;
+      const retryRes = await fetch(retryUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          networkKey: netKey,
+          recipient,
+          capacity,
+          reference: targetOrder.id,
+        }),
+      });
+
+      const retryData = await retryRes.json().catch(() => ({ success: false, message: "Provider request sent" }));
+      const rawStatus = String(retryData?.data?.status || retryData?.status || "processing").toLowerCase();
+      const isDelivered = ["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus);
+
+      const finalStatus = isDelivered ? "delivered" : "processing";
+      const providerRef = retryData?.data?.orderNumber
+        ? String(retryData.data.orderNumber)
+        : (retryData?.data?.reference || retryData?.order_id || targetOrder.id);
+
+      await admin
+        .from("orders")
+        .update({
+          status: finalStatus,
+          notes: `Retried via DataHub (Order #${providerRef}) - ${retryData?.message || "Submitted"}`,
+        })
+        .eq("id", targetOrder.id);
+
+      if (isDelivered) {
+        sendSMS({
+          to: recipient,
+          message: `Your OneGig order for ${recipient} (${sizeLabel}) has been successfully processed & delivered! Thank you for your patience.`,
+        }).catch((e) => console.error("SMS retry notify error:", e));
+      }
+
+      return json({
+        success: true,
+        message: isDelivered ? "Order successfully retried and delivered!" : "Order retried and submitted to provider.",
+        status: finalStatus,
+        data: retryData,
+      });
+
     } else {
       return json({ error: `Invalid action: ${action}` }, 400);
     }

@@ -1046,19 +1046,31 @@ function OrdersSection() {
   const retryOrder = async (order: any, manualFulfill: boolean = false) => {
     if (!order.recipient_phone) return;
     setRetryId(order.id);
-    const { error } = await supabase.functions.invoke("place-order", {
-      body: { 
-        recipient_phone: order.recipient_phone, 
-        bundle_id: order.bundle_id || null, 
-        force_provider: "swft", 
-        retry_order_id: order.id,
-        manual_fulfill: manualFulfill
-      },
-    });
-    setRetryId(null);
-    if (error) { toast({ title: "Update failed", description: error.message, variant: "destructive" }); return; }
-    toast({ title: manualFulfill ? "Marked as delivered" : "Order retried", description: "Status updated successfully." });
-    qc.invalidateQueries({ queryKey: ["admin-orders"] });
+    try {
+      toast({ title: "Retrying Delivery...", description: `Submitting order ref ${order.reference || order.id} to DataHub GH...` });
+      
+      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+        body: { 
+          action: "retry_order",
+          order_id: order.id,
+          manual_fulfill: manualFulfill
+        },
+      });
+
+      if (error) { 
+        toast({ title: "Retry Failed", description: error.message, variant: "destructive" }); 
+      } else {
+        toast({ 
+          title: manualFulfill ? "Marked as Delivered 🟢" : "Order Retried & Submitted 🔄", 
+          description: data?.message || "Provider request executed. Status updated!" 
+        });
+        qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      }
+    } catch (err: any) {
+      toast({ title: "Retry Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setRetryId(null);
+    }
   };
 
   if (isLoading) {
@@ -1978,9 +1990,7 @@ function IntegrationsSection() {
   };
 
   useEffect(() => {
-    if (config?.active === "swft" || config?.active === "swiftdata") {
-      fetchSwiftDataState();
-    }
+    fetchSwiftDataState();
   }, [config]);
 
   const saveConfig = async (newConfig: any) => {

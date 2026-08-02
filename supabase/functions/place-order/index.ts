@@ -122,20 +122,27 @@ async function deliverData(
 
   const config = (dpData?.value as any) ?? {};
   
-  let effectiveProviderKey = args.force_provider || config?.active || "mtopup";
+  let effectiveProviderKey = args.force_provider || config?.active || "datahub";
   if (!args.force_provider) {
     if (args.type === "airtime") {
-      effectiveProviderKey = config.active_airtime || config.active || "swft";
+      effectiveProviderKey = config.active_airtime || config.active || "datahub";
     } else if (args.type === "bill") {
-      effectiveProviderKey = config.active_utility || config.active || "swft";
+      effectiveProviderKey = config.active_utility || config.active || "datahub";
     } else {
-      effectiveProviderKey = config.active_data || config.active || "swiftdata";
+      effectiveProviderKey = config.active_data || config.active || "datahub";
     }
   }
 
-  const providerConfig = config?.providers?.[effectiveProviderKey] ?? {};
+  let providerConfig = config?.providers?.[effectiveProviderKey] ?? {};
+  if (!providerConfig?.api_key && config?.providers?.datahub?.api_key) {
+    effectiveProviderKey = "datahub";
+    providerConfig = config.providers.datahub;
+  }
 
-  const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
+  let defaultBaseUrl = "https://user.datahubgh.com/api/external";
+  if (effectiveProviderKey === "swiftdata") defaultBaseUrl = "https://reseller.swiftdata.com";
+
+  const PROVIDER_BASE_URL = providerConfig.base_url || defaultBaseUrl;
   const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "";
 
   const requestId = args.request_id || crypto.randomUUID();
@@ -272,10 +279,18 @@ async function deliverData(
   }
 
   if (response.status !== 200 || (parsed && parsed.success === false)) {
+    let cleanMessage = parsed?.error || parsed?.message || parsed?.msg;
+    if (!cleanMessage) {
+      if (rawText && (rawText.trim().startsWith("<!DOCTYPE") || rawText.trim().startsWith("<html"))) {
+        cleanMessage = `Provider API (${effectiveProviderKey}) returned an HTML error page. Please check API URL settings in Admin Integrations.`;
+      } else {
+        cleanMessage = rawText || `Provider failed with HTTP ${response.status}`;
+      }
+    }
     return {
       ok: false,
       provider_ref: requestId,
-      message: parsed?.error || parsed?.message || rawText || `Provider failed with HTTP ${response.status}`,
+      message: cleanMessage,
     };
   }
 

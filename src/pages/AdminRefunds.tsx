@@ -33,12 +33,27 @@ export default function AdminRefunds() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("*, customer:customer_user_id(id, full_name, email, phone, wallet_balance), network:network_id(name, logo_emoji), bundle:bundle_id(size_label)")
-        .in("status", ["failed", "refunded", "refund_requested", "pending"])
-        .order("created_at", { ascending: false });
+        .select("*, network:networks(name, logo_emoji), bundle:bundles(size_label)")
+        .order("created_at", { ascending: false })
+        .limit(300);
 
       if (error) throw error;
-      return data ?? [];
+      const list = data ?? [];
+      const userIds = Array.from(new Set(list.map((o) => o.customer_user_id || o.agent_id).filter(Boolean)));
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, phone, wallet_balance")
+          .in("id", userIds);
+        const profMap = new Map((profiles || []).map((p) => [p.id, p]));
+        return list.map((o) => ({
+          ...o,
+          customer: profMap.get(o.customer_user_id || o.agent_id) || null,
+        }));
+      }
+
+      return list;
     },
     refetchInterval: 10000,
   });

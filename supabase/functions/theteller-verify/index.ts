@@ -20,6 +20,13 @@ function normalizePhone(phone: string) {
   return phone.replace(/\D/g, "");
 }
 
+function isSamePhoneNumber(num1?: string | null, num2?: string | null): boolean {
+  if (!num1 || !num2) return false;
+  const clean1 = num1.replace(/\D/g, "").slice(-9);
+  const clean2 = num2.replace(/\D/g, "").slice(-9);
+  return clean1.length >= 9 && clean1 === clean2;
+}
+
 function toProviderNetwork(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
   if (["MTN", "M"].includes(normalized)) return "MTN";

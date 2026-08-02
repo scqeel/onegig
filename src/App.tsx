@@ -39,10 +39,29 @@ const DashboardIndex = () => {
 
 import { DomainRouter } from "./components/DomainRouter.tsx";
 
+import { useEffect } from "react";
+
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
+const App = () => {
+  useEffect(() => {
+    // Unregister any legacy service workers & clear stale asset caches for instant cross-device updates
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (let registration of registrations) {
+          registration.unregister();
+        }
+      });
+    }
+    if ("caches" in window) {
+      caches.keys().then((names) => {
+        names.forEach((name) => caches.delete(name));
+      });
+    }
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <TooltipProvider>
         <Toaster />
@@ -76,13 +95,47 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <PWAInstallBanner />
-              <DraggableThemeToggle />
-            </AuthProvider>
-          </BrowserRouter>
-        </DomainRouter>
-      </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <DomainRouter>
+            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+              <AuthProvider>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/verify-phone" element={<VerifyPhonePage />} />
+                  <Route path="/verify-number" element={<NumberVerificationPage />} />
+                  <Route path="/buy" element={<PublicBuyPage />} />
+                  <Route path="/track" element={<PublicTrackPage />} />
+                  <Route path="/dashboard" element={<RequireAuth><DashboardIndex /></RequireAuth>} />
+                  <Route path="/dashboard/customer" element={<RequireAuth><DashboardCustomerPage /></RequireAuth>} />
+                  <Route path="/dashboard/buy" element={<RequireAuth><Navigate to="/buy" replace /></RequireAuth>} />
+                  <Route path="/dashboard/track" element={<RequireAuth><Navigate to="/track" replace /></RequireAuth>} />
+                  <Route path="/dashboard/agent" element={<RequireAuth><DashboardAgentPage /></RequireAuth>} />
+                  <Route path="/dashboard/profile" element={<RequireAuth><DashboardProfilePage /></RequireAuth>} />
+                  <Route path="/dashboard/referrals" element={<RequireAuth><ReferralsPage /></RequireAuth>} />
+                  <Route path="/dashboard/notifications" element={<RequireAuth><NotificationsPage /></RequireAuth>} />
+                  <Route path="/admin" element={<RequireAuth role="admin"><AdminPage /></RequireAuth>} />
+                  <Route path="/admin/refunds" element={<RequireAuth role="admin"><AdminRefundsPage /></RequireAuth>} />
+                  <Route path="/agent" element={<RequireAuth role="agent"><AgentDashboardPage /></RequireAuth>} />
+                  <Route path="/sub-agent" element={<RequireAuth role="agent"><SubAgentDashboardPage /></RequireAuth>} />
+                  <Route path="/store/:slug" element={<AgentStorePage />} />
+                  <Route path="/store-auth/:slug" element={<CustomerAuthPage />} />
+                  <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+                  <Route path="/join/:ref" element={<InvitePage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <PWAInstallBanner />
+                <DraggableThemeToggle />
+              </AuthProvider>
+            </BrowserRouter>
+          </DomainRouter>
+        </TooltipProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

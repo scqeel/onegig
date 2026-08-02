@@ -267,10 +267,16 @@ async function deliverData(
     };
   }
 
+  const rawStatus = String(parsed?.data?.status || parsed?.status || "processing").toLowerCase();
+  const isDelivered = ["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus);
+  const providerRef = parsed?.data?.orderNumber
+    ? String(parsed.data.orderNumber)
+    : (parsed?.data?.reference || parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId);
+
   return {
     ok: true,
-    status: parsed?.status || "delivered",
-    provider_ref: parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId,
+    status: isDelivered ? "delivered" : "processing",
+    provider_ref: providerRef,
     message: parsed?.message || null,
   };
 }

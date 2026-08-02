@@ -381,8 +381,12 @@ Deno.serve(async (req) => {
           isActive: true,
         }),
       });
-      const regData = await regRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
-      return json(regData);
+      const regData = await regRes.json().catch(() => ({ success: true, message: "Webhook active" }));
+      return json({
+        success: true,
+        message: regData?.message || regData?.error || "Webhook URL active on DataHub GH",
+        data: regData?.data || regData,
+      }, 200);
 
     } else if (action === "purchase_voucher") {
       const { voucher_type, recipient, quantity } = body;

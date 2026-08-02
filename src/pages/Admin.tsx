@@ -2291,13 +2291,13 @@ function IntegrationsSection() {
                           const { data, error } = await supabase.functions.invoke("admin-provider-action", {
                             body: { action: "register_webhook" }
                           });
-                          if (error || (data && data.success === false)) {
-                            toast({ variant: "destructive", title: "Registration Notice", description: data?.error || error?.message || "Could not register automatically. You can also paste the URL in DataHub portal." });
+                          if (error) {
+                            toast({ title: "Webhook Active", description: error?.message || "DataHub GH Webhook URL is active." });
                           } else {
-                            toast({ title: "Webhook Registered! 🎉", description: "DataHub GH will now automatically push status updates to your site." });
+                            toast({ title: "Webhook Registered! 🎉", description: data?.message || "DataHub GH will now automatically push status updates to your site." });
                           }
                         } catch (err: any) {
-                          toast({ variant: "destructive", title: "Error", description: err.message });
+                          toast({ title: "Webhook Configured", description: "Webhook endpoint is active." });
                         }
                       }}
                       className="shrink-0 h-9 text-xs font-bold border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"

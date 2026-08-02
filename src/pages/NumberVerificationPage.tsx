@@ -38,6 +38,7 @@ interface VerificationResult {
 
 export default function NumberVerificationPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { networks, isLoading: loadingNetworks } = useNetworks();
   const networkList = networks || [];
 

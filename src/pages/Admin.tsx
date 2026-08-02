@@ -949,66 +949,39 @@ function StatusBadge({ status }: { status: string }) {
 function OrdersSection() {
   const qc = useQueryClient();
   const { toast } = useToast();
-  const [retryId, setRetryId]           = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [search, setSearch]             = useState("");
-  const [dateFilter, setDateFilter]     = useState("7d");
+  const [syncingId, setSyncingId]       = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["admin-orders", dateFilter],
-    queryFn: async () => {
-      let query = supabase
-        .from("orders")
-        .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label), network:networks(name, logo_emoji), agent:agent_profiles!orders_agent_id_fkey(store_name)")
-        .order("created_at", { ascending: false });
-
-      if (dateFilter === "today") {
-        const d = new Date();
-        d.setHours(0, 0, 0, 0);
-        query = query.gte("created_at", d.toISOString());
-      } else if (dateFilter === "7d") {
-        const d = new Date();
-        d.setDate(d.getDate() - 7);
-        query = query.gte("created_at", d.toISOString());
-      } else if (dateFilter === "30d") {
-        const d = new Date();
-        d.setDate(d.getDate() - 30);
-        query = query.gte("created_at", d.toISOString());
-      }
-
-      const { data: orders, error } = await query.limit(800);
+  const syncOrderStatus = async (order: any) => {
+    setSyncingId(order.id);
+    try {
+      toast({ title: "Syncing Provider Status...", description: `Checking live status with DataHub GH for order ref ${order.reference || order.id}...` });
       
-      if (error) {
-        console.error("Orders query error:", error);
-        throw error;
-      }
-
-      const userIds = [...new Set((orders ?? []).map((o: any) => o.customer_user_id).filter(Boolean))] as string[];
-      let profiles: Profile[] = [];
-      
-      if (userIds.length) {
-        // Chunk userIds to avoid URI Too Long error
-        const chunkSize = 50;
-        for (let i = 0; i < userIds.length; i += chunkSize) {
-          const chunk = userIds.slice(i, i + chunkSize);
-          const { data: p, error: pError } = await supabase
-            .from("profiles")
-            .select("id, full_name, username, email, phone")
-            .in("id", chunk);
-            
-          if (!pError && p) {
-            profiles = [...profiles, ...(p as Profile[])];
-          }
+      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+        body: {
+          action: "check_order_status",
+          order_id: order.id,
+          reference: order.reference || order.provider_ref
         }
+      });
+
+      if (error) {
+        toast({ title: "Sync Failed", description: error.message, variant: "destructive" });
+      } else if (data?.success) {
+        const newStatus = data.status || "processing";
+        toast({
+          title: `Order Status Synced: ${newStatus.toUpperCase()} 🔄`,
+          description: `Provider status (${data.provider_status || 'ok'}) mapped to ${newStatus}. Order tracker updated!`,
+        });
+        qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      } else {
+        toast({ title: "Sync Response", description: data?.error || "Could not resolve order status from provider." });
       }
-      
-      const profileMap = new Map(profiles.map((p) => [p.id, p]));
-      return (orders ?? []).map((o: any) => ({
-        ...o,
-        customer: o.customer_user_id ? profileMap.get(o.customer_user_id) ?? null : null,
-      }));
-    },
-  });
+    } catch (err: any) {
+      toast({ title: "Sync Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setSyncingId(null);
+    }
+  };
 
   const retryOrder = async (order: any, manualFulfill: boolean = false) => {
     if (!order.recipient_phone) return;
@@ -1216,30 +1189,43 @@ function OrdersSection() {
                       <p className="whitespace-nowrap text-[10px] text-muted-foreground/80 font-medium">{timeAgo(o.created_at)}</p>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {o.status === "failed" && (
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            size="sm" variant="outline"
-                            disabled={retryId === o.id}
-                            onClick={() => retryOrder(o, true)}
-                            className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all shadow-sm"
-                          >
-                            {retryId === o.id
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <><CheckCircle2 className="h-3.5 w-3.5" /> Manual Fulfill</>}
-                          </Button>
-                          <Button
-                            size="sm" variant="outline"
-                            disabled={retryId === o.id}
-                            onClick={() => retryOrder(o, false)}
-                            className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
-                          >
-                            {retryId === o.id
-                              ? <Loader2 className="h-3 w-3 animate-spin" />
-                              : <><RotateCcw className="h-3.5 w-3.5" /> Retry API</>}
-                          </Button>
-                        </div>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm" variant="outline"
+                          disabled={syncingId === o.id}
+                          onClick={() => syncOrderStatus(o)}
+                          className="h-8 gap-1.5 rounded-xl border-purple-500/30 bg-purple-500/5 px-3 text-xs font-bold text-purple-400 hover:bg-purple-500 hover:border-purple-500 hover:text-white transition-all shadow-sm"
+                          title="Fetch live provider status & update database + tracker"
+                        >
+                          {syncingId === o.id
+                            ? <Loader2 className="h-3 w-3 animate-spin" />
+                            : <><RefreshCw className="h-3.5 w-3.5" /> Sync Status</>}
+                        </Button>
+                        {o.status === "failed" && (
+                          <>
+                            <Button
+                              size="sm" variant="outline"
+                              disabled={retryId === o.id}
+                              onClick={() => retryOrder(o, true)}
+                              className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all shadow-sm"
+                            >
+                              {retryId === o.id
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <><CheckCircle2 className="h-3.5 w-3.5" /> Manual Fulfill</>}
+                            </Button>
+                            <Button
+                              size="sm" variant="outline"
+                              disabled={retryId === o.id}
+                              onClick={() => retryOrder(o, false)}
+                              className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
+                            >
+                              {retryId === o.id
+                                ? <Loader2 className="h-3 w-3 animate-spin" />
+                                : <><RotateCcw className="h-3.5 w-3.5" /> Retry API</>}
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -1305,26 +1291,36 @@ function OrdersSection() {
                     </div>
                   </div>
 
-                  {o.status === "failed" && (
-                    <div className="grid grid-cols-2 gap-2.5 pt-4 border-t border-border/30">
-                      <Button
-                        size="sm" variant="outline"
-                        disabled={retryId === o.id}
-                        onClick={() => retryOrder(o, true)}
-                        className="h-10 rounded-xl border-emerald-500/30 bg-emerald-500/5 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:text-white"
-                      >
-                        {retryId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1.5 h-4 w-4" /> Fulfill</>}
-                      </Button>
-                      <Button
-                        size="sm" variant="outline"
-                        disabled={retryId === o.id}
-                        onClick={() => retryOrder(o, false)}
-                        className="h-10 rounded-xl border-rose-500/30 bg-rose-500/5 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:text-white"
-                      >
-                        {retryId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCcw className="mr-1.5 h-4 w-4" /> Retry API</>}
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2 pt-3 border-t border-border/30">
+                    <Button
+                      size="sm" variant="outline"
+                      disabled={syncingId === o.id}
+                      onClick={() => syncOrderStatus(o)}
+                      className="flex-1 h-9 rounded-xl border-purple-500/30 bg-purple-500/5 text-xs font-bold text-purple-400 hover:bg-purple-500 hover:text-white"
+                    >
+                      {syncingId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Sync Status</>}
+                    </Button>
+                    {o.status === "failed" && (
+                      <>
+                        <Button
+                          size="sm" variant="outline"
+                          disabled={retryId === o.id}
+                          onClick={() => retryOrder(o, true)}
+                          className="h-9 rounded-xl border-emerald-500/30 bg-emerald-500/5 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:text-white"
+                        >
+                          {retryId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Fulfill</>}
+                        </Button>
+                        <Button
+                          size="sm" variant="outline"
+                          disabled={retryId === o.id}
+                          onClick={() => retryOrder(o, false)}
+                          className="h-9 rounded-xl border-rose-500/30 bg-rose-500/5 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:text-white"
+                        >
+                          {retryId === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <><RotateCcw className="mr-1.5 h-4 w-4" /> Retry API</>}
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

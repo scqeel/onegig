@@ -362,15 +362,85 @@ Deno.serve(async (req) => {
       return json(data);
 
     } else if (action === "check_order_status") {
-      const { reference, orderNumber } = body;
+      const { reference, orderNumber, order_id } = body;
       const ref = reference || orderNumber;
-      if (!ref) return json({ error: "reference or orderNumber is required" }, 400);
+      
+      let targetOrder: any = null;
 
-      const queryParam = reference ? `reference=${encodeURIComponent(reference)}` : `orderNumber=${encodeURIComponent(orderNumber)}`;
+      // Find target order if order_id or reference provided
+      if (order_id) {
+        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("id", order_id).maybeSingle();
+        targetOrder = data;
+      } else if (ref) {
+        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").or(`reference.eq.${ref},provider_ref.eq.${ref}`).maybeSingle();
+        targetOrder = data;
+      }
+
+      const lookupRef = ref || targetOrder?.provider_ref || targetOrder?.reference;
+      if (!lookupRef) {
+        return json({ error: "reference, orderNumber, or order_id is required" }, 400);
+      }
+
+      const queryParam = String(lookupRef).match(/^\d+$/) 
+        ? `orderNumber=${encodeURIComponent(lookupRef)}` 
+        : `reference=${encodeURIComponent(lookupRef)}`;
+
       const statusUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status?${queryParam}`;
       const statusRes = await fetch(statusUrl, { headers });
       const statusData = await statusRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
-      return json(statusData);
+
+      const rawStatus = String(statusData?.data?.status || statusData?.status || "").toLowerCase();
+      let mappedStatus: "delivered" | "failed" | "processing" = "processing";
+      
+      if (["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus)) {
+        mappedStatus = "delivered";
+      } else if (["failed", "canceled", "cancelled", "rejected", "declined"].includes(rawStatus)) {
+        mappedStatus = "failed";
+      }
+
+      // Update database if target order found
+      if (targetOrder) {
+        const providerRef = statusData?.data?.orderNumber
+          ? String(statusData.data.orderNumber)
+          : (statusData?.data?.reference || statusData?.order_id || statusData?.reference || lookupRef);
+
+        const { error: updateErr } = await admin
+          .from("orders")
+          .update({
+            status: mappedStatus,
+            provider_ref: providerRef,
+            notes: statusData?.message || statusData?.data?.message || targetOrder.notes || null,
+          })
+          .eq("id", targetOrder.id);
+
+        if (updateErr) {
+          console.error("Failed to sync order status in DB:", updateErr);
+        }
+
+        // Send SMS notification if transitioned to delivered
+        if (mappedStatus === "delivered" && targetOrder.status !== "delivered" && targetOrder.recipient_phone) {
+          try {
+            const bundleLabel = targetOrder.bundle?.size_label || "Data Bundle";
+            const networkName = targetOrder.network?.name || "Network";
+            const smsMessage = `Your ${bundleLabel} (${networkName}) order for ${targetOrder.recipient_phone} has been delivered successfully! Ref: ${providerRef}. Thank you for choosing OneGig!`;
+            
+            // Dynamic import helper to send SMS
+            const { sendSMS } = await import("../_shared/sms.ts");
+            await sendSMS({ to: targetOrder.recipient_phone, message: smsMessage });
+          } catch (smsErr) {
+            console.warn("SMS dispatch failed on status sync:", smsErr);
+          }
+        }
+      }
+
+      return json({
+        success: true,
+        status: mappedStatus,
+        provider_status: rawStatus || "unknown",
+        order_id: targetOrder?.id || null,
+        provider_ref: lookupRef,
+        data: statusData,
+      });
 
     } else if (action === "register_webhook") {
       const webhookUrl = body.webhook_url || `${supabaseUrl.replace(/\/$/, "")}/functions/v1/datahub-webhook`;

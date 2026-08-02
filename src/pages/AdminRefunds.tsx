@@ -142,10 +142,9 @@ export default function AdminRefunds() {
     try {
       const { data, error } = await supabase.functions.invoke("place-order", {
         body: {
-          recipient: order.recipient_phone,
-          network_code: order.network?.code || "MTN",
-          size_label: order.bundle?.size_label || "1GB",
-          request_id: order.id,
+          recipient_phone: order.recipient_phone,
+          bundle_id: order.bundle_id || null,
+          retry_order_id: order.id,
         },
       });
 

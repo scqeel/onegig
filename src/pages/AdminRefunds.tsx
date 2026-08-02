@@ -34,7 +34,7 @@ export default function AdminRefunds() {
       const { data: rawOrders, error } = await supabase
         .from("orders")
         .select("*, network:networks(name, logo_emoji), bundle:bundles(size_label)")
-        .in("status", ["failed", "refunded", "refund_requested", "pending"])
+        .in("status", ["failed", "refunded", "pending", "processing"])
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -62,7 +62,7 @@ export default function AdminRefunds() {
   const list = orders || [];
   const failedCount = list.filter((o) => o.status === "failed").length;
   const refundedCount = list.filter((o) => o.status === "refunded").length;
-  const pendingCount = list.filter((o) => o.status === "refund_requested" || o.status === "pending").length;
+  const pendingCount = list.filter((o) => ["pending", "processing"].includes(o.status)).length;
   const totalRefundedAmt = list
     .filter((o) => o.status === "refunded")
     .reduce((sum, o) => sum + Number(o.sell_price || 0), 0);
@@ -240,7 +240,7 @@ export default function AdminRefunds() {
         </div>
 
         <div className="flex gap-2 overflow-x-auto w-full md:w-auto">
-          {["all", "failed", "refund_requested", "refunded"].map((st) => (
+          {["all", "failed", "pending", "refunded"].map((st) => (
             <button
               key={st}
               onClick={() => setStatusFilter(st)}

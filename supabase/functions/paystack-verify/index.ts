@@ -72,6 +72,27 @@ function toSizeGb(sizeLabel: string | null | undefined, sizeMb: number): number 
   return Number(sizeMb) / 1024;
 }
 
+function toDataHubNetworkKey(networkCode: string, sizeLabel?: string | null): string {
+  const net = String(networkCode || "").toUpperCase();
+  const label = String(sizeLabel || "").toLowerCase();
+  if (net === "MTN") {
+    if (label.includes("express") || label.includes("xpress")) {
+      return "MTN_XPRESS";
+    }
+    return "YELLO";
+  }
+  if (net === "TELECEL" || net === "VODAFONE") {
+    return "TELECEL";
+  }
+  if (net === "AT" || net === "AIRTELTIGO") {
+    if (label.includes("bigtime") || label.includes("big time")) {
+      return "AT_BIGTIME";
+    }
+    return "AT_PREMIUM";
+  }
+  return "YELLO";
+}
+
 async function deliverData(
   admin: ReturnType<typeof createClient>,
   args: {
@@ -95,24 +116,60 @@ async function deliverData(
     .maybeSingle();
 
   const config = (dpData?.value as any) ?? {};
-  const activeProviderKey = args.force_provider || config?.active || "mtopup";
-  
-  // Fallback airtime/bills from "swiftdata" (Reseller REST API) to "swft" (Developer API)
+  let activeProviderKey = args.force_provider;
+  if (!activeProviderKey) {
+    if (args.type === "airtime") {
+      activeProviderKey = config.active_airtime || config.active || "swft";
+    } else if (args.type === "bill") {
+      activeProviderKey = config.active_utility || config.active || "swft";
+    } else {
+      activeProviderKey = config.active_data || config.active || "datahub";
+    }
+  }
+
   let effectiveProviderKey = activeProviderKey;
-  if (activeProviderKey === "swiftdata" && (args.type === "airtime" || args.type === "bill")) {
-    effectiveProviderKey = "swft";
+  if (!config?.providers?.[effectiveProviderKey]?.api_key && effectiveProviderKey !== "datahub") {
+    effectiveProviderKey = "datahub";
   }
 
   const providerConfig = config?.providers?.[effectiveProviderKey] ?? {};
 
-  const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
-  const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "";
+  const PROVIDER_BASE_URL = providerConfig.base_url || Deno.env.get("DEVELOPER_API_BASE_URL") || "https://user.datahubgh.com/api/external";
+  const PROVIDER_API_KEY = providerConfig.api_key || Deno.env.get("DEVELOPER_API_KEY") || "sk_a39f98c635f90d3d785348f4f3df3522d3c42c60001a1bca";
 
   const requestId = args.request_id || crypto.randomUUID();
   let endpoint = "";
   let payload: any = {};
 
-  if (effectiveProviderKey === "swiftdata") {
+  if (effectiveProviderKey === "datahub") {
+    const netUpper = String(args.network_code || "").toUpperCase();
+    const labelUpper = String(args.size_label || "").toUpperCase();
+
+    if (netUpper === "RESULT_CHECKER" || labelUpper.includes("CHECKER") || labelUpper.includes("VOUCHER")) {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/voucher-purchase`;
+      let vType = "WASSCE";
+      if (labelUpper.includes("BECE")) vType = "BECE";
+      if (labelUpper.includes("CSSPS")) vType = "CSSPS";
+      if (labelUpper.includes("NOVDEC")) vType = "NOVDEC";
+
+      payload = {
+        VoucherType: vType,
+        Recipient: normalizePhone(args.recipient),
+        Quantity: 1,
+        reference: requestId,
+      };
+    } else {
+      endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;
+      const netKey = toDataHubNetworkKey(args.network_code || "MTN", args.size_label);
+      const sizeGb = toSizeGb(args.size_label, args.size_mb || 0);
+      payload = {
+        networkKey: netKey,
+        recipient: normalizePhone(args.recipient),
+        capacity: String(sizeGb),
+        reference: requestId,
+      };
+    }
+  } else if (effectiveProviderKey === "swiftdata") {
     // New Reseller REST API (Data purchases only)
     endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;
     const net = toSwiftDataNetwork(args.network_code || "MTN", args.size_label);

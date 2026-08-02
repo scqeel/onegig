@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { formatGHS } from "@/lib/format";
-import { ShoppingCart, ExternalLink, Calendar, Search, Smartphone, Loader2, LogOut, History, BriefcaseBusiness, ArrowRight, Copy, Check, User, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { OrderStatusBadge } from "@/components/ui/OrderStatusBadge";
 
 export default function DashboardCustomerPage() {
   const { session } = useAuth();
@@ -155,7 +155,7 @@ Status: ${o.status.toUpperCase()}`;
                       <div>
                         <div className="flex items-center gap-2">
                           <p className="font-bold">{o.network?.name} {o.bundle?.size_label}</p>
-                          <StatusBadge status={o.status} />
+                          <OrderStatusBadge status={o.status} size="sm" />
                           {o.payment_reference?.startsWith("WP-") && (
                             <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider">
                               Wallet

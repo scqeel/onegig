@@ -57,7 +57,6 @@ export default function AdminRefunds() {
         customer: profMap.get(o.customer_user_id || o.agent_id) || null,
       }));
     },
-    refetchInterval: 10000,
   });
 
   const list = orders || [];

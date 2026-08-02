@@ -31,29 +31,30 @@ export default function AdminRefunds() {
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-refund-orders"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rawOrders, error } = await supabase
         .from("orders")
         .select("*, network:networks(name, logo_emoji), bundle:bundles(size_label)")
-        .order("created_at", { ascending: false })
-        .limit(300);
+        .in("status", ["failed", "refunded", "refund_requested", "pending"])
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
-      const list = data ?? [];
-      const userIds = Array.from(new Set(list.map((o) => o.customer_user_id || o.agent_id).filter(Boolean)));
-      
+      const ordersList = rawOrders || [];
+
+      const userIds = [...new Set(ordersList.map((o: any) => o.customer_user_id || o.agent_id).filter(Boolean))];
+      let profiles: any[] = [];
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
+        const { data: profs } = await supabase
           .from("profiles")
           .select("id, full_name, email, phone, wallet_balance")
           .in("id", userIds);
-        const profMap = new Map((profiles || []).map((p) => [p.id, p]));
-        return list.map((o) => ({
-          ...o,
-          customer: profMap.get(o.customer_user_id || o.agent_id) || null,
-        }));
+        if (profs) profiles = profs;
       }
 
-      return list;
+      const profMap = new Map(profiles.map((p) => [p.id, p]));
+      return ordersList.map((o: any) => ({
+        ...o,
+        customer: profMap.get(o.customer_user_id || o.agent_id) || null,
+      }));
     },
     refetchInterval: 10000,
   });

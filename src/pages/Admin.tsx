@@ -950,6 +950,66 @@ function OrdersSection() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [syncingId, setSyncingId]       = useState<string | null>(null);
+  const [retryId, setRetryId]           = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch]             = useState("");
+  const [dateFilter, setDateFilter]     = useState("7d");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-orders", dateFilter],
+    queryFn: async () => {
+      let query = supabase
+        .from("orders")
+        .select("id, reference, provider_ref, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label), network:networks(name, logo_emoji), agent:agent_profiles!orders_agent_id_fkey(store_name)")
+        .order("created_at", { ascending: false });
+
+      if (dateFilter === "today") {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        query = query.gte("created_at", d.toISOString());
+      } else if (dateFilter === "7d") {
+        const d = new Date();
+        d.setDate(d.getDate() - 7);
+        query = query.gte("created_at", d.toISOString());
+      } else if (dateFilter === "30d") {
+        const d = new Date();
+        d.setDate(d.getDate() - 30);
+        query = query.gte("created_at", d.toISOString());
+      }
+
+      const { data: orders, error } = await query.limit(800);
+      
+      if (error) {
+        console.error("Orders query error:", error);
+        throw error;
+      }
+
+      const userIds = [...new Set((orders ?? []).map((o: any) => o.customer_user_id).filter(Boolean))] as string[];
+      let profiles: Profile[] = [];
+      
+      if (userIds.length) {
+        // Chunk userIds to avoid URI Too Long error
+        const chunkSize = 50;
+        for (let i = 0; i < userIds.length; i += chunkSize) {
+          const chunk = userIds.slice(i, i + chunkSize);
+          const { data: p, error: pError } = await supabase
+            .from("profiles")
+            .select("id, full_name, username, email, phone")
+            .in("id", chunk);
+            
+          if (!pError && p) {
+            profiles = [...profiles, ...(p as Profile[])];
+          }
+        }
+      }
+      
+      const profileMap = new Map(profiles.map((p) => [p.id, p]));
+      return (orders ?? []).map((o: any) => ({
+        ...o,
+        customer: o.customer_user_id ? profileMap.get(o.customer_user_id) ?? null : null,
+      }));
+    },
+  });
 
   const syncOrderStatus = async (order: any) => {
     setSyncingId(order.id);

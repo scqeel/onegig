@@ -38,15 +38,22 @@ interface VerificationResult {
 
 export default function NumberVerificationPage() {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { networks, isLoading: loadingNetworks } = useNetworks();
-  const { bundles, isLoading: loadingBundles } = useBundles();
+  const networkList = networks || [];
 
   const [phone, setPhone] = useState("");
   const [isPorted, setIsPorted] = useState(true);
   const [selectedNetworkCode, setSelectedNetworkCode] = useState<string>("MTN");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<VerificationResult | null>(null);
+
+  const currentNetworkObj = networkList.find(
+    (n) => n.code.toUpperCase() === selectedNetworkCode.toUpperCase() ||
+      (selectedNetworkCode === "AIRTELTIGO" && n.code.toUpperCase() === "AT")
+  );
+
+  const { bundles, isLoading: loadingBundles } = useBundles(currentNetworkObj?.id || null);
+  const filteredBundles = bundles || [];
 
   // Auto-detect network from number prefix
   useEffect(() => {
@@ -136,15 +143,6 @@ export default function NumberVerificationPage() {
       setLoading(false);
     }
   };
-
-  const currentNetworkObj = networks.find(
-    (n) => n.code.toUpperCase() === selectedNetworkCode.toUpperCase() ||
-      (selectedNetworkCode === "AIRTELTIGO" && n.code.toUpperCase() === "AT")
-  );
-
-  const filteredBundles = bundles.filter(
-    (b) => currentNetworkObj && b.network_id === currentNetworkObj.id && b.is_active
-  );
 
   return (
     <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col justify-between overflow-x-hidden selection:bg-purple-500 selection:text-white">

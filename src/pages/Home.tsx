@@ -602,16 +602,6 @@ export default function HomePage() {
 
           </div>
         </div>
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-                </span>
-                <span className="text-xs font-bold text-slate-900 dark:text-white">Instant Fulfillment</span>
-              </div>
-            </div>
-            
-          </div>
-        </div>
 
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white via-white/50 to-transparent dark:from-[#05080f] dark:via-[#05080f]/40 dark:to-transparent" />
       </section>

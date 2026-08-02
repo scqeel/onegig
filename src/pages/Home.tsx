@@ -402,188 +402,206 @@ export default function HomePage() {
           </button>
         )}
 
-        <div className="relative z-20 mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-12 lg:gap-16">
+        {/* ── BREATHTAKING QUANTUM CYBER-HERO SECTION ── */}
+        <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-12">
+          {/* Background Holographic Aurora Spotlights */}
+          <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 h-[550px] w-full max-w-5xl bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.25),rgba(59,130,246,0.1),transparent_70%)] blur-3xl -z-10" />
+
+          <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-12 lg:gap-14 items-center">
             
-            {/* Left Content Column */}
-            <div className="w-full text-center lg:col-span-6 lg:text-left flex flex-col items-center lg:items-start">
-              {/* Animated Live Pill */}
-              <div className={`mb-6 animate-hero-badge ${HD.badge} w-fit`}>
-                <span className="inline-flex items-center gap-2.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-4 py-2 text-xs font-black text-purple-300 backdrop-blur-xl shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                  </span>
-                  <span>Ghana's #1 Instant Data & Result Checkers Platform</span>
-                  <span className="rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm">
-                    LIVE
-                  </span>
+            {/* LEFT COLUMN: QUANTUM TELECOM COMMAND CENTER */}
+            <div className="w-full text-center lg:col-span-6 lg:text-left flex flex-col items-center lg:items-start space-y-6">
+              
+              {/* Futuristic Cyber Badge */}
+              <div className="inline-flex items-center gap-2.5 rounded-full border border-purple-500/40 bg-[#0c1226]/90 px-4 py-2 text-xs font-black text-purple-300 shadow-[0_0_30px_rgba(168,85,247,0.3)] backdrop-blur-2xl">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                </span>
+                <span className="uppercase tracking-widest text-[10px] text-purple-200">QUANTUM ROUTING ENGINE · GHANA 🇬🇭</span>
+                <span className="rounded-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-indigo-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-md">
+                  V2.4 ACTIVE
                 </span>
               </div>
 
-              {/* Main Headline */}
-              <h1 className="text-4xl sm:text-5xl font-black leading-[1.04] tracking-tight md:text-6xl lg:text-[4.25rem] text-white">
-                <span className={`block animate-fade-up ${HD.l1}`}>Buy Data.</span>
-                <span className={`block bg-gradient-to-r from-purple-400 via-fuchsia-300 to-indigo-300 bg-clip-text text-transparent animate-fade-up ${HD.l2}`}>Save Huge.</span>
-                <span className={`block text-white/50 font-extrabold animate-fade-up ${HD.l3}`}>Instant Delivery ⚡</span>
+              {/* Breathtaking Headline */}
+              <h1 className="text-4xl sm:text-5xl font-black leading-[1.02] tracking-tight md:text-6xl lg:text-[4.5rem] text-white">
+                <span className="block text-slate-100">Ghana's Fastest</span>
+                <span className="block bg-gradient-to-r from-purple-400 via-fuchsia-300 via-emerald-300 to-indigo-300 bg-clip-text text-transparent drop-shadow-2xl">
+                  Data & Voucher
+                </span>
+                <span className="block text-slate-400 font-extrabold text-3xl sm:text-4xl md:text-5xl mt-1">
+                  Instant Gateway ⚡
+                </span>
               </h1>
 
-              <p className={`mt-5 max-w-md text-base sm:text-lg leading-relaxed text-slate-300/80 animate-fade-up ${HD.para} font-medium`}>
-                Ghana's fastest wholesale platform — MTN Non-Expiry, Telecel, AirtelTigo, and WAEC Result Checkers at wholesale prices. No account needed.
+              {/* Sub-headline */}
+              <p className="max-w-xl text-base sm:text-lg leading-relaxed text-slate-300/90 font-medium">
+                Direct telecom infrastructure for MTN Non-Expiry, Telecel, AirtelTigo, and WAEC Result Checkers at true wholesale prices. <span className="text-purple-300 font-bold">No login required.</span>
               </p>
 
-              {/* Real-time Telecom Gateway Status widget */}
-              <div className={`mt-6 w-full max-w-md bg-slate-950/60 border border-slate-800/80 rounded-3xl p-4.5 flex flex-col gap-3 animate-fade-up ${HD.para} backdrop-blur-xl shadow-2xl`}>
+              {/* Instant Interactive Quick Order Console */}
+              <div className="w-full max-w-lg rounded-3xl border border-purple-500/30 bg-[#0a0f1e]/90 p-4.5 shadow-2xl backdrop-blur-2xl space-y-3.5">
                 <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                    </span>
-                    <span className="text-[11px] font-black uppercase tracking-widest text-slate-200">Telecom API Gateway Status</span>
-                  </div>
-                  <span className="text-[10px] text-emerald-400 font-mono font-bold tracking-widest uppercase bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                    Active 🟢
+                  <span className="text-[11px] font-black uppercase tracking-widest text-slate-300 flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-purple-400 animate-pulse" /> Express Direct Order
+                  </span>
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    < 35s Average Delivery
                   </span>
                 </div>
-                
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { name: "MTN (Yello)", speed: "< 45s", status: "Active" },
-                    { name: "Telecel", speed: "< 30s", status: "Active" },
-                    { name: "AirtelTigo", speed: "< 30s", status: "Active" }
-                  ].map((gateway) => (
-                    <div key={gateway.name} className="bg-slate-900/80 border border-slate-800 p-2.5 rounded-2xl text-center shadow-inner">
-                      <span className="text-[10px] font-black text-slate-300 block uppercase truncate mb-1">{gateway.name}</span>
-                      <span className="text-[10px] font-bold text-emerald-400 block">{gateway.speed} speed</span>
-                    </div>
-                  ))}
+
+                {/* Instant Network Selection Buttons */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {NETWORKS.map((n) => {
+                    const active = activeNetwork === n.id;
+                    return (
+                      <button
+                        type="button"
+                        key={n.id}
+                        onClick={() => setActiveNetwork(n.id)}
+                        className={cn(
+                          "flex flex-col items-center justify-center p-2.5 rounded-2xl border text-xs font-black transition-all duration-300",
+                          active
+                            ? `${n.activeClass} scale-[1.03] ring-2 ring-purple-500/40`
+                            : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-white"
+                        )}
+                      >
+                        <span className="text-base">{n.emoji}</span>
+                        <span className="text-[10px] truncate">{n.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Action Button Bar */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <Button
+                    asChild
+                    size="lg"
+                    className="flex-1 h-13 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-black text-sm shadow-xl shadow-purple-500/30 transition-all hover:scale-[1.01]"
+                  >
+                    <Link to={`/buy?network=${network.id.toUpperCase()}`}>
+                      Order {network.name} Now <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="h-13 rounded-2xl border-slate-700 bg-slate-900/90 text-slate-200 hover:bg-slate-800 hover:text-white font-bold text-xs px-5 backdrop-blur-xl"
+                  >
+                    <Link to="/track">Track Order 📦</Link>
+                  </Button>
                 </div>
               </div>
 
-              {/* DataHub Live MTN Order Delivery Widget */}
-              <MtnStatusWidget className="mt-4 w-full max-w-md" />
+              {/* DataHub Live Status Widget */}
+              <MtnStatusWidget className="w-full max-w-lg" />
 
-              {/* Action Buttons */}
-              <div className={`mt-7 flex flex-col sm:flex-row gap-3.5 w-full sm:w-auto animate-fade-up ${HD.btns}`}>
-                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-black bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-xl shadow-purple-500/25 transition-all hover:scale-[1.02]">
-                  <Link to="/buy">Buy Data Now <ArrowRight className="ml-2 h-5 w-5" /></Link>
-                </Button>
-                <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold border border-slate-700 bg-slate-900/80 text-slate-200 hover:bg-slate-800 hover:text-white backdrop-blur-xl transition-all hover:scale-[1.02]">
-                  <Link to="/auth?intent=agent">Become an Agent <ChevronRight className="ml-1 h-5 w-5" /></Link>
-                </Button>
-              </div>
-
-              {/* Pips */}
-              <div className={`mt-7 flex flex-wrap justify-center lg:justify-start gap-x-6 gap-y-2 animate-fade-up ${HD.pips}`}>
-                {[
-                  { icon: CheckCircle, text: "No signup required" },
-                  { icon: Zap,         text: "< 60s fast delivery" },
-                  { icon: ShieldCheck, text: "MoMo & Card accepted" },
-                ].map(({ icon: Icon, text }) => (
-                  <span key={text} className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-400">
-                    <Icon className="h-4 w-4 text-emerald-400" /> {text}
-                  </span>
-                ))}
+              {/* Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-xs font-bold text-slate-400 pt-2">
+                <span className="flex items-center gap-1.5 text-emerald-400">
+                  <CheckCircle className="h-4 w-4" /> Instant MoMo Dispatch
+                </span>
+                <span className="flex items-center gap-1.5 text-purple-300">
+                  <ShieldCheck className="h-4 w-4" /> 100% Auto-Refund Guard
+                </span>
+                <span className="flex items-center gap-1.5 text-amber-300">
+                  <Star className="h-4 w-4 fill-amber-400" /> 4.9/5 Rating (12.4k+ Orders)
+                </span>
               </div>
             </div>
 
-            {/* Right Interactive Cockpit Column */}
-            <div className={`w-full max-w-md lg:col-span-6 lg:max-w-none relative animate-slide-right ${HD.card}`}>
-              <div className="pointer-events-none absolute inset-0 -m-6 rounded-3xl bg-purple-600/15 blur-3xl animate-float-pulse" />
+            {/* RIGHT COLUMN: HOLOGRAPHIC QUANTUM DECK & LIVE TICKER */}
+            <div className="w-full max-w-md lg:col-span-6 lg:max-w-none relative">
+              
+              {/* Outer Glow Halo */}
+              <div className="pointer-events-none absolute inset-0 -m-8 rounded-3xl bg-gradient-to-tr from-purple-600/20 via-fuchsia-600/10 to-emerald-500/20 blur-3xl animate-float-pulse" />
 
-              <div className="relative overflow-hidden rounded-[2.5rem] border border-slate-800 bg-[#0a0f1d]/90 p-3 sm:p-4 shadow-2xl backdrop-blur-2xl">
-                <div className="rounded-[2rem] bg-slate-950 p-5 sm:p-6 border border-slate-800/80 shadow-inner">
-
-                  {/* Network selection tabs */}
-                  <div className="mb-6 grid grid-cols-4 gap-1 rounded-2xl bg-slate-900/90 p-1 border border-slate-800">
-                    {NETWORKS.map((n) => {
-                      const active = activeNetwork === n.id;
-                      return (
-                        <button
-                          type="button"
-                          key={n.id}
-                          onClick={() => setActiveNetwork(n.id)}
-                          className={cn(
-                            "flex items-center justify-center gap-1 rounded-xl py-2.5 text-[11px] font-black tracking-tight transition-all duration-300",
-                            active
-                              ? n.activeClass
-                              : "text-slate-400 hover:text-white hover:bg-slate-800/50"
-                          )}
-                        >
-                          <span className="text-xs shrink-0">{n.emoji}</span>
-                          <span className="truncate">{n.name}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mb-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`h-2.5 w-2.5 rounded-full ${network.dotColor} animate-pulse`} />
-                      <p className="text-sm font-black text-white">{network.name} Active Bundles</p>
+              <div className="relative overflow-hidden rounded-[2.5rem] border border-purple-500/30 bg-[#080d1a]/95 p-4.5 sm:p-6 shadow-[0_32px_80px_rgba(0,0,0,0.8)] backdrop-blur-3xl space-y-5">
+                
+                {/* Header: Network Active Packages Selector */}
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-purple-500/20 text-purple-300 border border-purple-500/30 text-lg">
+                      {network.emoji}
                     </div>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold tracking-tight uppercase ${network.tagColor}`}>
-                      {network.tag}
-                    </span>
+                    <div>
+                      <h3 className="font-extrabold text-base text-white">{network.name} Packages</h3>
+                      <p className="text-xs text-slate-400">Select package & buy instantly</p>
+                    </div>
                   </div>
 
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {network.bundles.map((b, i) => {
-                      const isBest = i === 0;
-                      const netCode = network.id === "mtn" ? "MTN" : (network.id === "telecel" ? "TELECEL" : (network.id === "result_checkers" ? "RESULT_CHECKER" : "AT"));
-                      return (
-                        <Link
-                          key={b.label}
-                          to={`/buy?network=${netCode}&bundleLabel=${encodeURIComponent(b.label)}`}
-                          className={cn(
-                            "group flex items-center justify-between rounded-2xl border px-4 py-3.5 transition-all duration-200 cursor-pointer active:scale-[0.99] block",
-                            isBest
-                              ? `${network.rowHighlight} border-purple-500/40 shadow-lg shadow-purple-500/10`
-                              : "border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 hover:border-slate-700"
-                          )}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors",
-                              isBest ? "bg-purple-500/20 text-purple-300" : "bg-slate-800 text-slate-400"
-                            )}>
-                              <Smartphone className="h-4 w-4" />
-                            </div>
-                            <div className="flex flex-col gap-0.5">
-                              <span className="text-sm font-black text-white leading-tight">{b.label}</span>
-                              {isBest && (
-                                <span className="text-[9px] font-black uppercase tracking-wider text-purple-400 leading-none"> Reseller Choice </span>
-                              )}
-                            </div>
+                  <span className={`rounded-full border px-3 py-1 text-[10px] font-black tracking-wider uppercase ${network.tagColor}`}>
+                    {network.tag}
+                  </span>
+                </div>
+
+                {/* Interactive Bundles List */}
+                <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
+                  {network.bundles.map((b, i) => {
+                    const isBest = i === 0;
+                    const netCode = network.id === "mtn" ? "MTN" : (network.id === "telecel" ? "TELECEL" : (network.id === "result_checkers" ? "RESULT_CHECKER" : "AT"));
+                    return (
+                      <Link
+                        key={b.label}
+                        to={`/buy?network=${netCode}&bundleLabel=${encodeURIComponent(b.label)}`}
+                        className={cn(
+                          "group flex items-center justify-between rounded-2xl border p-4 transition-all duration-300 cursor-pointer active:scale-[0.99]",
+                          isBest
+                            ? `${network.rowHighlight} border-purple-500/50 shadow-lg shadow-purple-500/15`
+                            : "border-slate-800/80 bg-slate-950/70 hover:bg-slate-900 hover:border-slate-700"
+                        )}
+                      >
+                        <div className="flex items-center gap-3.5">
+                          <div className={cn(
+                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all",
+                            isBest ? "bg-purple-500/25 text-purple-200 border border-purple-500/40" : "bg-slate-900 text-slate-400 border border-slate-800"
+                          )}>
+                            <Smartphone className="h-4.5 w-4.5" />
                           </div>
+                          <div>
+                            <p className="text-sm font-black text-white leading-tight">{b.label}</p>
+                            {isBest && (
+                              <span className="text-[9px] font-black uppercase tracking-wider text-purple-300 leading-none block mt-0.5"> Reseller Choice </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
                           <span className={cn(
                             "text-sm font-black tracking-tight",
                             isBest ? network.priceColor : "text-white"
-                          )}>{b.price}</span>
-                        </Link>
-                      );
-                    })}
-                  </div>
+                          )}>
+                            {b.price}
+                          </span>
+                          <ChevronRight className="h-4 w-4 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
 
-                  <Button asChild className="mt-5 h-13 w-full rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 font-black shadow-xl shadow-purple-500/20 text-sm transition-all hover:scale-[1.01] active:scale-[0.98]">
-                    <Link to="/buy">Order {network.name} Now <ArrowRight className="ml-1.5 h-4 w-4" /></Link>
-                  </Button>
-
-                  <div className="mt-4 flex items-center justify-center gap-1.5 text-[11px] font-extrabold text-slate-400">
+                {/* Bottom Bar CTAs */}
+                <div className="border-t border-slate-800/80 pt-4 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2 text-slate-400 font-bold">
                     <ShieldCheck className="h-4 w-4 text-emerald-400" />
-                    <span>Instant Telecom Dispatch · 256-Bit Encrypted</span>
+                    <span>256-Bit Gateway Protection</span>
                   </div>
+
+                  <Link
+                    to="/buy"
+                    className="font-extrabold text-purple-400 hover:text-purple-300 flex items-center gap-1 hover:underline"
+                  >
+                    View All Bundles <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
                 </div>
               </div>
+            </div>
 
-              {/* Floating badges with glassmorphic backing & hover effects */}
-              <div className={`absolute -right-2 -top-4 flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-slate-900/90 px-3.5 py-2 shadow-xl backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb1} hover:scale-105 transition-transform`}>
-                <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                <span className="text-xs font-black text-white">4.9</span>
-                <span className="text-[10px] text-slate-400 font-bold">· 12.4k orders fulfilled</span>
-              </div>
-              <div className={`absolute -left-2 bottom-16 flex items-center gap-2 rounded-full border border-emerald-500/30 bg-slate-900/90 px-3.5 py-2 shadow-xl backdrop-blur-md animate-in zoom-in-75 duration-500 ${HD.fb2} hover:scale-105 transition-transform`}>
+          </div>
+        </div>
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-500 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />

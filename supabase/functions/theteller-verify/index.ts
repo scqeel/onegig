@@ -670,11 +670,7 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       console.error("Error fetching whatsapp_group_link:", err);
     }
 
-    const msg = isSelf 
-      ? `Your OneGig order for ${sizeLabel} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
-      : `Your OneGig order of ${sizeLabel} for ${recipient} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
-    
-    sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+    // SMS will be dispatched upon provider delivery webhook confirmation
   }
 
   const networkCode = orderType === "data" ? ((bundle?.networks as any)?.code ?? "MTN") : (payload.network_code || "MTN");

@@ -420,12 +420,7 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       console.error("Error fetching whatsapp_group_link:", err);
     }
 
-    let detailText = bundle ? bundle.size_label : (type === "airtime" ? `GHS ${sellPrice} Airtime` : `${payload.bill_type} Bill Payment`);
-    const msg = isSelf 
-      ? `Your OneGig order for ${detailText} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
-      : `Your OneGig order of ${detailText} for ${recipient} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
-    
-    sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+    // SMS will be dispatched upon provider delivery webhook confirmation
   }
 
   // Fulfill via SwiftData

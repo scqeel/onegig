@@ -112,11 +112,12 @@ Deno.serve(async (req) => {
         })
         .eq("id", order.id);
 
-      // Trigger push notification or SMS if needed
-      if (order.customer?.phone) {
+      // Trigger success SMS when provider webhook confirms delivery!
+      const smsPhone = order.customer?.phone || order.recipient_phone;
+      if (smsPhone) {
         await sendSMS({
-          to: order.customer.phone,
-          message: `Your order #${order.id.slice(0, 8)} for ${order.recipient_phone} has been delivered successfully!`,
+          to: smsPhone,
+          message: `Your OneGig order for ${order.recipient_phone} has been delivered successfully! Thank you for choosing OneGig.`,
         }).catch((err) => console.error("SMS notification error:", err));
       }
 

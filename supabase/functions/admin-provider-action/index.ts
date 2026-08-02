@@ -39,11 +39,16 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     const config = (dpData?.value as any) ?? {};
-    const activeProviderKey = config?.active_data || config?.active || "swiftdata";
-    const providerConfig = config?.providers?.[activeProviderKey] ?? {};
+    const activeProviderKey = config?.active_data || config?.active || "datahub";
+    let providerConfig = config?.providers?.[activeProviderKey] ?? {};
 
-    const PROVIDER_BASE_URL = providerConfig.base_url || "https://user.datahubgh.com/api/external";
-    const PROVIDER_API_KEY = providerConfig.api_key || "";
+    // Fallback to DataHub if current active provider config has no API key
+    if (!providerConfig?.api_key && config?.providers?.datahub?.api_key) {
+      providerConfig = config.providers.datahub;
+    }
+
+    const PROVIDER_BASE_URL = providerConfig?.base_url || "https://user.datahubgh.com/api/external";
+    const PROVIDER_API_KEY = providerConfig?.api_key || "";
 
     // Public action handling for recipient number verification
     if (action === "verify_number") {
@@ -85,7 +90,7 @@ Deno.serve(async (req) => {
     if (!isAdmin) return json({ error: "Forbidden: Admin access required" }, 403);
 
     if (!PROVIDER_API_KEY) {
-      return json({ error: "Provider API Key is not configured in integrations settings" }, 400);
+      return json({ success: false, error: "Provider API Key is not configured in integrations settings" }, 200);
     }
 
     const headers: Record<string, string> = {

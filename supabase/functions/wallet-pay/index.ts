@@ -616,12 +616,27 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     }
   }
 
-  if (delivery.ok && finalStatus === "delivered" && customerPhone) {
+  const targetPhone = customerPhone || recipient;
+  if (delivery.ok && targetPhone) {
     let detailText = bundle ? bundle.size_label : (type === "airtime" ? `GHS ${sellPrice} Airtime` : `${payload.bill_type} Bill Payment`);
+    const isSelf = isSamePhoneNumber(targetPhone, recipient);
+
+    const msg = finalStatus === "delivered"
+      ? `Your OneGig purchase of ${detailText} for ${recipient} was successfully delivered! Thank you for choosing OneGig.`
+      : (isSelf
+          ? `Your OneGig order for ${detailText} is processing and will reflect shortly. Thank you for choosing OneGig!`
+          : `Your OneGig order of ${detailText} for ${recipient} is processing and will reflect shortly.`);
+
     sendSMS({
-      to: customerPhone,
-      message: `Your OneGig purchase of ${detailText} for ${recipient} was successfully delivered! Thank you for choosing OneGig.`,
-    }).catch((err) => console.error("Success SMS Error:", err));
+      to: targetPhone,
+      message: msg,
+    }).catch((err) => console.error("Order SMS Error:", err));
+
+    // Send recipient SMS if buying for someone else
+    if (!isSelf && recipient) {
+      const recipMsg = `A OneGig package (${detailText}) for your line (${recipient}) is being processed and will be delivered shortly!`;
+      sendSMS({ to: recipient, message: recipMsg }).catch((err) => console.error("Recipient SMS Error:", err));
+    }
   }
 
   if (delivery.ok && customerUserId) {

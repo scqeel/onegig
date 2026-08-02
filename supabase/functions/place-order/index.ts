@@ -438,9 +438,11 @@ Deno.serve(async (req) => {
       
       if (oErr || !order) return json({ error: oErr?.message ?? "Order setup failed" }, 500);
 
-      // Send Processing SMS
-      if (customerPhone) {
-        const isSelf = customerPhone === body.recipient_phone;
+      const targetPhone = customerPhone || body.customer_phone || body.recipient_phone;
+
+      // Send Processing SMS to Customer & Recipient
+      if (targetPhone) {
+        const isSelf = isSamePhoneNumber(targetPhone, body.recipient_phone);
         let waLink = "https://whatsapp.com/channel/0029VbDOyktLdQelDfBClj3y";
         try {
           const { data: waRow } = await admin
@@ -455,12 +457,19 @@ Deno.serve(async (req) => {
           console.error("Error fetching whatsapp_group_link:", err);
         }
 
+        const sizeLabel = bundle?.size_label || "Data Bundle";
         const msg = isSelf 
-          ? `Your OneGig order for ${bundle.size_label} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel for updates: ${waLink}`
-          : `Your OneGig order of ${bundle.size_label} for ${body.recipient_phone} is processing and may take 10-60 mins to reflect. Join our WhatsApp channel: ${waLink}`;
+          ? `Your OneGig order for ${sizeLabel} is processing and will reflect shortly. Join our channel: ${waLink}`
+          : `Your OneGig order of ${sizeLabel} for ${body.recipient_phone} is processing and will reflect shortly. Join channel: ${waLink}`;
         
-        // Fire and forget
-        sendSMS({ to: customerPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+        // Dispatch Processing SMS
+        sendSMS({ to: targetPhone, message: msg }).catch((err) => console.error("SMS Error:", err));
+
+        // If recipient is different, notify recipient as well
+        if (!isSelf && body.recipient_phone) {
+          const recipMsg = `A OneGig ${sizeLabel} package for your line (${body.recipient_phone}) is processing and will be delivered shortly!`;
+          sendSMS({ to: body.recipient_phone, message: recipMsg }).catch((err) => console.error("Recipient SMS Error:", err));
+        }
       }
     }
 

@@ -722,15 +722,27 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
     })
     .eq("id", order.id);
 
-  if (delivery.ok && finalStatus === "delivered") {
-    if (customerPhone) {
-      let detailText = bundle ? bundle.size_label : (orderType === "airtime" ? `GHS ${sellPrice} Airtime` : `${payload.bill_type} Bill Payment`);
-      sendSMS({
-        to: customerPhone,
-        message: `Your OneGig purchase of ${detailText} for ${recipient} was successfully delivered! Thank you for choosing OneGig.`,
-      }).catch((err) => console.error("Success SMS Error:", err));
-    }
+  const targetPhone = customerPhone || recipient;
+  if (delivery.ok && targetPhone) {
+    let detailText = bundle ? bundle.size_label : (orderType === "airtime" ? `GHS ${sellPrice} Airtime` : `${payload.bill_type} Bill Payment`);
+    const isSelf = isSamePhoneNumber(targetPhone, recipient);
 
+    const msg = finalStatus === "delivered"
+      ? `Your OneGig purchase of ${detailText} for ${recipient} was successfully delivered! Thank you for choosing OneGig.`
+      : (isSelf
+          ? `Your OneGig order for ${detailText} is processing and will reflect shortly. Thank you for choosing OneGig!`
+          : `Your OneGig order of ${detailText} for ${recipient} is processing and will reflect shortly.`);
+
+    sendSMS({
+      to: targetPhone,
+      message: msg,
+    }).catch((err) => console.error("Order SMS Error:", err));
+
+    if (!isSelf && recipient) {
+      const recipMsg = `A OneGig package (${detailText}) for your line (${recipient}) is being processed and will be delivered shortly!`;
+      sendSMS({ to: recipient, message: recipMsg }).catch((err) => console.error("Recipient SMS Error:", err));
+    }
+  if (delivery.ok) {
     if (agentId && agentProfit > 0) {
       const { data: agentRow } = await admin.from("agent_profiles").select("user_id").eq("id", agentId).maybeSingle();
       if (agentRow?.user_id) {
@@ -871,6 +883,7 @@ async function fulfillOrder(admin: ReturnType<typeof createClient>, payment: any
       });
     }
   }
+}
 
   return order.id;
 }

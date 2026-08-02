@@ -124,6 +124,18 @@ const NETWORKS = [
     dotColor: "bg-blue-500", rowHighlight: "bg-blue-50 border-blue-200/60", priceColor: "text-blue-600",
     bundles: [{ label: "1 GB", price: "GH₵3.95" }, { label: "5 GB", price: "GH₵19.50" }, { label: "10 GB", price: "GH₵38.50" }, { label: "20 GB", price: "GH₵75.00" }, { label: "30 GB", price: "GH₵115.00" }],
   },
+  {
+    id: "result_checkers", name: "Result Checkers", emoji: "🎓", tag: "WAEC Vouchers",
+    tagColor: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    activeClass: "bg-gradient-to-r from-purple-600 to-indigo-600 text-white border-purple-500 shadow-[0_4px_16px_rgba(168,85,247,0.4)]",
+    dotColor: "bg-purple-400", rowHighlight: "bg-purple-500/10 border-purple-500/20", priceColor: "text-purple-400",
+    bundles: [
+      { label: "WASSCE Result Checker 🎓", price: "GH₵25.00" },
+      { label: "BECE Result Checker 🎓", price: "GH₵22.00" },
+      { label: "CSSPS Placement Checker 🏫", price: "GH₵20.00" },
+      { label: "NOVDEC Result Checker 🎓", price: "GH₵25.00" },
+    ],
+  },
 ];
 
 const TESTIMONIALS = [
@@ -227,6 +239,9 @@ export default function HomePage() {
           <Logo size="md" />
           
           <nav className="hidden items-center gap-1 md:flex">
+            <Link to="/verify-number" className="inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 transition-all">
+              <ShieldCheck className="h-3.5 w-3.5" /> Verify Number
+            </Link>
             <Link to="/track" className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900 hover:text-slate-900 dark:hover:text-white transition-colors">
               <Search className="h-3.5 w-3.5" /> Track Order
             </Link>

@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatGHS } from "@/lib/format";
 import { Confetti } from "@/components/Confetti";
 import { ArrowRight, CheckCircle2, Lock, RefreshCcw, Zap, ChevronDown, Smartphone, CreditCard } from "lucide-react";
+import { VerifiedPhoneInput } from "@/components/VerifiedPhoneInput";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import {
@@ -1089,44 +1090,20 @@ export function BuyDataFlow({
 
             {/* Form */}
             <div className="space-y-3.5">
-              {/* Recipient Input */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
-                  Data Recipient
-                </label>
-                <div className="relative group">
-                  <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
-                  <Input
-                    inputMode="tel"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="e.g. 024 123 4567"
-                    className={cn(
-                      "h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-inner transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0",
-                      recipientNetworkError ? "border-destructive/60 focus:border-destructive focus:ring-destructive/10" : ""
-                    )}
-                  />
-                  {isVerifyingRecipient && (
-                    <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                      <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
-                    </div>
-                  )}
+              {/* Recipient Input with Active DataHub Verification */}
+              <VerifiedPhoneInput
+                value={phone}
+                onChange={setPhone}
+                networkCode={network?.code}
+                label="Data Recipient"
+              />
+                
+              {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
+                <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                  <span className="truncate">{recipientAccountName}</span>
                 </div>
-                
-                {recipientNetworkError ? (
-                  <p className="mt-1 text-[11px] font-bold text-destructive flex items-center gap-1 px-1 animate-in slide-in-from-top-1 duration-200">
-                    <RefreshCcw className="h-3.5 w-3.5" />
-                    {recipientNetworkError}
-                  </p>
-                ) : null}
-                
-                {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
-                  <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                    <span className="truncate">{recipientAccountName}</span>
-                  </div>
-                )}
-              </div>
+              )}
 
               {/* Momo inputs are hidden if paying with wallet */}
               {!payWithWallet && (

@@ -21,7 +21,55 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Verify authentication and admin authorization
+    const rawBody = await req.text();
+    let body: any = {};
+    try {
+      body = rawBody ? JSON.parse(rawBody) : {};
+    } catch {
+      body = {};
+    }
+
+    const action = body.action;
+
+    // Fetch active provider credentials
+    const { data: dpData } = await admin
+      .from("app_settings")
+      .select("value")
+      .eq("key", "data_providers")
+      .maybeSingle();
+
+    const config = (dpData?.value as any) ?? {};
+    const activeProviderKey = config?.active_data || config?.active || "swiftdata";
+    const providerConfig = config?.providers?.[activeProviderKey] ?? {};
+
+    const PROVIDER_BASE_URL = providerConfig.base_url || "https://user.datahubgh.com/api/external";
+    const PROVIDER_API_KEY = providerConfig.api_key || "";
+
+    // Public action handling for recipient number verification
+    if (action === "verify_number") {
+      const { phone, is_ported_number } = body;
+      if (!phone) return json({ error: "phone is required" }, 400);
+
+      // If active provider is not DataHub or missing API Key, return standard success
+      if (activeProviderKey !== "datahub" || !PROVIDER_API_KEY) {
+        return json({ success: true, verified: true, message: "Number validated" });
+      }
+
+      const verifyUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/purchases/verify-number`;
+      const verifyRes = await fetch(verifyUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${PROVIDER_API_KEY}`,
+          "X-API-Key": PROVIDER_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ phone, is_ported_number: !!is_ported_number }),
+      });
+      const verifyData = await verifyRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      return json(verifyData);
+    }
+
+    // Verify authentication and admin authorization for administrative actions
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized: Missing token" }, 401);
 
@@ -36,26 +84,9 @@ Deno.serve(async (req) => {
 
     if (!isAdmin) return json({ error: "Forbidden: Admin access required" }, 403);
 
-    // Fetch active provider credentials
-    const { data: dpData } = await admin
-      .from("app_settings")
-      .select("value")
-      .eq("key", "data_providers")
-      .maybeSingle();
-
-    const config = (dpData?.value as any) ?? {};
-    const activeProviderKey = config?.active_data || config?.active || "swiftdata";
-    const providerConfig = config?.providers?.[activeProviderKey] ?? {};
-
-    const PROVIDER_BASE_URL = providerConfig.base_url || "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
-    const PROVIDER_API_KEY = providerConfig.api_key || "";
-
     if (!PROVIDER_API_KEY) {
       return json({ error: "Provider API Key is not configured in integrations settings" }, 400);
     }
-
-    const body = await req.json();
-    const action = body.action;
 
     const headers: Record<string, string> = {
       "Authorization": `Bearer ${PROVIDER_API_KEY}`,
@@ -68,7 +99,15 @@ Deno.serve(async (req) => {
       let apiBalance = 0;
       let currency = "GHS";
 
-      if (activeProviderKey === "swiftdata") {
+      if (activeProviderKey === "datahub") {
+        const dhRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/balance`, { headers });
+        const dhData = await dhRes.json().catch(() => null);
+        if (dhData?.success) {
+          mainBalance = Number(dhData.data?.balance ?? dhData.balance ?? 0);
+          apiBalance = mainBalance;
+          currency = dhData.data?.currency || dhData.currency || "GHS";
+        }
+      } else if (activeProviderKey === "swiftdata") {
         const swiftRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/balance`, { headers });
         const swiftData = await swiftRes.json().catch(() => null);
         if (swiftData?.success) {
@@ -295,6 +334,66 @@ Deno.serve(async (req) => {
       const res = await fetch(statusUrl, { headers: serviceHeaders });
       const data = await res.json().catch(() => ({ success: false }));
       return json(data);
+
+    } else if (action === "check_order_status") {
+      const { reference, orderNumber } = body;
+      const ref = reference || orderNumber;
+      if (!ref) return json({ error: "reference or orderNumber is required" }, 400);
+
+      const queryParam = reference ? `reference=${encodeURIComponent(reference)}` : `orderNumber=${encodeURIComponent(orderNumber)}`;
+      const statusUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status?${queryParam}`;
+      const statusRes = await fetch(statusUrl, { headers });
+      const statusData = await statusRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      return json(statusData);
+
+    } else if (action === "register_webhook") {
+      const webhookUrl = body.webhook_url || `${supabaseUrl.replace(/\/$/, "")}/functions/v1/datahub-webhook`;
+      const registerUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/webhook`;
+      const regRes = await fetch(registerUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          url: webhookUrl,
+          secret: PROVIDER_API_KEY,
+          events: ["order.status.changed"],
+          description: "OneGig Platform Auto-Webhook",
+          isActive: true,
+        }),
+      });
+      const regData = await regRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      return json(regData);
+
+    } else if (action === "purchase_voucher") {
+      const { voucher_type, recipient, quantity } = body;
+      if (!voucher_type || !recipient) {
+        return json({ error: "voucher_type and recipient are required" }, 400);
+      }
+      const vUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/voucher-purchase`;
+      const vRes = await fetch(vUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          VoucherType: String(voucher_type).toUpperCase(),
+          Recipient: recipient,
+          Quantity: Number(quantity || 1),
+        }),
+      });
+      const vData = await vRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      return json(vData);
+
+    } else if (action === "report_order") {
+      const { reference, description } = body;
+      if (!reference || !description) {
+        return json({ error: "reference and description are required" }, 400);
+      }
+      const repUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-report`;
+      const repRes = await fetch(repUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ reference, description }),
+      });
+      const repData = await repRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      return json(repData);
 
     } else {
       return json({ error: `Invalid action: ${action}` }, 400);

@@ -24,6 +24,7 @@ import InvitePage from "./pages/Invite.tsx";
 import SubAgentDashboardPage from "./pages/SubAgentDashboard.tsx";
 import ReferralsPage from "./pages/Referrals.tsx";
 import NotificationsPage from "./pages/Notifications.tsx";
+import NumberVerificationPage from "./pages/NumberVerificationPage.tsx";
 import { PWAInstallBanner } from "./components/PWAInstallBanner.tsx";
 import { DraggableThemeToggle } from "./components/ui/DraggableThemeToggle.tsx";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,6 +53,7 @@ const App = () => (
                 <Route path="/" element={<HomePage />} />
                 <Route path="/auth" element={<AuthPage />} />
                 <Route path="/verify-phone" element={<VerifyPhonePage />} />
+                <Route path="/verify-number" element={<NumberVerificationPage />} />
                 <Route path="/buy" element={<PublicBuyPage />} />
                 <Route path="/track" element={<PublicTrackPage />} />
                 <Route path="/dashboard" element={<RequireAuth><DashboardIndex /></RequireAuth>} />

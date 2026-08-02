@@ -1854,11 +1854,21 @@ function IntegrationsSection() {
       const { data } = await supabase.from("app_settings").select("value").eq("key", "data_providers").maybeSingle();
       if (data?.value) {
         const val = data.value;
+        const defaultProviders: Record<string, any> = {
+          swiftdata: { name: "SwiftData Reseller API", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+          datahub:   { name: "DataHub GH", base_url: "https://user.datahubgh.com/api/external", api_key: "" },
+          swft:      { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+          mtopup:    { name: "MTopUp", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+        };
         setConfig({
           ...val,
           active_data: val.active_data || val.active || "swiftdata",
           active_airtime: val.active_airtime || val.active || "swft",
           active_utility: val.active_utility || val.active || "swft",
+          providers: {
+            ...defaultProviders,
+            ...(val.providers || {}),
+          },
         });
       } else {
         setConfig({
@@ -1867,8 +1877,10 @@ function IntegrationsSection() {
           active_airtime: "swft",
           active_utility: "swft",
           providers: {
-            swft:   { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "swft_live_74686859a45448bea75376f0a64f97ed" },
-            mtopup: { name: "MTopUp",        base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+            swiftdata: { name: "SwiftData Reseller API", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+            datahub:   { name: "DataHub GH", base_url: "https://user.datahubgh.com/api/external", api_key: "" },
+            swft:      { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "swft_live_74686859a45448bea75376f0a64f97ed" },
+            mtopup:    { name: "MTopUp", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
           },
         });
       }
@@ -2264,6 +2276,36 @@ function IntegrationsSection() {
                     <Input type="password" value={provider.api_key} onChange={(e) => updateProvider(key, "api_key", e.target.value)} placeholder="Enter API key…" className="h-12 rounded-xl bg-background/80 focus:ring-2 focus:ring-primary/20" />
                   </div>
                 </div>
+                {key === "datahub" && (
+                  <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3">
+                    <div className="text-xs">
+                      <span className="font-bold text-emerald-400 block">Real-time Webhook Receiver</span>
+                      <span className="text-[11px] text-muted-foreground">Automatically receives status callbacks from DataHub GH to deliver or fail orders instantly.</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          toast({ title: "Registering Webhook...", description: "Connecting webhook URL to DataHub GH" });
+                          const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+                            body: { action: "register_webhook" }
+                          });
+                          if (error || (data && data.success === false)) {
+                            toast({ variant: "destructive", title: "Registration Notice", description: data?.error || error?.message || "Could not register automatically. You can also paste the URL in DataHub portal." });
+                          } else {
+                            toast({ title: "Webhook Registered! 🎉", description: "DataHub GH will now automatically push status updates to your site." });
+                          }
+                        } catch (err: any) {
+                          toast({ variant: "destructive", title: "Error", description: err.message });
+                        }
+                      }}
+                      className="shrink-0 h-9 text-xs font-bold border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10"
+                    >
+                      ⚡ Auto-Register Webhook
+                    </Button>
+                  </div>
+                )}
                 {!isActive && (
                   <Button 
                     variant="outline" 

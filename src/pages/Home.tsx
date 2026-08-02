@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/accordion";
 import { useEffect, useRef, useState } from "react";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
+import { MtnStatusWidget } from "@/components/MtnStatusWidget";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "next-themes";
@@ -405,8 +406,8 @@ export default function HomePage() {
 
               <h1 className="text-4xl sm:text-5xl font-black leading-[1.05] tracking-tight md:text-6xl lg:text-[4.25rem] text-white">
                 <span className={`block animate-fade-up ${HD.l1}`}>Buy data.</span>
-                <span className={`block hero-gradient-text animate-fade-up ${HD.l2}`}>Save more.</span>
-                <span className={`block text-white/30 font-bold animate-fade-up ${HD.l3}`}>Deliver instantly.</span>
+                <span className={`block hero-gradient-text-v2 animate-fade-up ${HD.l2}`}>Save more.</span>
+                <span className={`block text-white/40 font-bold animate-fade-up ${HD.l3}`}>Deliver instantly.</span>
               </h1>
 
               <p className={`mt-5 max-w-md text-base sm:text-lg leading-relaxed text-white/50 animate-fade-up ${HD.para}`}>
@@ -445,6 +446,9 @@ export default function HomePage() {
                   <span>Latest Delivery: <strong>2 min ago</strong></span>
                 </div>
               </div>
+
+              {/* DataHub Live MTN Order Delivery Widget */}
+              <MtnStatusWidget className="mt-4 w-full max-w-md" />
 
               <div className={`mt-8 flex flex-col sm:flex-row gap-3 w-full sm:w-auto animate-fade-up ${HD.btns}`}>
                 <Button asChild size="lg" className="h-14 rounded-2xl px-8 text-base font-bold bg-white text-slate-950 hover:bg-slate-100 hover:scale-[1.01] shadow-[0_12px_30px_-6px_rgba(139,92,246,0.3)] transition-all">

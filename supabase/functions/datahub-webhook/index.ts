@@ -1,0 +1,147 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendSMS } from "../_shared/sms.ts";
+import { sendWebPushNotification } from "../_shared/push.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    const rawBody = await req.text();
+    let body: any = null;
+    try {
+      body = rawBody ? JSON.parse(rawBody) : null;
+    } catch {
+      return json({ error: "Invalid JSON payload" }, 400);
+    }
+
+    console.log("DataHub Webhook Received:", body);
+
+    const dataObj = body?.data || body;
+    const reference = dataObj?.reference || body?.reference;
+    const orderNumber = dataObj?.orderNumber || body?.orderNumber;
+    const status = String(dataObj?.status || body?.status || "").toUpperCase();
+
+    if (!reference && !orderNumber) {
+      return json({ ok: true, message: "No reference or orderNumber found in payload" });
+    }
+
+    let order: any = null;
+
+    // Search order by reference (UUID)
+    if (reference) {
+      const { data: oByRef } = await admin
+        .from("orders")
+        .select("*, customer:customer_user_id(*)")
+        .eq("id", reference)
+        .maybeSingle();
+      if (oByRef) order = oByRef;
+    }
+
+    // Search order by notes containing orderNumber or reference
+    if (!order && (orderNumber || reference)) {
+      const searchStr = String(orderNumber || reference);
+      const { data: oByNotes } = await admin
+        .from("orders")
+        .select("*, customer:customer_user_id(*)")
+        .like("notes", `%${searchStr}%`)
+        .maybeSingle();
+      if (oByNotes) order = oByNotes;
+    }
+
+    if (!order) {
+      console.warn("DataHub webhook matched no order in DB:", { reference, orderNumber });
+      return json({ ok: true, matched: false });
+    }
+
+    const isSuccess = ["COMPLETED", "DELIVERED", "SUCCESS"].includes(status);
+    const isFailure = ["FAILED", "REJECTED", "CANCELLED"].includes(status);
+
+    if (isSuccess && order.status !== "delivered") {
+      await admin
+        .from("orders")
+        .update({
+          status: "delivered",
+          notes: `${order.notes || ""} | DataHub update: ${status}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      // Trigger push notification or SMS if needed
+      if (order.customer?.phone) {
+        await sendSMS({
+          to: order.customer.phone,
+          message: `Your order #${order.id.slice(0, 8)} for ${order.recipient_phone} has been delivered successfully!`,
+        }).catch((err) => console.error("SMS notification error:", err));
+      }
+
+      if (order.customer_user_id) {
+        await sendWebPushNotification(admin, {
+          userId: order.customer_user_id,
+          title: "Order Delivered!",
+          body: `Your data bundle order for ${order.recipient_phone} was completed.`,
+        }).catch((err) => console.error("Push notification error:", err));
+      }
+
+      return json({ ok: true, updated: "delivered", orderId: order.id });
+    }
+
+    if (isFailure && order.status !== "failed") {
+      await admin
+        .from("orders")
+        .update({
+          status: "failed",
+          notes: `${order.notes || ""} | DataHub failed: ${dataObj?.statusDescription || status}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      // Refund agent wallet balance if needed
+      if (order.agent_id && order.sell_price > 0) {
+        const { data: agProf } = await admin
+          .from("profiles")
+          .select("wallet_balance")
+          .eq("id", order.agent_id)
+          .single();
+
+        if (agProf) {
+          const newBal = (agProf.wallet_balance || 0) + Number(order.sell_price);
+          await admin
+            .from("profiles")
+            .update({ wallet_balance: newBal })
+            .eq("id", order.agent_id);
+
+          await admin.from("wallet_transactions").insert({
+            user_id: order.agent_id,
+            type: "credit",
+            amount: Number(order.sell_price),
+            description: `Refund for failed order #${order.id.slice(0, 8)}`,
+            balance_after: newBal,
+          });
+        }
+      }
+
+      return json({ ok: true, updated: "failed", orderId: order.id });
+    }
+
+    return json({ ok: true, status: "unchanged", orderId: order.id });
+  } catch (err: any) {
+    console.error("DataHub webhook error:", err);
+    return json({ error: err.message || "Internal server error" }, 500);
+  }
+});

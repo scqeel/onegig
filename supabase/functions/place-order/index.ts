@@ -78,6 +78,27 @@ function toSizeGb(sizeLabel: string | null | undefined, sizeMb: number): number 
   return Number(sizeMb) / 1024;
 }
 
+function toDataHubNetworkKey(networkCode: string, sizeLabel?: string | null): string {
+  const net = String(networkCode || "").toUpperCase();
+  const label = String(sizeLabel || "").toLowerCase();
+  if (net === "MTN") {
+    if (label.includes("express") || label.includes("xpress")) {
+      return "MTN_XPRESS";
+    }
+    return "YELLO";
+  }
+  if (net === "TELECEL" || net === "VODAFONE") {
+    return "TELECEL";
+  }
+  if (net === "AT" || net === "AIRTELTIGO") {
+    if (label.includes("bigtime") || label.includes("big time")) {
+      return "AT_BIGTIME";
+    }
+    return "AT_PREMIUM";
+  }
+  return "YELLO";
+}
+
 async function deliverData(
   admin: ReturnType<typeof createClient>,
   args: {
@@ -121,7 +142,17 @@ async function deliverData(
   let endpoint = "";
   let payload: any = {};
 
-  if (effectiveProviderKey === "swiftdata") {
+  if (effectiveProviderKey === "datahub") {
+    endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;
+    const netKey = toDataHubNetworkKey(args.network_code || "MTN", args.size_label);
+    const sizeGb = toSizeGb(args.size_label, args.size_mb || 0);
+    payload = {
+      networkKey: netKey,
+      recipient: normalizePhone(args.recipient),
+      capacity: String(sizeGb),
+      reference: requestId
+    };
+  } else if (effectiveProviderKey === "swiftdata") {
     // New Reseller REST API (Data purchases only)
     endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/v1/buy-data`;
     const net = toSwiftDataNetwork(args.network_code || "MTN", args.size_label);
@@ -225,8 +256,8 @@ async function deliverData(
 
   return {
     ok: true,
-    status: parsed?.status || "delivered",
-    provider_ref: parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId,
+    status: parsed?.data?.status || parsed?.status || "delivered",
+    provider_ref: parsed?.data?.orderNumber ? String(parsed.data.orderNumber) : (parsed?.data?.reference || parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId),
     message: parsed?.message || null,
   };
 }

@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetworksAndBundles";
 import { useSettings } from "@/hooks/useSettings";
+import { VerifiedPhoneInput } from "@/components/VerifiedPhoneInput";
 import { TrackOrder } from "@/components/buy/TrackOrder";
 import { formatGHS } from "@/lib/format";
 import {
@@ -1249,21 +1250,12 @@ export default function AgentStorePage() {
 
           {/* Checkout inputs */}
           <div className="space-y-4 px-6 py-5">
-            <div>
-              <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
-                Recipient Phone (Who is receiving the data?)
-              </label>
-              <Input
-                inputMode="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="024 123 4567"
-                className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-base font-semibold focus-visible:ring-rose-500"
-              />
-              <p className="mt-1 text-[9px] text-slate-400 font-medium">
-                Data bundle will be automatically credited to this number.
-              </p>
-            </div>
+            <VerifiedPhoneInput
+              value={phone}
+              onChange={setPhone}
+              networkCode={selectedNetwork?.code}
+              label="Recipient Phone (Who is receiving data?)"
+            />
 
             <div>
               <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">

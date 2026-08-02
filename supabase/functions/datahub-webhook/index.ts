@@ -60,17 +60,47 @@ Deno.serve(async (req) => {
         .from("orders")
         .select("*, customer:customer_user_id(*)")
         .like("notes", `%${searchStr}%`)
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (oByNotes) order = oByNotes;
     }
 
+    // Search order by recipient phone if reference or orderNumber yielded no match
+    const recipientPhone = dataObj?.recipient || body?.recipient || body?.phone;
+    if (!order && recipientPhone) {
+      const cleanPhone = String(recipientPhone).replace(/\D/g, "").slice(-9);
+      const { data: oByPhone } = await admin
+        .from("orders")
+        .select("*, customer:customer_user_id(*)")
+        .like("recipient_phone", `%${cleanPhone}`)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (oByPhone) order = oByPhone;
+    }
+
     if (!order) {
-      console.warn("DataHub webhook matched no order in DB:", { reference, orderNumber });
+      console.warn("DataHub webhook matched no order in DB:", { reference, orderNumber, recipientPhone });
       return json({ ok: true, matched: false });
     }
 
     const isSuccess = ["COMPLETED", "DELIVERED", "SUCCESS"].includes(status);
     const isFailure = ["FAILED", "REJECTED", "CANCELLED"].includes(status);
+    const isProcessing = ["PROCESSING", "PENDING", "INITIALIZED"].includes(status);
+
+    if (isProcessing && order.status !== "processing" && order.status !== "delivered" && order.status !== "failed" && order.status !== "refunded") {
+      await admin
+        .from("orders")
+        .update({
+          status: "processing",
+          notes: `${order.notes || ""} | DataHub status: ${dataObj?.statusDescription || status}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order.id);
+
+      return json({ ok: true, updated: "processing", orderId: order.id });
+    }
 
     if (isSuccess && order.status !== "delivered") {
       await admin

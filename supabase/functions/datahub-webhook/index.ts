@@ -127,10 +127,9 @@ Deno.serve(async (req) => {
         }
 
         if (order.customer_user_id) {
-          await sendWebPushNotification(admin, {
-            userId: order.customer_user_id,
+          await sendWebPushNotification(admin, order.customer_user_id, {
             title: "Order Delivered!",
-            body: `Your data bundle order for ${order.recipient_phone} was completed.`,
+            message: `Your data bundle order for ${order.recipient_phone} was completed.`,
           }).catch((err) => console.error("Push notification error:", err));
         }
       }

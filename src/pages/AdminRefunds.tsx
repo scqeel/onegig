@@ -30,6 +30,7 @@ export default function AdminRefunds() {
   // Fetch failed & refunded orders
   const { data: orders, isLoading } = useQuery({
     queryKey: ["admin-refund-orders"],
+    refetchInterval: 4000,
     queryFn: async () => {
       const { data: rawOrders, error } = await supabase
         .from("orders")

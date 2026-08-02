@@ -30,6 +30,7 @@ Status: ${o.status.toUpperCase()}`;
   const { data: orders, isLoading } = useQuery({
     queryKey: ["customer-orders", session?.user.id],
     enabled: !!session?.user.id,
+    refetchInterval: 4000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")

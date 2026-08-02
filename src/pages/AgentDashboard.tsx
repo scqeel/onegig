@@ -1240,6 +1240,7 @@ export function TransactionsSection({ agentId }: { agentId: string }) {
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ["agent-transactions", agentId],
+    refetchInterval: 4000,
     queryFn: async () => {
       const { data } = await supabase
         .from("orders")

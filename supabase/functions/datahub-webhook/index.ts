@@ -85,11 +85,15 @@ Deno.serve(async (req) => {
       return json({ ok: true, matched: false });
     }
 
-    const isSuccess = ["COMPLETED", "DELIVERED", "SUCCESS"].includes(status);
-    const isFailure = ["FAILED", "REJECTED", "CANCELLED"].includes(status);
-    const isProcessing = ["PROCESSING", "PENDING", "INITIALIZED"].includes(status);
+    const status = String(
+      dataObj?.status || dataObj?.state || dataObj?.order_status || body?.status || body?.state || body?.order_status || ""
+    ).toUpperCase();
 
-    if (isProcessing && order.status !== "processing" && order.status !== "delivered" && order.status !== "failed" && order.status !== "refunded") {
+    const isSuccess = ["COMPLETED", "DELIVERED", "SUCCESS", "SUCCESSFUL", "DONE", "FULFILLED", "PAID", "SUCCESS_DELIVERED"].includes(status);
+    const isFailure = ["FAILED", "REJECTED", "CANCELLED", "DECLINED", "ERROR", "UNSUCCESSFUL", "FAIL"].includes(status);
+    const isProcessing = ["PROCESSING", "PENDING", "INITIALIZED", "IN_PROGRESS", "QUEUED", "SUBMITTED"].includes(status);
+
+    if (isProcessing && order.status !== "delivered" && order.status !== "failed" && order.status !== "refunded") {
       await admin
         .from("orders")
         .update({
@@ -102,31 +106,33 @@ Deno.serve(async (req) => {
       return json({ ok: true, updated: "processing", orderId: order.id });
     }
 
-    if (isSuccess && order.status !== "delivered") {
-      await admin
-        .from("orders")
-        .update({
-          status: "delivered",
-          notes: `${order.notes || ""} | DataHub update: ${status}`,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id);
+    if (isSuccess) {
+      if (order.status !== "delivered") {
+        await admin
+          .from("orders")
+          .update({
+            status: "delivered",
+            notes: `${order.notes || ""} | DataHub update: ${dataObj?.statusDescription || status}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", order.id);
 
-      // Trigger success SMS when provider webhook confirms delivery!
-      const smsPhone = order.customer?.phone || order.recipient_phone;
-      if (smsPhone) {
-        await sendSMS({
-          to: smsPhone,
-          message: `Your OneGig order for ${order.recipient_phone} has been delivered successfully! Thank you for choosing OneGig.`,
-        }).catch((err) => console.error("SMS notification error:", err));
-      }
+        // Trigger success SMS when provider webhook confirms delivery!
+        const smsPhone = order.customer?.phone || order.recipient_phone;
+        if (smsPhone) {
+          await sendSMS({
+            to: smsPhone,
+            message: `Your OneGig order for ${order.recipient_phone} has been delivered successfully! Thank you for choosing OneGig.`,
+          }).catch((err) => console.error("SMS notification error:", err));
+        }
 
-      if (order.customer_user_id) {
-        await sendWebPushNotification(admin, {
-          userId: order.customer_user_id,
-          title: "Order Delivered!",
-          body: `Your data bundle order for ${order.recipient_phone} was completed.`,
-        }).catch((err) => console.error("Push notification error:", err));
+        if (order.customer_user_id) {
+          await sendWebPushNotification(admin, {
+            userId: order.customer_user_id,
+            title: "Order Delivered!",
+            body: `Your data bundle order for ${order.recipient_phone} was completed.`,
+          }).catch((err) => console.error("Push notification error:", err));
+        }
       }
 
       return json({ ok: true, updated: "delivered", orderId: order.id });

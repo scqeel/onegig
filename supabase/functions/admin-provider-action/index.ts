@@ -372,11 +372,22 @@ Deno.serve(async (req) => {
         const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("id", order_id).maybeSingle();
         targetOrder = data;
       } else if (ref) {
-        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("reference", ref).maybeSingle();
+        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").or(`reference.eq.${ref},id.eq.${ref}`).maybeSingle();
         targetOrder = data;
+        if (!targetOrder) {
+          const { data: oByNotes } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").like("notes", `%${ref}%`).maybeSingle();
+          if (oByNotes) targetOrder = oByNotes;
+        }
       }
 
-      const lookupRef = ref || targetOrder?.reference;
+      // Extract DataHub order number from targetOrder.notes if available (e.g. "Provider Ref: 1574625")
+      let dhOrderNum = "";
+      if (targetOrder?.notes) {
+        const match = String(targetOrder.notes).match(/(?:Provider Ref:\s*|Order #\s*|Ref:\s*)(\d+)/i) || String(targetOrder.notes).match(/\b(\d{5,8})\b/);
+        if (match) dhOrderNum = match[1];
+      }
+
+      const lookupRef = orderNumber || dhOrderNum || ref || targetOrder?.reference || targetOrder?.id;
       if (!lookupRef) {
         return json({ error: "reference, orderNumber, or order_id is required" }, 400);
       }

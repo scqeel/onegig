@@ -447,7 +447,7 @@ export default function HomePage() {
                     <Zap className="h-4 w-4 text-purple-400 animate-pulse" /> Express Direct Order
                   </span>
                   <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md border border-emerald-500/20">
-                    < 35s Average Delivery
+                    ⚡ Under 35s Delivery
                   </span>
                 </div>
 

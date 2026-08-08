@@ -7,7 +7,7 @@ import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetwo
 import { useAuth } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { formatGHS } from "@/lib/format";
+import { formatGHS, isSamePhoneNumber } from "@/lib/format";
 import { Confetti } from "@/components/Confetti";
 import { ArrowRight, CheckCircle2, Lock, RefreshCcw, Zap, ChevronDown, Smartphone, CreditCard } from "lucide-react";
 import { VerifiedPhoneInput } from "@/components/VerifiedPhoneInput";
@@ -20,13 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-const isSamePhoneNumber = (num1: string, num2: string) => {
-  const clean1 = num1.replace(/\D/g, "");
-  const clean2 = num2.replace(/\D/g, "");
-  if (!clean1 || !clean2) return false;
-  return clean1.slice(-9) === clean2.slice(-9);
-};
 
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
 

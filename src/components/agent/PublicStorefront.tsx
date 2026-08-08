@@ -8,7 +8,7 @@ import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetwo
 import { useSettings } from "@/hooks/useSettings";
 import { VerifiedPhoneInput } from "@/components/VerifiedPhoneInput";
 import { TrackOrder } from "@/components/buy/TrackOrder";
-import { formatGHS } from "@/lib/format";
+import { formatGHS, isSamePhoneNumber } from "@/lib/format";
 import {
   Store,
   Phone,

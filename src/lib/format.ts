@@ -15,8 +15,15 @@ export const formatPhone = (raw: string): string => {
   return raw;
 };
 
+export const isSamePhoneNumber = (num1?: string | null, num2?: string | null): boolean => {
+  if (!num1 || !num2) return false;
+  const clean1 = String(num1).replace(/\D/g, "");
+  const clean2 = String(num2).replace(/\D/g, "");
+  if (!clean1 || !clean2) return false;
+  return clean1.slice(-9) === clean2.slice(-9);
+};
+
 export const phoneToEmail = (phone: string): string => {
-  // Use phone as identifier — wrap into a synthetic email for Supabase auth
   const digits = phone.replace(/\D/g, "");
   return `${digits}@phone.onegig.local`;
 };

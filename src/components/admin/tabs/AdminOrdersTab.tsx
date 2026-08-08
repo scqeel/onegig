@@ -363,7 +363,7 @@ export function AdminOrdersTab() {
                             ? <Loader2 className="h-3 w-3 animate-spin" />
                             : <><RefreshCw className="h-3.5 w-3.5" /> Sync Status</>}
                         </Button>
-                        {o.status === "failed" && (
+                        {["failed", "processing", "pending"].includes(o.status) && (
                           <>
                             <Button
                               size="sm" variant="outline"

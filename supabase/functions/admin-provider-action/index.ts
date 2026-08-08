@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sendSMS } from "../_shared/sms.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -433,9 +434,6 @@ Deno.serve(async (req) => {
             const bundleLabel = targetOrder.bundle?.size_label || "Data Bundle";
             const networkName = targetOrder.network?.name || "Network";
             const smsMessage = `Your ${bundleLabel} (${networkName}) order for ${targetOrder.recipient_phone} has been delivered successfully! Ref: ${providerRef}. Thank you for choosing OneGig!`;
-            
-            // Dynamic import helper to send SMS
-            const { sendSMS } = await import("../_shared/sms.ts");
             await sendSMS({ to: targetOrder.recipient_phone, message: smsMessage });
           } catch (smsErr) {
             console.warn("SMS dispatch failed on status sync:", smsErr);

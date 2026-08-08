@@ -35,7 +35,6 @@ Deno.serve(async (req) => {
     const dataObj = body?.data || body;
     const reference = dataObj?.reference || body?.reference;
     const orderNumber = dataObj?.orderNumber || body?.orderNumber;
-    const status = String(dataObj?.status || body?.status || "").toUpperCase();
 
     if (!reference && !orderNumber) {
       return json({ ok: true, message: "No reference or orderNumber found in payload" });

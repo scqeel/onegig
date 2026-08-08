@@ -23,6 +23,29 @@ export const isSamePhoneNumber = (num1?: string | null, num2?: string | null): b
   return clean1.slice(-9) === clean2.slice(-9);
 };
 
+export async function parseEdgeFunctionError(error: any, data?: any): Promise<string> {
+  if (data?.error) {
+    return typeof data.error === "object" ? (data.error.message || JSON.stringify(data.error)) : String(data.error);
+  }
+  if (!error) return "";
+
+  try {
+    if (error.context && typeof error.context.json === "function") {
+      const json = await error.context.json();
+      if (json?.error) return typeof json.error === "object" ? (json.error.message || JSON.stringify(json.error)) : String(json.error);
+      if (json?.message) return String(json.message);
+    }
+  } catch (e) {
+    // Ignore JSON extraction error
+  }
+
+  if (error.message && error.message !== "Failed to send a request to the Edge Function") {
+    return error.message;
+  }
+
+  return "Payment processor connection error. Please try again or use another payment method.";
+}
+
 export const phoneToEmail = (phone: string): string => {
   const digits = phone.replace(/\D/g, "");
   return `${digits}@phone.onegig.local`;

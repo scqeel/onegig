@@ -7,7 +7,7 @@ import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetwo
 import { useAuth } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
 import { supabase } from "@/integrations/supabase/client";
-import { formatGHS, isSamePhoneNumber } from "@/lib/format";
+import { formatGHS, isSamePhoneNumber, parseEdgeFunctionError } from "@/lib/format";
 import { Confetti } from "@/components/Confetti";
 import { ArrowRight, CheckCircle2, Lock, RefreshCcw, Zap, ChevronDown, Smartphone, CreditCard } from "lucide-react";
 import { VerifiedPhoneInput } from "@/components/VerifiedPhoneInput";
@@ -401,16 +401,10 @@ export function BuyDataFlow({
       },
     });
 
-    if (error) {
+    if (error || data?.error) {
       setPhase("error");
-      setErrorMsg(error?.message || "Payment initialization failed");
-      return;
-    }
-
-    if (data?.error) {
-      setPhase("error");
-      const errMsg = typeof data.error === "object" ? JSON.stringify(data.error) : data.error;
-      setErrorMsg(errMsg);
+      const msg = await parseEdgeFunctionError(error, data);
+      setErrorMsg(msg);
       return;
     }
 

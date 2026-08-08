@@ -68,7 +68,7 @@ export function TrackOrder() {
         return;
       }
 
-      const mapped: OrderResult[] = (data ?? []).map((o: any) => ({
+      let mapped: OrderResult[] = (data ?? []).map((o: any) => ({
         id: o.id,
         reference: o.reference,
         payment_reference: o.payment_reference,
@@ -80,6 +80,37 @@ export function TrackOrder() {
         bundle: o.bundle_size_label ? { size_label: o.bundle_size_label } : null,
         network: o.network_name ? { name: o.network_name, logo_emoji: o.network_logo_emoji } : null,
       }));
+
+      if (mapped.length === 0) {
+        const digits = raw.replace(/\D/g, "");
+        let qBuilder = supabase
+          .from("orders")
+          .select("id, reference, payment_reference, recipient_phone, status, sell_price, created_at, notes, bundle:bundles(size_label), network:networks(name, logo_emoji)")
+          .order("created_at", { ascending: false })
+          .limit(20);
+
+        if (digits.length >= 9) {
+          qBuilder = qBuilder.like("recipient_phone", `%${digits.slice(-9)}`);
+        } else {
+          qBuilder = qBuilder.or(`reference.ilike.%${raw}%,payment_reference.ilike.%${raw}%,id.eq.${raw}`);
+        }
+
+        const { data: directOrders } = await qBuilder;
+        if (directOrders && directOrders.length > 0) {
+          mapped = directOrders.map((o: any) => ({
+            id: o.id,
+            reference: o.reference,
+            payment_reference: o.payment_reference,
+            recipient_phone: o.recipient_phone,
+            status: o.status,
+            sell_price: Number(o.sell_price || 0),
+            created_at: o.created_at,
+            notes: o.notes,
+            bundle: o.bundle ? { size_label: (o.bundle as any).size_label } : null,
+            network: o.network ? { name: (o.network as any).name, logo_emoji: (o.network as any).logo_emoji } : null,
+          }));
+        }
+      }
 
       setOrders(mapped);
       setLastUpdated(new Date());

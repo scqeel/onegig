@@ -44,7 +44,7 @@ export function AdminOrdersTab() {
   const [retryId, setRetryId]           = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch]             = useState("");
-  const [dateFilter, setDateFilter]     = useState("7d");
+  const [dateFilter, setDateFilter]     = useState("30d");
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-orders", dateFilter],

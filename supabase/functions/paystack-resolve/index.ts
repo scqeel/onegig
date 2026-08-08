@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
     const paystackSecret = await getPaystackSecretKey();
     if (!paystackSecret) {
-      return json({ error: "Missing Paystack secrets. Set PAYSTACK_SECRET_KEY." }, 500);
+      return json({ ok: false, error: "Missing Paystack secrets. Set PAYSTACK_SECRET_KEY." }, 200);
     }
     
     // Test bypass - if using test keys, resolving won't work correctly for real numbers
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const resolveData = await resolveRes.json();
     
     if (!resolveRes.ok || !resolveData?.status) {
-      return json({ error: resolveData?.message ?? "Unable to resolve account" }, 200);
+      return json({ ok: false, error: resolveData?.message ?? "Unable to resolve account" }, 200);
     }
 
     return json({
@@ -80,6 +80,6 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("paystack-resolve error", e);
-    return json({ error: e?.message ?? "Internal error" }, 500);
+    return json({ ok: false, error: e?.message ?? "Internal error" }, 200);
   }
 });

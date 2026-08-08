@@ -59,8 +59,9 @@ Deno.serve(async (req) => {
     const apiUser = await dbGetTellerApiUser();
     if (!merchantId || !apiKey) {
       return json({
+        ok: false,
         error: "Missing theTeller secrets. Set THETELLER_MERCHANT_ID and THETELLER_API_KEY.",
-      }, 500);
+      }, 200);
     }
 
     if (!body?.purpose) return json({ error: "purpose is required" }, 400);
@@ -354,8 +355,9 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("theteller-process error", e);
     return json({
+      ok: false,
       error: e?.message ?? "Internal error",
       details: e?.stack ?? String(e)
-    }, 500);
+    }, 200);
   }
 });

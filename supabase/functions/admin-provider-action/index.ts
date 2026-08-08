@@ -589,7 +589,7 @@ Deno.serve(async (req) => {
     }
   } catch (err: any) {
     console.error("admin-provider-action error:", err);
-    return json({ error: err.message || "Internal Server Error" }, 500);
+    return json({ ok: false, error: err.message || "Internal Server Error" }, 200);
   }
 });
 

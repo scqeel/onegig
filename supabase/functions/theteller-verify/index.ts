@@ -1089,8 +1089,9 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("theteller-verify error", e);
     return json({
+      ok: false,
       error: e?.message ?? "Internal error",
       details: e?.stack ?? String(e)
-    }, 500);
+    }, 200);
   }
 });

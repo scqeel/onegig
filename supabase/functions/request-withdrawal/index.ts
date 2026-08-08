@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
     })
     .select("*")
     .single();
-  if (wErr) return json({ error: wErr.message }, 500);
+  if (wErr) return json({ ok: false, error: wErr.message }, 200);
 
   // Lock funds via pending withdrawal tx
   await admin.from("wallet_transactions").insert({

@@ -578,6 +578,6 @@ Deno.serve(async (req) => {
     });
   } catch (e: any) {
     console.error("place-order error", e);
-    return json({ error: e?.message ?? "Internal error" }, 500);
+    return json({ ok: false, error: e?.message ?? "Internal error" }, 200);
   }
 });

@@ -73,8 +73,9 @@ Deno.serve(async (req) => {
     const paystackSecret = await getPaystackSecretKey();
     if (!paystackSecret) {
       return json({
+        ok: false,
         error: "Missing Paystack secrets. Set PAYSTACK_SECRET_KEY.",
-      }, 500);
+      }, 200);
     }
 
     if (body?.action === "submit_otp") {
@@ -447,9 +448,10 @@ Deno.serve(async (req) => {
   } catch (e: any) {
     console.error("paystack-process error", e);
     return json({
+      ok: false,
       error: e?.message ?? "Internal error",
       details: e?.stack ?? String(e)
-    }, 500);
+    }, 200);
   }
 });
 

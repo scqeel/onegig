@@ -45,6 +45,7 @@ export function TrackOrder() {
   const [loading, setLoading] = useState(false);
   const [copiedRef, setCopiedRef] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [syncingRef, setSyncingRef] = useState<string | null>(null);
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
@@ -131,9 +132,10 @@ export function TrackOrder() {
     }
   }, [searchParams, fetchOrders]);
 
-  // 4-Second Auto-Polling for active processing orders
+  // 4-Second Auto-Polling & 10-Second Live Provider Sync for active processing orders
   useEffect(() => {
-    if (!query.trim() || !orders?.some((o) => ["pending", "processing"].includes(o.status))) {
+    const processingOrders = orders?.filter((o) => ["pending", "processing"].includes(o.status));
+    if (!query.trim() || !processingOrders || processingOrders.length === 0) {
       return;
     }
 
@@ -141,7 +143,25 @@ export function TrackOrder() {
       fetchOrders(query);
     }, 4000);
 
-    return () => clearInterval(interval);
+    const syncProviderStatus = async () => {
+      for (const order of processingOrders) {
+        try {
+          await supabase.functions.invoke("admin-provider-action", {
+            body: { action: "check_order_status", order_id: order.id }
+          });
+        } catch (e) {
+          console.warn("Live status sync error:", e);
+        }
+      }
+    };
+
+    syncProviderStatus();
+    const syncInterval = setInterval(syncProviderStatus, 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(syncInterval);
+    };
   }, [query, orders, fetchOrders]);
 
   // Real-time Postgres Channel Listener
@@ -439,16 +459,42 @@ export function TrackOrder() {
 
                 {/* Bottom Action Footer */}
                 <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-4">
-                  <a
-                    href={`https://wa.me/233500000000?text=${encodeURIComponent(
-                      `Hello OneGig Support, I need help with my Order Ref: ${order.reference || order.id} for phone ${order.recipient_phone}`
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-extrabold text-emerald-400 hover:bg-emerald-500/20 transition-all"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" /> Live Support Chat
-                  </a>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <a
+                      href={`https://wa.me/233500000000?text=${encodeURIComponent(
+                        `Hello OneGig Support, I need help with my Order Ref: ${order.reference || order.id} for phone ${order.recipient_phone}`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-extrabold text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" /> Live Support Chat
+                    </a>
+
+                    {isProcessing && (
+                      <Button
+                        size="sm"
+                        disabled={syncingRef === order.id}
+                        onClick={async () => {
+                          setSyncingRef(order.id);
+                          try {
+                            await supabase.functions.invoke("admin-provider-action", {
+                              body: { action: "check_order_status", order_id: order.id }
+                            });
+                            await fetchOrders(query);
+                          } catch (e) {
+                            console.warn("Sync status error:", e);
+                          } finally {
+                            setSyncingRef(null);
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-xs font-extrabold text-blue-400 hover:bg-blue-500/20 transition-all"
+                      >
+                        {syncingRef === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                        Sync Live Status
+                      </Button>
+                    )}
+                  </div>
 
                   <Link
                     to="/buy"

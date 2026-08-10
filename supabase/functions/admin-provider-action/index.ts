@@ -76,6 +76,147 @@ Deno.serve(async (req) => {
       return json(verifyData);
     }
 
+    const headers: Record<string, string> = {
+      "Authorization": `Bearer ${PROVIDER_API_KEY}`,
+      "X-API-Key": PROVIDER_API_KEY,
+      "Content-Type": "application/json",
+    };
+
+    if (action === "check_order_status") {
+      const { reference, orderNumber, order_id } = body;
+      const ref = reference || orderNumber;
+      
+      let targetOrder: any = null;
+
+      // Find target order if order_id or reference provided
+      if (order_id) {
+        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("id", order_id).maybeSingle();
+        targetOrder = data;
+      } else if (ref) {
+        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").or(`reference.eq.${ref},id.eq.${ref}`).maybeSingle();
+        targetOrder = data;
+        if (!targetOrder) {
+          const { data: oByNotes } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").like("notes", `%${ref}%`).maybeSingle();
+          if (oByNotes) targetOrder = oByNotes;
+        }
+      }
+
+      // Extract DataHub order number from targetOrder.notes if available (e.g. "Provider Ref: 1574625")
+      let dhOrderNum = "";
+      if (targetOrder?.notes) {
+        const match = String(targetOrder.notes).match(/(?:Provider Ref:\s*|Order #\s*|Ref:\s*)(\d+)/i) || String(targetOrder.notes).match(/\b(\d{5,8})\b/);
+        if (match) dhOrderNum = match[1];
+      }
+
+      const lookupRef = orderNumber || dhOrderNum || ref || targetOrder?.reference || targetOrder?.id;
+      if (!lookupRef) {
+        return json({ error: "reference, orderNumber, or order_id is required" }, 400);
+      }
+
+      const queryParam = String(lookupRef).match(/^\d+$/) 
+        ? `orderNumber=${encodeURIComponent(lookupRef)}` 
+        : `reference=${encodeURIComponent(lookupRef)}`;
+
+      const statusUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status?${queryParam}`;
+      const statusRes = await fetch(statusUrl, { headers });
+      const statusData = await statusRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+
+      const rawStatus = String(statusData?.data?.status || statusData?.status || "").toLowerCase();
+      let mappedStatus: "delivered" | "failed" | "processing" = "processing";
+      
+      if (["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus)) {
+        mappedStatus = "delivered";
+      } else if (["failed", "canceled", "cancelled", "rejected", "declined"].includes(rawStatus)) {
+        mappedStatus = "failed";
+      }
+
+      // Update database if target order found
+      if (targetOrder) {
+        const providerRef = statusData?.data?.orderNumber
+          ? String(statusData.data.orderNumber)
+          : (statusData?.data?.reference || statusData?.order_id || statusData?.reference || lookupRef);
+
+        const { error: updateErr } = await admin
+          .from("orders")
+          .update({
+            status: mappedStatus,
+            notes: statusData?.message || statusData?.data?.message || targetOrder.notes || null,
+          })
+          .eq("id", targetOrder.id);
+
+        if (updateErr) {
+          console.error("Failed to sync order status in DB:", updateErr);
+        }
+
+        // Send SMS & Credit Agent Earnings if transitioned to delivered
+        if (mappedStatus === "delivered" && targetOrder.status !== "delivered") {
+          if (targetOrder.recipient_phone) {
+            try {
+              const bundleLabel = targetOrder.bundle?.size_label || "Data Bundle";
+              const networkName = targetOrder.network?.name || "Network";
+              const smsMessage = `Your ${bundleLabel} (${networkName}) order for ${targetOrder.recipient_phone} has been delivered successfully! Ref: ${providerRef}. Thank you for choosing OneGig!`;
+              await sendSMS({ to: targetOrder.recipient_phone, message: smsMessage });
+            } catch (smsErr) {
+              console.warn("SMS dispatch failed on status sync:", smsErr);
+            }
+          }
+
+          // Credit Agent Earnings
+          if (targetOrder.agent_id && Number(targetOrder.agent_profit || 0) > 0) {
+            const { data: existingTx } = await admin
+              .from("wallet_transactions")
+              .select("id")
+              .eq("related_order_id", targetOrder.id)
+              .eq("type", "earning")
+              .maybeSingle();
+
+            if (!existingTx) {
+              const { data: agentRow } = await admin
+                .from("agent_profiles")
+                .select("user_id")
+                .eq("id", targetOrder.agent_id)
+                .maybeSingle();
+
+              if (agentRow?.user_id) {
+                await admin.from("wallet_transactions").insert({
+                  user_id: agentRow.user_id,
+                  type: "earning",
+                  amount: Number(targetOrder.agent_profit),
+                  status: "completed",
+                  related_order_id: targetOrder.id,
+                  description: `Profit from order ${targetOrder.reference}`,
+                });
+
+                await admin.from("app_notifications").insert({
+                  title: "New Store Sale!",
+                  message: `You earned GHS ${Number(targetOrder.agent_profit).toFixed(2)} profit from a sale to ${targetOrder.recipient_phone}.`,
+                  type: "success",
+                  sound_name: "paystack",
+                  target_user_id: agentRow.user_id,
+                  is_global: false,
+                });
+
+                await sendWebPushNotification(admin, agentRow.user_id, {
+                  title: "New Store Sale!",
+                  message: `You earned GHS ${Number(targetOrder.agent_profit).toFixed(2)} profit from a sale to ${targetOrder.recipient_phone}.`,
+                  url: "/agent",
+                }).catch((err) => console.error("Agent push notification error:", err));
+              }
+            }
+          }
+        }
+      }
+
+      return json({
+        success: true,
+        status: mappedStatus,
+        provider_status: rawStatus || "unknown",
+        order_id: targetOrder?.id || null,
+        provider_ref: lookupRef,
+        data: statusData,
+      });
+    }
+
     // Verify authentication and admin authorization for administrative actions
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Unauthorized: Missing token" }, 401);
@@ -362,140 +503,6 @@ Deno.serve(async (req) => {
       }
       const data = await res.json().catch(() => ({ success: true, status: "online" }));
       return json(data);
-
-    } else if (action === "check_order_status") {
-      const { reference, orderNumber, order_id } = body;
-      const ref = reference || orderNumber;
-      
-      let targetOrder: any = null;
-
-      // Find target order if order_id or reference provided
-      if (order_id) {
-        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").eq("id", order_id).maybeSingle();
-        targetOrder = data;
-      } else if (ref) {
-        const { data } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").or(`reference.eq.${ref},id.eq.${ref}`).maybeSingle();
-        targetOrder = data;
-        if (!targetOrder) {
-          const { data: oByNotes } = await admin.from("orders").select("*, bundle:bundles(size_label), network:networks(name)").like("notes", `%${ref}%`).maybeSingle();
-          if (oByNotes) targetOrder = oByNotes;
-        }
-      }
-
-      // Extract DataHub order number from targetOrder.notes if available (e.g. "Provider Ref: 1574625")
-      let dhOrderNum = "";
-      if (targetOrder?.notes) {
-        const match = String(targetOrder.notes).match(/(?:Provider Ref:\s*|Order #\s*|Ref:\s*)(\d+)/i) || String(targetOrder.notes).match(/\b(\d{5,8})\b/);
-        if (match) dhOrderNum = match[1];
-      }
-
-      const lookupRef = orderNumber || dhOrderNum || ref || targetOrder?.reference || targetOrder?.id;
-      if (!lookupRef) {
-        return json({ error: "reference, orderNumber, or order_id is required" }, 400);
-      }
-
-      const queryParam = String(lookupRef).match(/^\d+$/) 
-        ? `orderNumber=${encodeURIComponent(lookupRef)}` 
-        : `reference=${encodeURIComponent(lookupRef)}`;
-
-      const statusUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status?${queryParam}`;
-      const statusRes = await fetch(statusUrl, { headers });
-      const statusData = await statusRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
-
-      const rawStatus = String(statusData?.data?.status || statusData?.status || "").toLowerCase();
-      let mappedStatus: "delivered" | "failed" | "processing" = "processing";
-      
-      if (["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus)) {
-        mappedStatus = "delivered";
-      } else if (["failed", "canceled", "cancelled", "rejected", "declined"].includes(rawStatus)) {
-        mappedStatus = "failed";
-      }
-
-      // Update database if target order found
-      if (targetOrder) {
-        const providerRef = statusData?.data?.orderNumber
-          ? String(statusData.data.orderNumber)
-          : (statusData?.data?.reference || statusData?.order_id || statusData?.reference || lookupRef);
-
-        const { error: updateErr } = await admin
-          .from("orders")
-          .update({
-            status: mappedStatus,
-            notes: statusData?.message || statusData?.data?.message || targetOrder.notes || null,
-          })
-          .eq("id", targetOrder.id);
-
-        if (updateErr) {
-          console.error("Failed to sync order status in DB:", updateErr);
-        }
-
-        // Send SMS & Credit Agent Earnings if transitioned to delivered
-        if (mappedStatus === "delivered" && targetOrder.status !== "delivered") {
-          if (targetOrder.recipient_phone) {
-            try {
-              const bundleLabel = targetOrder.bundle?.size_label || "Data Bundle";
-              const networkName = targetOrder.network?.name || "Network";
-              const smsMessage = `Your ${bundleLabel} (${networkName}) order for ${targetOrder.recipient_phone} has been delivered successfully! Ref: ${providerRef}. Thank you for choosing OneGig!`;
-              await sendSMS({ to: targetOrder.recipient_phone, message: smsMessage });
-            } catch (smsErr) {
-              console.warn("SMS dispatch failed on status sync:", smsErr);
-            }
-          }
-
-          // Credit Agent Earnings
-          if (targetOrder.agent_id && Number(targetOrder.agent_profit || 0) > 0) {
-            const { data: existingTx } = await admin
-              .from("wallet_transactions")
-              .select("id")
-              .eq("related_order_id", targetOrder.id)
-              .eq("type", "earning")
-              .maybeSingle();
-
-            if (!existingTx) {
-              const { data: agentRow } = await admin
-                .from("agent_profiles")
-                .select("user_id")
-                .eq("id", targetOrder.agent_id)
-                .maybeSingle();
-
-              if (agentRow?.user_id) {
-                await admin.from("wallet_transactions").insert({
-                  user_id: agentRow.user_id,
-                  type: "earning",
-                  amount: Number(targetOrder.agent_profit),
-                  status: "completed",
-                  related_order_id: targetOrder.id,
-                  description: `Profit from order ${targetOrder.reference}`,
-                });
-
-                await admin.from("app_notifications").insert({
-                  title: "New Store Sale!",
-                  message: `You earned GHS ${Number(targetOrder.agent_profit).toFixed(2)} profit from a sale to ${targetOrder.recipient_phone}.`,
-                  type: "success",
-                  sound_name: "paystack",
-                  target_user_id: agentRow.user_id,
-                  is_global: false,
-                });
-
-                await sendWebPushNotification(admin, agentRow.user_id, {
-                  title: "New Store Sale!",
-                  message: `You earned GHS ${Number(targetOrder.agent_profit).toFixed(2)} profit from a sale to ${targetOrder.recipient_phone}.`,
-                  url: "/agent",
-                }).catch((err) => console.error("Agent push notification error:", err));
-              }
-            }
-          }
-        }
-      }
-
-      return json({
-        success: true,
-        status: mappedStatus,
-        provider_status: rawStatus || "unknown",
-        order_id: targetOrder?.id || null,
-        provider_ref: lookupRef,
-        data: statusData,
-      });
 
     } else if (action === "register_webhook") {
       const webhookUrl = body.webhook_url || `${supabaseUrl.replace(/\/$/, "")}/functions/v1/datahub-webhook`;

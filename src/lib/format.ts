@@ -23,6 +23,10 @@ export const isSamePhoneNumber = (num1?: string | null, num2?: string | null): b
   return clean1.slice(-9) === clean2.slice(-9);
 };
 
+if (typeof window !== "undefined") {
+  (window as any).isSamePhoneNumber = isSamePhoneNumber;
+}
+
 export async function parseEdgeFunctionError(error: any, data?: any): Promise<string> {
   if (data?.error) {
     return typeof data.error === "object" ? (data.error.message || JSON.stringify(data.error)) : String(data.error);

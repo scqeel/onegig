@@ -279,7 +279,10 @@ async function deliverData(
     parsed = null;
   }
 
-  if (response.status !== 200 || (parsed && parsed.success === false)) {
+  const isHttpOk = response.ok;
+  const isJsonError = parsed && (parsed.success === false || parsed.status === "failed" || parsed.status === "error");
+
+  if (!isHttpOk || isJsonError) {
     let cleanMessage = parsed?.error || parsed?.message || parsed?.msg;
     if (!cleanMessage) {
       if (rawText && (rawText.trim().startsWith("<!DOCTYPE") || rawText.trim().startsWith("<html"))) {

@@ -131,6 +131,50 @@ Deno.serve(async (req) => {
             message: `Your data bundle order for ${order.recipient_phone} was completed.`,
           }).catch((err) => console.error("Push notification error:", err));
         }
+
+        // Credit Agent Earnings when order is confirmed delivered
+        if (order.agent_id && Number(order.agent_profit || 0) > 0) {
+          const { data: existingTx } = await admin
+            .from("wallet_transactions")
+            .select("id")
+            .eq("related_order_id", order.id)
+            .eq("type", "earning")
+            .maybeSingle();
+
+          if (!existingTx) {
+            const { data: agentRow } = await admin
+              .from("agent_profiles")
+              .select("user_id")
+              .eq("id", order.agent_id)
+              .maybeSingle();
+
+            if (agentRow?.user_id) {
+              await admin.from("wallet_transactions").insert({
+                user_id: agentRow.user_id,
+                type: "earning",
+                amount: Number(order.agent_profit),
+                status: "completed",
+                related_order_id: order.id,
+                description: `Profit from order ${order.reference}`,
+              });
+
+              await admin.from("app_notifications").insert({
+                title: "New Store Sale!",
+                message: `You earned GHS ${Number(order.agent_profit).toFixed(2)} profit from a sale to ${order.recipient_phone}.`,
+                type: "success",
+                sound_name: "paystack",
+                target_user_id: agentRow.user_id,
+                is_global: false,
+              });
+
+              await sendWebPushNotification(admin, agentRow.user_id, {
+                title: "New Store Sale!",
+                message: `You earned GHS ${Number(order.agent_profit).toFixed(2)} profit from a sale to ${order.recipient_phone}.`,
+                url: "/agent",
+              }).catch((err) => console.error("Agent push notification error:", err));
+            }
+          }
+        }
       }
 
       return json({ ok: true, updated: "delivered", orderId: order.id });

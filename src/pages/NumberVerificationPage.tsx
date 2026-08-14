@@ -155,22 +155,22 @@ export default function NumberVerificationPage() {
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-border bg-background/90 backdrop-blur-md px-4 md:px-6 pointer-events-auto transition-all">
           <Logo size="md" />
 
-          <nav className="flex items-center gap-2">
+          <nav className="flex items-center gap-1.5 sm:gap-2">
             <Link
               to="/submit-numbers"
-              className="hidden sm:inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
-              <Send className="h-3.5 w-3.5" /> Submit Numbers
+              <Send className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Submit</span><span className="xs:hidden">Submit</span>
             </Link>
             <Link
               to="/track"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              className="inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
             >
-              <Search className="h-3.5 w-3.5" /> Track Order
+              <Search className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Track Order</span><span className="xs:hidden">Track</span>
             </Link>
-            <Button asChild className="h-9 rounded-full px-5 text-xs">
+            <Button asChild className="h-8 sm:h-9 rounded-full px-3 sm:px-5 text-xs">
               <Link to="/buy">
-                Buy Data <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                Buy <ArrowRight className="ml-1 h-3.5 w-3.5 hidden sm:inline" />
               </Link>
             </Button>
           </nav>
@@ -327,6 +327,25 @@ export default function NumberVerificationPage() {
               }`}>
                 <p>{result.beneficiaryMessage}</p>
               </div>
+
+              {/* Callout to Submit Number for Approval if not on beneficiary list */}
+              {!result.beneficiaryVerified && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-400 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-sm text-amber-400">Number Not On Beneficiary List</p>
+                    <p className="text-[11px] opacity-90 mt-0.5">
+                      Submit this number for automated approval so it can be added to the network beneficiary list.
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/submit-numbers?phone=${result.phone}`)}
+                    className="bg-amber-500 hover:bg-amber-600 text-black font-semibold text-xs shrink-0 rounded-lg"
+                  >
+                    <Send className="mr-1.5 h-3.5 w-3.5" /> Submit For Approval
+                  </Button>
+                </div>
+              )}
 
               {/* Fast Checkout CTA for verified number */}
               <div className="pt-3 border-t border-border space-y-3">

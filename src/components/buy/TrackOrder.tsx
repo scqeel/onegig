@@ -132,23 +132,41 @@ export function TrackOrder() {
     }
   }, [searchParams, fetchOrders]);
 
+const SUPABASE_URL = "https://huvuogyvgeoqiqltbgcw.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1dnVvZ3l2Z2VvcWlxbHRiZ2N3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MjY1MDYsImV4cCI6MjA5MTAwMjUwNn0.uysmVkP3O00NZaT4ucojUmJAHSA9HB6IUCl7wZCUvVQ";
+
+async function checkOrderStatusNoLock(orderId: string) {
+  return fetch(`${SUPABASE_URL}/functions/v1/admin-provider-action`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify({ action: "check_order_status", order_id: orderId }),
+  });
+}
+
   // 4-Second Auto-Polling & 10-Second Live Provider Sync for active processing orders
+  const processingOrderIds = orders
+    ?.filter((o) => ["pending", "processing"].includes(o.status))
+    .map((o) => o.id)
+    .join(",");
+
   useEffect(() => {
-    const processingOrders = orders?.filter((o) => ["pending", "processing"].includes(o.status));
-    if (!query.trim() || !processingOrders || processingOrders.length === 0) {
+    if (!query.trim() || !processingOrderIds) {
       return;
     }
+    const ids = processingOrderIds.split(",");
 
     const interval = setInterval(() => {
       fetchOrders(query);
     }, 4000);
 
     const syncProviderStatus = async () => {
-      for (const order of processingOrders) {
+      for (const id of ids) {
         try {
-          await supabase.functions.invoke("admin-provider-action", {
-            body: { action: "check_order_status", order_id: order.id },
-          });
+          await checkOrderStatusNoLock(id);
         } catch (e) {
           console.warn("Live status sync error:", e);
         }
@@ -162,7 +180,7 @@ export function TrackOrder() {
       clearInterval(interval);
       clearInterval(syncInterval);
     };
-  }, [query, orders, fetchOrders]);
+  }, [query, processingOrderIds, fetchOrders]);
 
   // Real-time Postgres Channel Listener
   useEffect(() => {
@@ -479,9 +497,7 @@ export function TrackOrder() {
                         onClick={async () => {
                           setSyncingRef(order.id);
                           try {
-                            await supabase.functions.invoke("admin-provider-action", {
-                              body: { action: "check_order_status", order_id: order.id },
-                            });
+                            await checkOrderStatusNoLock(order.id);
                             await fetchOrders(query);
                           } catch (e) {
                             console.warn("Sync status error:", e);

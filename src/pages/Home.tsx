@@ -10,6 +10,7 @@ import {
   Globe,
   Menu,
   Search,
+  Send,
   ShieldCheck,
   Smartphone,
   Sparkles,
@@ -218,6 +219,9 @@ export default function HomePage() {
             <Link to="/verify-number" className="inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold text-primary bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors">
               <ShieldCheck className="h-3.5 w-3.5" /> Verify Number
             </Link>
+            <Link to="/submit-numbers" className="inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
+              <Send className="h-3.5 w-3.5" /> Submit Numbers
+            </Link>
             <Link to="/track" className="inline-flex h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors">
               <Search className="h-3.5 w-3.5" /> Track Order
             </Link>
@@ -257,6 +261,30 @@ export default function HomePage() {
                         <span className="font-semibold text-primary-foreground">Buy Data Now</span>
                       </div>
                       <ChevronRight className="h-5 w-5 text-primary-foreground/70 group-hover:text-primary-foreground transition-colors" />
+                    </Link>
+                  </SheetClose>
+
+                  <SheetClose asChild>
+                    <Link to="/verify-number" className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 transition-all hover:bg-accent active:scale-[0.98]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10">
+                          <ShieldCheck className="h-4 w-4 text-emerald-500" />
+                        </div>
+                        <span className="font-semibold text-foreground">Verify Number</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                    </Link>
+                  </SheetClose>
+
+                  <SheetClose asChild>
+                    <Link to="/submit-numbers" className="group flex items-center justify-between rounded-2xl border border-border bg-card p-4 transition-all hover:bg-accent active:scale-[0.98]">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/10">
+                          <Send className="h-4 w-4 text-blue-500" />
+                        </div>
+                        <span className="font-semibold text-foreground">Submit Numbers</span>
+                      </div>
+                      <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-foreground transition-colors" />
                     </Link>
                   </SheetClose>
 

@@ -4,7 +4,8 @@ import { sendWebPushNotification } from "../_shared/push.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-region, *",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
 };
 
 const json = (body: unknown, status = 200) =>
@@ -14,7 +15,7 @@ const json = (body: unknown, status = 200) =>
   });
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response("ok", { status: 200, headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
   try {
@@ -130,32 +131,85 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Extract DataHub order number from targetOrder.notes if available (e.g. "Provider Ref: 1574625")
+      // Extract DataHub order number from targetOrder.notes if available (e.g. "Provider Ref: 1574625" or "Order #1574625")
       let dhOrderNum = "";
       if (targetOrder?.notes) {
-        const match = String(targetOrder.notes).match(/(?:Provider Ref:\s*|Order #\s*|Ref:\s*)(\d+)/i) || String(targetOrder.notes).match(/\b(\d{5,8})\b/);
+        // Must match pure numeric digits (4-10 digits) not followed by letters or hyphens (prevents matching UUIDs)
+        const match = String(targetOrder.notes).match(/(?:Provider Ref:\s*|Provider Order #\s*|Order #\s*)(\d{4,10})(?!\w|-)/i) || String(targetOrder.notes).match(/\b(\d{4,10})\b/);
         if (match) dhOrderNum = match[1];
       }
 
-      const lookupRef = orderNumber || dhOrderNum || ref || targetOrder?.reference || targetOrder?.id;
-      if (!lookupRef) {
+      // Determine references to attempt against DataHub /order-status
+      const candidateRefs: { ref: string; isNum: boolean }[] = [];
+      
+      const addCandidate = (val: any) => {
+        if (!val) return;
+        const str = String(val).trim();
+        if (!str) return;
+        const isNum = /^\d+$/.test(str);
+        if (!candidateRefs.some((c) => c.ref === str)) {
+          candidateRefs.push({ ref: str, isNum });
+        }
+      };
+
+      if (orderNumber) addCandidate(orderNumber);
+      if (dhOrderNum) addCandidate(dhOrderNum);
+      if (ref) addCandidate(ref);
+      if (targetOrder?.payment_reference) addCandidate(targetOrder.payment_reference);
+      if (targetOrder?.reference) addCandidate(targetOrder.reference);
+      if (targetOrder?.id) addCandidate(targetOrder.id);
+
+      if (candidateRefs.length === 0) {
         return json({ error: "reference, orderNumber, or order_id is required" }, 400);
       }
 
-      const queryParam = String(lookupRef).match(/^\d+$/) 
-        ? `orderNumber=${encodeURIComponent(lookupRef)}` 
-        : `reference=${encodeURIComponent(lookupRef)}`;
+      let statusData: any = null;
+      let usedRef = candidateRefs[0].ref;
 
-      const statusUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status?${queryParam}`;
-      const statusRes = await fetch(statusUrl, { headers });
-      const statusData = await statusRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      for (const item of candidateRefs) {
+        const bodyPayload = item.isNum ? { orderNumber: Number(item.ref) } : { reference: item.ref };
+        const queryStr = item.isNum ? `orderNumber=${encodeURIComponent(item.ref)}` : `reference=${encodeURIComponent(item.ref)}`;
+
+        // 1. Attempt POST request as per DataHub API spec
+        try {
+          const pRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(bodyPayload),
+          });
+          const pData = await pRes.json().catch(() => null);
+          if (pData && (pData.success || pData.data?.status || pData.status)) {
+            statusData = pData;
+            usedRef = item.ref;
+            break;
+          }
+        } catch {}
+
+        // 2. Attempt GET request fallback
+        try {
+          const gRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status?${queryStr}`, {
+            method: "GET",
+            headers,
+          });
+          const gData = await gRes.json().catch(() => null);
+          if (gData && (gData.success || gData.data?.status || gData.status)) {
+            statusData = gData;
+            usedRef = item.ref;
+            break;
+          }
+        } catch {}
+      }
+
+      if (!statusData) {
+        statusData = { success: false, error: "Order not found on provider API" };
+      }
 
       const rawStatus = String(statusData?.data?.status || statusData?.status || "").toLowerCase();
       let mappedStatus: "delivered" | "failed" | "processing" = "processing";
       
-      if (["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus)) {
+      if (["completed", "delivered", "success", "fulfilled", "paid", "successful"].includes(rawStatus)) {
         mappedStatus = "delivered";
-      } else if (["failed", "canceled", "cancelled", "rejected", "declined"].includes(rawStatus)) {
+      } else if (["failed", "canceled", "cancelled", "rejected", "declined", "error"].includes(rawStatus)) {
         mappedStatus = "failed";
       }
 
@@ -163,7 +217,7 @@ Deno.serve(async (req) => {
       if (targetOrder) {
         const providerRef = statusData?.data?.orderNumber
           ? String(statusData.data.orderNumber)
-          : (statusData?.data?.reference || statusData?.order_id || statusData?.reference || lookupRef);
+          : (statusData?.data?.reference || statusData?.order_id || statusData?.reference || usedRef);
 
         const { error: updateErr } = await admin
           .from("orders")
@@ -241,7 +295,7 @@ Deno.serve(async (req) => {
         status: mappedStatus,
         provider_status: rawStatus || "unknown",
         order_id: targetOrder?.id || null,
-        provider_ref: lookupRef,
+        provider_ref: usedRef,
         data: statusData,
       });
     }
@@ -635,15 +689,19 @@ Deno.serve(async (req) => {
       const isDelivered = ["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus);
 
       const finalStatus = isDelivered ? "delivered" : "processing";
-      const providerRef = retryData?.data?.orderNumber
-        ? String(retryData.data.orderNumber)
+      const rawNum = retryData?.data?.orderNumber || retryData?.orderNumber;
+      const providerRef = rawNum
+        ? String(rawNum)
         : (retryData?.data?.reference || retryData?.order_id || targetOrder.id);
+
+      const isNumericRef = /^\d+$/.test(providerRef);
+      const noteRefText = isNumericRef ? `Order #${providerRef}` : `Ref: ${providerRef}`;
 
       await admin
         .from("orders")
         .update({
           status: finalStatus,
-          notes: `Retried via DataHub (Order #${providerRef}) - ${retryData?.message || "Submitted"}`,
+          notes: `Retried via DataHub (${noteRefText}) - ${retryData?.message || "Submitted"}`,
         })
         .eq("id", targetOrder.id);
 

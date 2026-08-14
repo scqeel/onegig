@@ -265,12 +265,6 @@ Deno.serve(async (req) => {
       return json({ success: false, error: "Provider API Key is not configured in integrations settings" }, 200);
     }
 
-    const headers: Record<string, string> = {
-      "Authorization": `Bearer ${PROVIDER_API_KEY}`,
-      "X-API-Key": PROVIDER_API_KEY,
-      "Content-Type": "application/json",
-    };
-
     if (action === "get_balance") {
       let mainBalance = 0;
       let apiBalance = 0;

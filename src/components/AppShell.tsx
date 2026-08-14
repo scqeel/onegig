@@ -45,22 +45,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             className="fixed inset-0 pointer-events-none -z-50 bg-cover bg-center bg-no-repeat transition-all duration-700 animate-bg-zoom"
             style={{ backgroundImage: `url(${homePageBg})` }}
           />
-          <div className="fixed inset-0 pointer-events-none -z-40 bg-background/85 backdrop-blur-[12px] transition-all duration-700" />
+          <div className="fixed inset-0 pointer-events-none -z-40 bg-background/95 transition-all duration-700" />
         </>
       )}
       {inDashboard && popupNotice && !dismissed && (
-        <div className="sticky top-0 z-40 w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 px-4 py-2.5 shadow-md">
+        <div className="sticky top-0 z-40 w-full border-b border-border bg-foreground px-4 py-2.5">
           <div className="mx-auto flex w-full max-w-[1360px] items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/20 shadow-inner">
-                <Megaphone className="h-3.5 w-3.5 text-white" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/15">
+                <Megaphone className="h-3.5 w-3.5 text-primary" />
               </span>
-              <p className="text-sm font-semibold tracking-wide text-white">
+              <p className="text-sm font-semibold tracking-wide text-background">
                 {popupNotice}
               </p>
             </div>
-            <button 
-              className="flex items-center justify-center rounded-full p-1.5 bg-white/10 text-white/80 hover:bg-white/20 hover:text-white transition-colors" 
+            <button
+              className="flex items-center justify-center rounded-full p-1.5 text-background/70 hover:bg-background/10 hover:text-background transition-colors"
               onClick={dismissNotice}
               title="Dismiss"
             >

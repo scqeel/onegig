@@ -71,11 +71,11 @@ export function DraggableThemeToggle() {
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
       onClick={handleClick}
-      className={`fixed z-50 flex items-center justify-center w-12 h-12 rounded-full border border-border/50 bg-background/80 shadow-float backdrop-blur-md cursor-grab active:cursor-grabbing touch-none ${isDragging ? 'scale-110 transition-none' : 'transition-transform duration-300 hover:scale-105 active:scale-95 hover:bg-accent/80'}`}
+      className={`fixed z-50 flex items-center justify-center w-12 h-12 rounded-full border border-border bg-card shadow-float cursor-grab active:cursor-grabbing touch-none ${isDragging ? 'scale-110 transition-none' : 'transition-transform duration-300 hover:scale-105 active:scale-95 hover:bg-accent'}`}
       style={{ left: position.x, top: position.y }}
       aria-label="Toggle Theme"
     >
-      {theme === "dark" ? <Sun className="h-5 w-5 text-yellow-500" /> : <Moon className="h-5 w-5 text-indigo-500" />}
+      {theme === "dark" ? <Sun className="h-5 w-5 text-primary" /> : <Moon className="h-5 w-5 text-foreground" />}
     </button>
   );
 }

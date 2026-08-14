@@ -48,37 +48,35 @@ export default function PublicBuyPage() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Nav ── */}
-      <header className="sticky top-0 z-30 border-b border-border/40 glass">
+      <header className="sticky top-0 z-30 border-b border-border bg-background/95">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 md:px-8">
           <Link to="/">
             <Logo size="sm" />
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground dark:hover:text-white">
+            <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground">
               <Link to="/track">
                 <Search className="h-3.5 w-3.5" /> Track Order
               </Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs dark:border-slate-800 dark:hover:bg-slate-900">
+            <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs">
               <Link to="/auth?tab=signin">Agent Sign In</Link>
             </Button>
           </div>
         </div>
       </header>
 
-      {/* ── Dark page header band ── */}
-      <div className="relative overflow-hidden bg-[#080c1a]">
-        <div className="pointer-events-none absolute -top-20 left-1/4 h-64 w-64 rounded-full bg-primary/20 blur-3xl" />
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent" />
+      {/* ── Page header band ── */}
+      <div className="relative overflow-hidden border-b border-border bg-secondary/30">
         <div className="relative mx-auto max-w-6xl px-5 py-10 md:px-8">
           <Link
             to="/"
-            className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-white/40 hover:text-white/70 transition-colors"
+            className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-3.5 w-3.5" /> Back to home
           </Link>
-          <h1 className="text-3xl font-bold text-white md:text-4xl transition-all duration-300">{header.title}</h1>
-          <p className="mt-2 max-w-lg text-sm text-white/50 transition-all duration-300">
+          <h1 className="text-3xl font-bold text-foreground md:text-4xl transition-all duration-300">{header.title}</h1>
+          <p className="mt-2 max-w-lg text-sm text-muted-foreground transition-all duration-300">
             {header.desc}
           </p>
         </div>
@@ -90,9 +88,9 @@ export default function PublicBuyPage() {
 
           {/* ── Main flow ── */}
           <div className="space-y-5">
-            <div className="overflow-hidden rounded-[2rem] glass-card">
+            <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
               {/* Tab Switcher Headers */}
-              <div className="border-b border-border/40 bg-secondary/10 dark:bg-slate-900/10 p-2 flex gap-1">
+              <div className="border-b border-border bg-secondary/40 p-2 flex gap-1">
                 {[
                   { id: "data", label: "Buy Data", icon: Zap },
                   { id: "airtime", label: "Buy Airtime", icon: Smartphone },
@@ -104,13 +102,13 @@ export default function PublicBuyPage() {
                       key={t.id}
                       onClick={() => setActiveTab(t.id as any)}
                       className={cn(
-                        "flex-1 py-3 px-4 rounded-2xl flex items-center justify-center gap-2 font-bold text-xs md:text-sm transition-all duration-200",
+                        "flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-semibold text-xs md:text-sm transition-colors duration-200",
                         activeTab === t.id
-                          ? "bg-slate-950 text-white shadow-float border border-slate-800"
-                          : "text-muted-foreground hover:text-foreground hover:bg-secondary/20 dark:hover:bg-slate-900/20"
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                       )}
                     >
-                      <Icon className={cn("h-4 w-4", activeTab === t.id ? "text-primary" : "text-slate-400")} />
+                      <Icon className="h-4 w-4" />
                       <span>{t.label}</span>
                     </button>
                   );
@@ -126,11 +124,11 @@ export default function PublicBuyPage() {
             </div>
 
             {/* Already paid strip */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl px-5 py-4 glass-card">
-              <span className="text-sm text-muted-foreground dark:text-slate-400">Already paid? Find your order here.</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4">
+              <span className="text-sm text-muted-foreground">Already paid? Find your order here.</span>
               <Link
                 to="/track"
-                className="inline-flex items-center gap-1.5 text-sm font-bold text-primary hover:text-primary/80 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
               >
                 <Search className="h-3.5 w-3.5" /> Track my order
               </Link>
@@ -142,9 +140,9 @@ export default function PublicBuyPage() {
             <div className="sticky top-20 space-y-4">
 
               {/* Why us */}
-              <div className="overflow-hidden rounded-2xl glass-card">
-                <div className="border-b border-border/45 bg-secondary/20 dark:bg-slate-900/20 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Why OneGig?</p>
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="border-b border-border bg-secondary/40 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Why OneGig?</p>
                 </div>
                 <div className="space-y-4 p-4">
                   {TRUST_ITEMS.map(({ icon: Icon, title, desc }) => (
@@ -153,8 +151,8 @@ export default function PublicBuyPage() {
                         <Icon className="h-4 w-4 text-primary" />
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-foreground dark:text-white">{title}</p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground dark:text-slate-400">{desc}</p>
+                        <p className="text-sm font-semibold text-foreground">{title}</p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{desc}</p>
                       </div>
                     </div>
                   ))}
@@ -162,9 +160,9 @@ export default function PublicBuyPage() {
               </div>
 
               {/* Networks */}
-              <div className="overflow-hidden rounded-2xl glass-card">
-                <div className="border-b border-border/45 bg-secondary/20 dark:bg-slate-900/20 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground dark:text-slate-400">Networks supported</p>
+              <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="border-b border-border bg-secondary/40 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Networks supported</p>
                 </div>
                 <div className="space-y-2 p-4">
                   {[
@@ -174,12 +172,12 @@ export default function PublicBuyPage() {
                   ].map((n) => (
                     <div
                       key={n.name}
-                      className="flex items-center gap-3 rounded-xl border border-border/30 dark:border-slate-800/40 bg-secondary/10 dark:bg-slate-900/10 px-3 py-2.5 hover:bg-secondary/20 dark:hover:bg-slate-900/20 transition-colors"
+                      className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2.5 hover:bg-accent transition-colors"
                     >
                       <span className="text-xl">{n.emoji}</span>
                       <div>
-                        <p className="text-sm font-semibold text-foreground dark:text-white">{n.name}</p>
-                        <p className="text-[10px] text-muted-foreground dark:text-slate-400">{n.detail}</p>
+                        <p className="text-sm font-semibold text-foreground">{n.name}</p>
+                        <p className="text-[10px] text-muted-foreground">{n.detail}</p>
                       </div>
                     </div>
                   ))}
@@ -187,18 +185,15 @@ export default function PublicBuyPage() {
               </div>
 
               {/* Agent CTA */}
-              <div className="relative overflow-hidden rounded-2xl bg-[#080c1a] p-4">
-                <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
-                <div className="relative">
-                  <BriefcaseBusiness className="h-5 w-5 text-primary mb-2" />
-                  <p className="text-sm font-bold text-white">Buying frequently?</p>
-                  <p className="mt-1 text-xs text-white/50 leading-relaxed">
-                    Get wholesale prices and earn margins as an agent.
-                  </p>
-                  <Button asChild size="sm" className="mt-3 h-8 w-full rounded-xl text-xs font-bold gradient-primary shadow-float">
-                    <Link to="/auth?intent=agent">Become an Agent</Link>
-                  </Button>
-                </div>
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4">
+                <BriefcaseBusiness className="h-5 w-5 text-primary mb-2" />
+                <p className="text-sm font-semibold text-foreground">Buying frequently?</p>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  Get wholesale prices and earn margins as an agent.
+                </p>
+                <Button asChild size="sm" className="mt-3 h-8 w-full rounded-xl text-xs">
+                  <Link to="/auth?intent=agent">Become an Agent</Link>
+                </Button>
               </div>
             </div>
           </aside>

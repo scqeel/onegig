@@ -147,7 +147,7 @@ export function TrackOrder() {
       for (const order of processingOrders) {
         try {
           await supabase.functions.invoke("admin-provider-action", {
-            body: { action: "check_order_status", order_id: order.id }
+            body: { action: "check_order_status", order_id: order.id },
           });
         } catch (e) {
           console.warn("Live status sync error:", e);
@@ -223,18 +223,18 @@ export function TrackOrder() {
       {/* Search Input Box */}
       <form onSubmit={handleSearchSubmit} className="relative group">
         <div className="relative flex items-center">
-          <Search className="absolute left-4 h-5 w-5 text-slate-400 group-focus-within:text-purple-400 transition-colors" />
+          <Search className="absolute left-4 h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Enter Phone (0547xxxxxx) or Order Ref (OG-xxxx)..."
-            className="h-14 w-full rounded-2xl border-2 border-slate-800 bg-[#0a0f1d] pl-12 pr-32 text-sm font-bold text-slate-100 placeholder:text-slate-500 focus:border-purple-500/60 focus:ring-4 focus:ring-purple-500/10 transition-all shadow-inner"
+            className="h-14 w-full rounded-xl border border-border bg-background pl-12 pr-32 text-sm font-semibold text-foreground focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
           />
           <Button
             type="submit"
             disabled={loading || !query.trim()}
-            className="absolute right-2 h-10 rounded-xl bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 px-5 text-xs font-black uppercase tracking-wider text-white shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="absolute right-2 h-10 rounded-lg px-5 text-xs uppercase tracking-wider"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Track"}
           </Button>
@@ -243,13 +243,13 @@ export function TrackOrder() {
 
       {/* Live Status Header indicator if polling */}
       {orders && orders.some((o) => ["pending", "processing"].includes(o.status)) && (
-        <div className="flex items-center justify-between rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2.5 text-xs text-blue-300 animate-pulse">
-          <div className="flex items-center gap-2 font-extrabold">
-            <RefreshCw className="h-4 w-4 animate-spin text-blue-400" />
+        <div className="flex items-center justify-between rounded-xl border border-blue-500/25 bg-blue-500/5 px-4 py-2.5 text-xs text-blue-500">
+          <div className="flex items-center gap-2 font-semibold">
+            <RefreshCw className="h-4 w-4 animate-spin" />
             <span>Live Status Syncing Active — Order In Progress</span>
           </div>
           {lastUpdated && (
-            <span className="text-[10px] text-blue-400 font-mono">
+            <span className="text-[10px] font-mono">
               Updated {lastUpdated.toLocaleTimeString()}
             </span>
           )}
@@ -259,8 +259,8 @@ export function TrackOrder() {
       {/* Loading Skeleton */}
       {loading && !orders && (
         <div className="flex flex-col items-center justify-center py-16 space-y-3">
-          <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
             Fetching Live Order Status...
           </p>
         </div>
@@ -268,19 +268,19 @@ export function TrackOrder() {
 
       {/* No Orders Found */}
       {!loading && orders !== null && orders.length === 0 && (
-        <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-950/40 p-8 text-center space-y-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-400">
+        <div className="rounded-[1.75rem] border border-dashed border-border bg-card p-8 text-center space-y-4">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500">
             <AlertTriangle className="h-6 w-6" />
           </div>
           <div className="space-y-1">
-            <h3 className="text-base font-extrabold text-white">No Matching Orders Found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              We couldn't find an order matching <span className="font-mono text-purple-300 font-bold">"{query}"</span>. Please check your phone number or reference code.
+            <h3 className="text-base font-semibold text-foreground">No Matching Orders Found</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+              We couldn't find an order matching <span className="font-mono text-primary font-semibold">"{query}"</span>. Please check your phone number or reference code.
             </p>
           </div>
           <Link
             to="/buy"
-            className="inline-flex items-center gap-2 rounded-xl bg-purple-600/20 px-4 py-2 text-xs font-bold text-purple-300 border border-purple-500/30 hover:bg-purple-600/30 transition-all"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-xs font-semibold text-primary border border-primary/25 hover:bg-primary/15 transition-colors"
           >
             Buy Data Now
           </Link>
@@ -302,28 +302,28 @@ export function TrackOrder() {
             return (
               <div
                 key={order.id}
-                className="relative overflow-hidden rounded-3xl border border-slate-800 bg-[#0a0f1d] p-6 sm:p-7 shadow-2xl transition-all hover:border-slate-700"
+                className="relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-6 sm:p-7 transition-colors hover:border-primary/30"
               >
                 {/* Top Bar: Network & Status Badge */}
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
                   <div className="flex items-center gap-3">
                     <span className="text-2xl">{order.network?.logo_emoji || "📱"}</span>
                     <div>
-                      <h3 className="text-base font-black text-white flex items-center gap-2">
+                      <h3 className="text-base font-bold text-foreground flex items-center gap-2">
                         {order.bundle?.size_label || "Data Package"}
-                        <span className="text-xs text-slate-400 font-normal">
+                        <span className="text-xs text-muted-foreground font-normal">
                           ({order.network?.name || "MTN"})
                         </span>
                       </h3>
-                      <p className="text-xs font-mono text-slate-400 flex items-center gap-1.5 mt-0.5">
+                      <p className="text-xs font-mono text-muted-foreground flex items-center gap-1.5 mt-0.5">
                         <span>Ref: {order.reference || order.id.slice(0, 8)}</span>
                         <button
                           onClick={() => handleCopy(order.reference || order.id, order.id)}
-                          className="hover:text-purple-400 transition-colors"
+                          className="hover:text-primary transition-colors"
                           title="Copy Reference"
                         >
                           {copiedRef === order.id ? (
-                            <Check className="h-3 w-3 text-emerald-400" />
+                            <Check className="h-3 w-3 text-emerald-500" />
                           ) : (
                             <Copy className="h-3 w-3" />
                           )}
@@ -341,9 +341,9 @@ export function TrackOrder() {
                 <div className="py-6">
                   <div className="relative">
                     {/* Connecting Line */}
-                    <div className="absolute left-6 right-6 top-4 -z-0 h-1 bg-slate-800 rounded-full">
+                    <div className="absolute left-6 right-6 top-4 -z-0 h-1 bg-border rounded-full">
                       <div
-                        className="h-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-emerald-500 transition-all duration-700 rounded-full"
+                        className="h-full bg-primary transition-all duration-700 rounded-full"
                         style={{
                           width: step3Complete ? "100%" : step2Complete ? "50%" : "0%",
                         }}
@@ -356,27 +356,27 @@ export function TrackOrder() {
                       <div className="flex flex-col items-center gap-2">
                         <div
                           className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-black transition-all",
+                            "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all",
                             step1Complete
-                              ? "border-purple-500 bg-purple-600 text-white shadow-lg shadow-purple-500/30"
-                              : "border-slate-800 bg-slate-900 text-slate-500"
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-secondary text-muted-foreground"
                           )}
                         >
                           <Check className="h-4 w-4" />
                         </div>
-                        <span className="text-[11px] font-bold text-slate-300">Paid</span>
+                        <span className="text-[11px] font-semibold text-muted-foreground">Paid</span>
                       </div>
 
                       {/* Step 2: Dispatched */}
                       <div className="flex flex-col items-center gap-2">
                         <div
                           className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-black transition-all",
+                            "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all",
                             step3Complete
-                              ? "border-emerald-500 bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+                              ? "border-emerald-500 bg-emerald-500 text-white"
                               : isProcessing
-                              ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/30 animate-pulse"
-                              : "border-slate-800 bg-slate-900 text-slate-500"
+                              ? "border-blue-500 bg-blue-500 text-white animate-pulse"
+                              : "border-border bg-secondary text-muted-foreground"
                           )}
                         >
                           {isProcessing ? (
@@ -387,19 +387,19 @@ export function TrackOrder() {
                             <Truck className="h-4 w-4" />
                           )}
                         </div>
-                        <span className="text-[11px] font-bold text-slate-300">Dispatching</span>
+                        <span className="text-[11px] font-semibold text-muted-foreground">Dispatching</span>
                       </div>
 
                       {/* Step 3: Delivered */}
                       <div className="flex flex-col items-center gap-2">
                         <div
                           className={cn(
-                            "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-black transition-all",
+                            "flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-semibold transition-all",
                             step3Complete
-                              ? "border-emerald-500 bg-emerald-600 text-white shadow-lg shadow-emerald-500/30"
+                              ? "border-emerald-500 bg-emerald-500 text-white"
                               : isFailed
-                              ? "border-rose-500 bg-rose-600 text-white"
-                              : "border-slate-800 bg-slate-900 text-slate-500"
+                              ? "border-destructive bg-destructive text-white"
+                              : "border-border bg-secondary text-muted-foreground"
                           )}
                         >
                           {step3Complete ? (
@@ -410,35 +410,35 @@ export function TrackOrder() {
                             <Smartphone className="h-4 w-4" />
                           )}
                         </div>
-                        <span className="text-[11px] font-bold text-slate-300">Delivered</span>
+                        <span className="text-[11px] font-semibold text-muted-foreground">Delivered</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Details Grid */}
-                <div className="grid gap-3 rounded-2xl bg-slate-950/60 p-4 sm:grid-cols-3 text-xs">
+                <div className="grid gap-3 rounded-2xl bg-background border border-border p-4 sm:grid-cols-3 text-xs">
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Recipient Number
                     </span>
-                    <p className="font-extrabold text-sm text-slate-100 mt-0.5">
+                    <p className="font-semibold text-sm text-foreground mt-0.5">
                       {order.recipient_phone}
                     </p>
                   </div>
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Amount Paid
                     </span>
-                    <p className="font-extrabold text-sm text-emerald-400 mt-0.5">
+                    <p className="font-semibold text-sm text-emerald-500 mt-0.5">
                       {formatGHS(order.sell_price)}
                     </p>
                   </div>
                   <div>
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Order Time
                     </span>
-                    <p className="font-extrabold text-sm text-slate-300 mt-0.5">
+                    <p className="font-semibold text-sm text-foreground mt-0.5">
                       {timeAgo(order.created_at)}
                     </p>
                   </div>
@@ -446,11 +446,11 @@ export function TrackOrder() {
 
                 {/* Automated Refund Callout if Failed */}
                 {isFailed && (
-                  <div className="mt-4 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 text-xs text-rose-300 flex items-start gap-2.5">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400 mt-0.5" />
+                  <div className="mt-4 rounded-xl border border-destructive/25 bg-destructive/5 p-3.5 text-xs text-destructive flex items-start gap-2.5">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>
-                      <p className="font-extrabold">Order Delivery Could Not Complete</p>
-                      <p className="text-[11px] text-rose-300/80 mt-0.5">
+                      <p className="font-semibold">Order Delivery Could Not Complete</p>
+                      <p className="text-[11px] opacity-80 mt-0.5">
                         Your payment has been automatically credited back to your account wallet balance. You can retry or use your balance anytime.
                       </p>
                     </div>
@@ -458,7 +458,7 @@ export function TrackOrder() {
                 )}
 
                 {/* Bottom Action Footer */}
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-4">
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <a
                       href={`https://wa.me/233500000000?text=${encodeURIComponent(
@@ -466,7 +466,7 @@ export function TrackOrder() {
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2 text-xs font-extrabold text-emerald-400 hover:bg-emerald-500/20 transition-all"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/25 bg-emerald-500/5 px-3.5 py-2 text-xs font-semibold text-emerald-500 hover:bg-emerald-500/10 transition-colors"
                     >
                       <MessageCircle className="h-3.5 w-3.5" /> Live Support Chat
                     </a>
@@ -474,12 +474,13 @@ export function TrackOrder() {
                     {isProcessing && (
                       <Button
                         size="sm"
+                        variant="outline"
                         disabled={syncingRef === order.id}
                         onClick={async () => {
                           setSyncingRef(order.id);
                           try {
                             await supabase.functions.invoke("admin-provider-action", {
-                              body: { action: "check_order_status", order_id: order.id }
+                              body: { action: "check_order_status", order_id: order.id },
                             });
                             await fetchOrders(query);
                           } catch (e) {
@@ -488,7 +489,7 @@ export function TrackOrder() {
                             setSyncingRef(null);
                           }
                         }}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-2 text-xs font-extrabold text-blue-400 hover:bg-blue-500/20 transition-all"
+                        className="inline-flex items-center gap-1.5 rounded-lg border-blue-500/25 bg-blue-500/5 px-3.5 py-2 text-xs text-blue-500 hover:bg-blue-500/10"
                       >
                         {syncingRef === order.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
                         Sync Live Status
@@ -498,7 +499,7 @@ export function TrackOrder() {
 
                   <Link
                     to="/buy"
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-purple-600/20 border border-purple-500/30 px-3.5 py-2 text-xs font-extrabold text-purple-300 hover:bg-purple-600/30 transition-all"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 border border-primary/25 px-3.5 py-2 text-xs font-semibold text-primary hover:bg-primary/15 transition-colors"
                   >
                     Buy Another Bundle
                   </Link>

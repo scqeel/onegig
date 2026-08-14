@@ -82,13 +82,13 @@ export const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({
   const sizeClasses = {
     sm: "px-2 py-0.5 text-[10px]",
     md: "px-2.5 py-1 text-xs",
-    lg: "px-3.5 py-1.5 text-sm font-extrabold",
+    lg: "px-3.5 py-1.5 text-sm font-bold",
   };
 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border font-black tracking-tight shadow-sm transition-all duration-200",
+        "inline-flex items-center gap-1.5 rounded-full border font-semibold tracking-tight transition-colors duration-200",
         config.styles,
         sizeClasses[size],
         className

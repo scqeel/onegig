@@ -101,29 +101,29 @@ export function DashboardLayout({
               <input
                 type="text"
                 placeholder="Search…"
-                className="h-10 w-full rounded-xl border border-border/50 bg-secondary/40 pl-10 pr-3 text-sm text-foreground outline-none backdrop-blur-sm ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/30 transition-all"
+                className="h-10 w-full rounded-xl border border-border bg-secondary/50 pl-10 pr-3 text-sm text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/30 transition-all"
               />
             </label>
-            <button type="button" aria-label="Messages" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 bg-card/70 text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
+            <button type="button" aria-label="Messages" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
               <MessageCircle className="h-4 w-4" />
             </button>
-            <Link 
-              to="/dashboard/notifications" 
-              aria-label="Notifications" 
+            <Link
+              to="/dashboard/notifications"
+              aria-label="Notifications"
               className={cn(
-                "relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border/60 transition-colors xl:inline-flex",
-                isNotifications ? "bg-primary/10 text-primary" : "bg-card/70 text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                "relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border transition-colors xl:inline-flex",
+                isNotifications ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >
               <Bell className="h-4 w-4" fill={isNotifications ? "currentColor" : "none"} />
               {!!unreadCount && unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white shadow-sm ring-2 ring-card animate-in zoom-in">
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground ring-2 ring-card animate-in zoom-in">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
             </Link>
             {badge && (
-              <span className="rounded-full gradient-primary px-3 py-1 text-xs font-bold text-white shadow-soft">
+              <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary">
                 {badge}
               </span>
             )}
@@ -135,9 +135,9 @@ export function DashboardLayout({
         <div className="grid gap-4 lg:grid-cols-12 xl:gap-5">
 
           {/* ── Sidebar ── */}
-          <aside className="hidden self-start rounded-3xl border border-border/50 bg-card/90 shadow-float backdrop-blur-md lg:block lg:sticky lg:top-5 lg:col-span-3 xl:col-span-2">
+          <aside className="hidden self-start rounded-[1.75rem] border border-border bg-card lg:block lg:sticky lg:top-5 lg:col-span-3 xl:col-span-2">
             {sidebarHeader && (
-              <div className="border-b border-border/60 px-3 py-3">
+              <div className="border-b border-border px-3 py-3">
                 {sidebarHeader}
               </div>
             )}
@@ -145,10 +145,10 @@ export function DashboardLayout({
               <nav className="p-2 space-y-0.5 relative z-10">
                 {sidebarItems?.map((item) => {
                   const itemCls = cn(
-                    "flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all w-full text-left",
+                    "flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors w-full text-left",
                     item.active
-                      ? "gradient-primary text-primary-foreground shadow-soft"
-                      : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground bg-transparent"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground bg-transparent"
                   );
 
                   if (item.to) {
@@ -170,13 +170,12 @@ export function DashboardLayout({
               </nav>
 
             {/* Sidebar status card */}
-            <div className="m-2 mt-1 hidden overflow-hidden rounded-2xl bg-[#05080f] p-3.5 lg:block">
-              <div className="absolute inset-0 grid-pattern-dark opacity-30 pointer-events-none" />
-              <div className="relative flex items-center gap-2 mb-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                <p className="text-xs font-bold text-white">System Online</p>
+            <div className="m-2 mt-1 hidden rounded-2xl border border-border bg-secondary/40 p-3.5 lg:block">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                <p className="text-xs font-semibold text-foreground">System Online</p>
               </div>
-              <p className="relative text-[10px] text-white/35 leading-relaxed">Instant delivery active. All networks operational.</p>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">Instant delivery active. All networks operational.</p>
             </div>
           </aside>
 
@@ -190,21 +189,21 @@ export function DashboardLayout({
       {/* ── Mobile Bottom Navigation (Modern Floating Pill) ── */}
       {sidebarItems.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
-          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-slate-200/50 bg-[#0b0f19]/95 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-xl pointer-events-auto">
+          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-border bg-card/95 backdrop-blur-md px-4 pointer-events-auto">
             {sidebarItems.slice(0, 4).map((item) => {
               const isActive = item.active;
               const content = (
                 <div className={cn(
                   "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300 w-full h-full",
-                  isActive ? "text-primary font-bold" : "text-white/40 hover:text-white/80"
+                  isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
                 )}>
                   {isActive && (
-                    <span className="absolute -top-[18px] h-1 w-8 rounded-full bg-primary shadow-[0_0_12px_rgba(139,92,246,0.9)] animate-in fade-in zoom-in" />
+                    <span className="absolute -top-[18px] h-1 w-8 rounded-full bg-primary animate-in fade-in zoom-in" />
                   )}
                   <span className="transition-transform duration-300">
                     {item.icon}
                   </span>
-                  <span className="text-[10px] font-bold tracking-tight">
+                  <span className="text-[10px] font-semibold tracking-tight">
                     {item.label}
                   </span>
                 </div>
@@ -234,11 +233,11 @@ export function DashboardLayout({
                 }}
                 className="flex-1 flex justify-center h-full items-center active:scale-95 transition-transform touch-manipulation"
               >
-                <div className="relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300 text-white/40 hover:text-white/80">
+                <div className="relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300 text-muted-foreground hover:text-foreground">
                   <span className="transition-transform duration-300">
                     <Menu className="h-5 w-5" />
                   </span>
-                  <span className="text-[10px] font-bold tracking-tight">
+                  <span className="text-[10px] font-semibold tracking-tight">
                     More
                   </span>
                 </div>
@@ -250,31 +249,31 @@ export function DashboardLayout({
 
       {/* ── Mobile Navigation Drawer (Modern) ── */}
       <Drawer open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-        <DrawerContent className="bg-background border-border/40 rounded-t-[32px] max-h-[85vh]">
-          <DrawerHeader className="border-b border-border/40 pb-4 pt-6 px-6">
+        <DrawerContent className="bg-background border-border rounded-t-[1.75rem] max-h-[85vh]">
+          <DrawerHeader className="border-b border-border pb-4 pt-6 px-6">
             <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center shadow-soft">
-                <span className="text-xs font-black text-white">OG</span>
+              <div className="h-8 w-8 rounded-xl bg-primary flex items-center justify-center">
+                <span className="text-xs font-bold text-primary-foreground">OG</span>
               </div>
-              <DrawerTitle className="text-left text-xl font-black tracking-tight text-foreground">Navigation</DrawerTitle>
+              <DrawerTitle className="text-left text-xl font-bold tracking-tight text-foreground">Navigation</DrawerTitle>
             </div>
             <DrawerDescription className="sr-only">Main navigation menu</DrawerDescription>
           </DrawerHeader>
-          
+
           <div className="overflow-y-auto p-5 pb-12 space-y-6">
             {sidebarHeader && (
-              <div className="rounded-3xl border border-border/50 bg-card/40 p-4 shadow-sm">
+              <div className="rounded-2xl border border-border bg-card p-4">
                 {sidebarHeader}
               </div>
             )}
-            
-            <div className="overflow-hidden rounded-[20px] border border-border/50 bg-secondary/20 shadow-sm">
+
+            <div className="overflow-hidden rounded-2xl border border-border bg-secondary/30">
               {sidebarItems?.map((item, idx) => {
                 const isLast = idx === sidebarItems.length - 1;
                 const itemCls = cn(
-                  "flex items-center justify-between px-5 py-4 w-full text-left transition-colors active:bg-secondary/40",
-                  !isLast && "border-b border-border/50",
-                  item.active ? "bg-primary/5" : "hover:bg-secondary/30"
+                  "flex items-center justify-between px-5 py-4 w-full text-left transition-colors active:bg-accent",
+                  !isLast && "border-b border-border",
+                  item.active ? "bg-primary/5" : "hover:bg-accent"
                 );
 
                 const content = (
@@ -282,7 +281,7 @@ export function DashboardLayout({
                     <div className="flex items-center gap-3.5">
                       <div className={cn(
                         "flex h-9 w-9 items-center justify-center rounded-xl",
-                        item.active ? "bg-primary text-primary-foreground shadow-soft" : "bg-card border border-border/60 text-muted-foreground"
+                        item.active ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"
                       )}>
                         {item.icon}
                       </div>
@@ -293,7 +292,7 @@ export function DashboardLayout({
                         {item.label}
                       </span>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/60" />
                   </>
                 );
 
@@ -330,30 +329,27 @@ export function DashboardLayout({
       </Drawer>
 
       <Dialog open={promptOpen} onOpenChange={(val) => !val && handleClosePrompt()}>
-        <DialogContent className="w-[94vw] max-w-sm rounded-[2rem] border border-slate-200/50 dark:border-slate-800/50 p-6 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl shadow-float animate-in fade-in zoom-in duration-300">
+        <DialogContent className="w-[94vw] max-w-sm rounded-[1.75rem] border border-border p-6 bg-card animate-in fade-in zoom-in duration-300">
           <DialogHeader className="space-y-3">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 shadow-sm animate-bounce">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-500">
               <UserCheck className="h-6 w-6" />
             </div>
-            <DialogTitle className="text-center text-lg font-black text-foreground">
-              Profile Auto-Completed! 🚀
+            <DialogTitle className="text-center text-lg font-bold text-foreground">
+              Profile Auto-Completed!
             </DialogTitle>
-            <DialogDescription className="text-center text-xs text-muted-foreground/80 leading-relaxed">
-              We resolved your registered MoMo name: <span className="font-bold text-foreground font-mono block mt-1.5 px-3 py-1.5 rounded-lg bg-secondary/50 border border-border/30">{momoName}</span> and updated your profile display name automatically.
+            <DialogDescription className="text-center text-xs text-muted-foreground leading-relaxed">
+              We resolved your registered MoMo name: <span className="font-semibold text-foreground font-mono block mt-1.5 px-3 py-1.5 rounded-lg bg-secondary border border-border">{momoName}</span> and updated your profile display name automatically.
             </DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-2 pt-3">
-            <Button
-              onClick={handleReviewProfile}
-              className="w-full h-11 rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground transition-all hover:scale-[1.02] active:scale-[0.98] text-xs shadow-soft"
-            >
+            <Button onClick={handleReviewProfile} className="w-full h-11 rounded-xl text-xs">
               Verify & Complete Profile
             </Button>
             <Button
               variant="ghost"
               onClick={handleClosePrompt}
-              className="w-full h-10 rounded-xl font-bold text-xs hover:bg-secondary/50 text-muted-foreground"
+              className="w-full h-10 rounded-xl text-xs"
             >
               Looks good!
             </Button>

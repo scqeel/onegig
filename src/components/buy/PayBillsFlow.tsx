@@ -16,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OrderSummary } from "@/components/buy/OrderSummary";
 
 type Phase = "select" | "lookup" | "processing" | "polling" | "delivering" | "success" | "error";
 
@@ -33,7 +34,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   const [billType, setBillType] = useState<"DSTV" | "GOTV" | "STARTIMES" | "ECG">("DSTV");
   const [accountNumber, setAccountNumber] = useState("");
   const [amount, setAmount] = useState("");
-  
+
   // Verification states
   const [isValidating, setIsValidating] = useState(false);
   const [customerName, setCustomerName] = useState<string | null>(null);
@@ -171,16 +172,16 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
     try {
       const isEcg = billType === "ECG";
       const { data, error } = await supabase.functions.invoke("payment-lookup", {
-        body: isEcg 
+        body: isEcg
           ? { action: "ecg_lookup", accountNumber }
           : { action: "validate", customerNumber: accountNumber, billType }
       });
 
       if (error || !data || data.success === false) {
-        toast({ 
-          title: "Account Lookup Failed", 
-          description: data?.error || error?.message || "Verify your card/meter number and try again.", 
-          variant: "destructive" 
+        toast({
+          title: "Account Lookup Failed",
+          description: data?.error || error?.message || "Verify your card/meter number and try again.",
+          variant: "destructive"
         });
       } else {
         setCustomerName(data.customerName || "VALIDATED ACCOUNT");
@@ -353,21 +354,21 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
   if (phase === "success") {
     return (
-      <div className="glass-panel text-center py-12 px-6 max-w-md mx-auto animate-fade-in relative overflow-hidden">
+      <div className="rounded-[1.75rem] border border-border bg-card text-center py-12 px-6 max-w-md mx-auto animate-fade-in relative overflow-hidden">
         <Confetti />
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 mb-6 border border-emerald-500/30">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 mb-6">
           <CheckCircle2 className="w-10 h-10" />
         </div>
-        <h2 className="text-2xl font-bold mb-2 text-white">Payment Completed!</h2>
+        <h2 className="text-2xl font-bold mb-2 text-foreground">Payment Completed!</h2>
         <p className="text-muted-foreground mb-6">
-          Your utility payment of <span className="text-white font-semibold">{formatGHS(Number(amount))}</span> for <span className="text-white font-semibold">{billType} ({accountNumber})</span> is processing successfully.
+          Your utility payment of <span className="text-foreground font-semibold">{formatGHS(Number(amount))}</span> for <span className="text-foreground font-semibold">{billType} ({accountNumber})</span> is processing successfully.
         </p>
         {orderRef && (
-          <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 mb-6 inline-block font-mono text-xs text-slate-400">
+          <div className="bg-background border border-border rounded-lg p-3 mb-6 inline-block font-mono text-xs text-muted-foreground">
             Receipt: {orderRef}
           </div>
         )}
-        <Button 
+        <Button
           onClick={() => {
             setAmount("");
             setAccountNumber("");
@@ -375,7 +376,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
             resetLookup();
             setPhase("select");
           }}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg"
+          className="w-full"
         >
           Pay Another Bill
         </Button>
@@ -385,18 +386,15 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
   if (phase === "error") {
     return (
-      <div className="glass-panel text-center py-12 px-6 max-w-md mx-auto animate-fade-in border border-rose-500/20">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-rose-500/10 text-rose-400 mb-6 border border-rose-500/20 animate-pulse">
+      <div className="rounded-[1.75rem] border border-destructive/20 bg-card text-center py-12 px-6 max-w-md mx-auto animate-fade-in">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 text-destructive mb-6">
           <Tv className="w-8 h-8" />
         </div>
-        <h2 className="text-xl font-bold mb-3 text-white">Payment Failed</h2>
+        <h2 className="text-xl font-bold mb-3 text-foreground">Payment Failed</h2>
         <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
           {errorMsg || "An error occurred while processing your utility payment. Please try again."}
         </p>
-        <Button 
-          onClick={() => setPhase("select")}
-          className="w-full bg-gradient-to-r from-rose-500 to-orange-600 hover:from-rose-600 hover:to-orange-700 text-white shadow-lg"
-        >
+        <Button onClick={() => setPhase("select")} variant="outline" className="w-full">
           Try Again
         </Button>
       </div>
@@ -405,15 +403,15 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
     return (
-      <div className="glass-panel text-center py-16 px-6 max-w-md mx-auto animate-fade-in">
+      <div className="rounded-[1.75rem] border border-border bg-card text-center py-16 px-6 max-w-md mx-auto animate-fade-in">
         <div className="relative w-20 h-20 mx-auto mb-8">
-          <div className="absolute inset-0 rounded-full border-4 border-emerald-500/10" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-emerald-500 animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-emerald-400">
-            <RefreshCcw className="w-8 h-8 animate-pulse" />
+          <div className="absolute inset-0 rounded-full border-4 border-primary/15" />
+          <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center text-primary">
+            <RefreshCcw className="w-8 h-8" />
           </div>
         </div>
-        <h3 className="text-lg font-semibold text-white mb-2">
+        <h3 className="text-lg font-semibold text-foreground mb-2">
           {phase === "processing" ? "Processing payment..." : phase === "polling" ? "Awaiting authorization..." : "Completing billing..."}
         </h3>
         <p className="text-sm text-muted-foreground max-w-xs mx-auto">
@@ -424,30 +422,27 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   }
 
   return (
-    <div className="border border-white/15 bg-slate-950/50 backdrop-blur-2xl p-6 sm:p-8 max-w-md mx-auto rounded-[2rem] shadow-[0_8px_32px_0_rgba(0,0,0,0.6)] relative overflow-hidden animate-fade-in">
-      <div className="absolute top-0 right-0 w-36 h-36 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-36 h-36 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="border border-border bg-card p-6 sm:p-8 max-w-md mx-auto rounded-[1.75rem] relative overflow-hidden animate-fade-in">
       <div className="flex items-center gap-3.5 mb-6">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-400/20 to-violet-500/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
-          <Tv className="w-6 h-6 animate-pulse" />
+        <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+          <Tv className="w-6 h-6" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-white leading-tight">Pay Bills</h2>
-          <p className="text-xs text-white/60 mt-0.5 font-semibold">DSTV, GOTV, StarTimes & ECG Prepaid</p>
+          <h2 className="text-xl font-bold text-foreground leading-tight">Pay Bills</h2>
+          <p className="text-xs text-muted-foreground mt-0.5 font-semibold">DSTV, GOTV, StarTimes & ECG Prepaid</p>
         </div>
       </div>
 
       <div className="space-y-4">
         {/* Bill Type Selector */}
         <div>
-          <label className="text-[11px] font-black uppercase tracking-widest text-white/80 block mb-2.5 ml-1">Select Provider</label>
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Select Provider</label>
           <div className="grid grid-cols-4 gap-1.5">
             {[
-              { id: "DSTV", label: "DSTV", activeClass: "bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-[0_0_15px_rgba(14,165,233,0.3)] border-transparent" },
-              { id: "GOTV", label: "GOTV", activeClass: "bg-gradient-to-br from-emerald-400 to-green-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)] border-transparent" },
-              { id: "STARTIMES", label: "StarTimes", activeClass: "bg-gradient-to-br from-orange-400 to-rose-600 text-white shadow-[0_0_15px_rgba(249,115,22,0.3)] border-transparent" },
-              { id: "ECG", label: "ECG Prepaid", activeClass: "bg-gradient-to-br from-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(245,158,11,0.3)] border-transparent" }
+              { id: "DSTV", label: "DSTV" },
+              { id: "GOTV", label: "GOTV" },
+              { id: "STARTIMES", label: "StarTimes" },
+              { id: "ECG", label: "ECG Prepaid" }
             ].map((p) => (
               <button
                 key={p.id}
@@ -457,10 +452,10 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                   resetLookup();
                 }}
                 className={cn(
-                  "py-2.5 px-1 rounded-2xl border text-center font-extrabold text-xs transition-all duration-150",
-                  billType === p.id 
-                    ? p.activeClass
-                    : "border-white/10 bg-white/[0.03] text-white/80 hover:text-white hover:bg-white/[0.08] hover:border-white/20"
+                  "py-2.5 px-1 rounded-xl border text-center font-semibold text-xs transition-colors duration-150",
+                  billType === p.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border bg-secondary text-muted-foreground hover:text-foreground"
                 )}
               >
                 {p.label}
@@ -472,7 +467,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
         {/* Saved Accounts list */}
         {savedMeters.length > 0 && (
           <div className="pb-1 animate-in fade-in duration-300">
-            <label className="text-[10px] font-black uppercase tracking-widest text-white/50 block mb-1.5 ml-1">Saved Accounts</label>
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground block mb-1.5 ml-1">Saved Accounts</label>
             <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
               {savedMeters.map((m) => (
                 <button
@@ -482,11 +477,11 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                     setAccountNumber(m.meter_number);
                     setCustomerName(m.customer_name || "");
                   }}
-                  className="py-1.5 px-3 rounded-xl border border-white/[0.08] bg-white/[0.02] text-white/80 hover:text-white hover:bg-white/[0.05] hover:border-white/20 text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5"
+                  className="py-1.5 px-3 rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground hover:bg-accent text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5"
                 >
                   <span className="text-[10px]">⭐</span>
                   <span>{m.alias}</span>
-                  <span className="text-[10px] text-white/40">({m.meter_number})</span>
+                  <span className="text-[10px] text-muted-foreground/70">({m.meter_number})</span>
                 </button>
               ))}
             </div>
@@ -495,7 +490,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
         {/* Card/Meter Number Input */}
         <div>
-          <label className="text-[11px] font-black uppercase tracking-widest text-white/80 block mb-2 ml-1">
+          <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground block mb-2 ml-1">
             {billType === "ECG" ? "Meter Number" : "Smartcard / IUC Number"}
           </label>
           <div className="flex gap-2">
@@ -507,13 +502,13 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                 setAccountNumber(e.target.value);
                 resetLookup();
               }}
-              className="bg-white/[0.02] border-white/10 text-white placeholder:text-white/40 flex-1 font-mono rounded-2xl h-12 font-semibold focus:border-indigo-500/70 focus:ring-indigo-500/15 focus:bg-white/[0.05] transition-all duration-300"
+              className="flex-1 font-mono rounded-xl h-12 font-semibold"
             />
             <Button
               type="button"
               onClick={handleValidateAccount}
               disabled={isValidating || !accountNumber}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 rounded-2xl h-12 shadow-lg shadow-indigo-950/20"
+              className="text-xs px-4 rounded-xl h-12"
             >
               {isValidating ? (
                 <RefreshCcw className="w-4 h-4 animate-spin" />
@@ -526,29 +521,29 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
         {/* Validated Information Card */}
         {customerName && (
-          <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-4 space-y-2 animate-fade-in">
-            <div className="text-xs text-white/80 flex justify-between">
+          <div className="bg-background border border-border rounded-xl p-4 space-y-2 animate-fade-in">
+            <div className="text-xs text-muted-foreground flex justify-between">
               <span>Customer Name:</span>
-              <span className="font-bold text-white uppercase">{customerName}</span>
+              <span className="font-semibold text-foreground uppercase">{customerName}</span>
             </div>
             {validatedAmount !== null && (
-              <div className="text-xs text-white/80 flex justify-between">
+              <div className="text-xs text-muted-foreground flex justify-between">
                 <span>Account Balance:</span>
-                <span className="font-bold text-indigo-400">{formatGHS(validatedAmount)}</span>
+                <span className="font-semibold text-primary">{formatGHS(validatedAmount)}</span>
               </div>
             )}
           </div>
         )}
 
         {customerName && user && !savedMeters.some(m => m.meter_number === accountNumber) && (
-          <div className="bg-white/[0.02] border border-white/[0.08] rounded-2xl p-3 space-y-2 animate-in fade-in duration-300">
+          <div className="bg-background border border-border rounded-xl p-3 space-y-2 animate-in fade-in duration-300">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Save Account?</span>
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Save Account?</span>
               <button
                 type="button"
                 onClick={handleSaveMeter}
                 disabled={isSavingMeter || !meterAlias}
-                className="text-[10px] font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-900 disabled:text-slate-650 text-white py-1.5 px-2.5 rounded-lg transition-all"
+                className="text-[10px] font-semibold uppercase tracking-wider bg-primary hover:bg-primary/90 disabled:bg-secondary disabled:text-muted-foreground text-primary-foreground py-1.5 px-2.5 rounded-lg transition-colors"
               >
                 {isSavingMeter ? "Saving..." : "Save Now"}
               </button>
@@ -558,7 +553,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                 placeholder="Name/Alias e.g. Home Meter, Shop DSTV"
                 value={meterAlias}
                 onChange={(e) => setMeterAlias(e.target.value)}
-                className="bg-slate-900/60 border-white/5 text-white placeholder:text-white/30 h-8 text-xs font-semibold rounded-lg"
+                className="h-8 text-xs font-semibold rounded-lg"
               />
             </div>
           </div>
@@ -567,14 +562,14 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
         {/* Amount Input */}
         {customerName && (
           <div>
-            <label className="text-[11px] font-black uppercase tracking-widest text-white/80 block mb-2 ml-1">Payment Amount (GHS)</label>
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground block mb-2 ml-1">Payment Amount (GHS)</label>
             <Input
               type="number"
               min="1"
               placeholder="Enter amount"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              className="bg-white/[0.02] border-white/10 text-white placeholder:text-white/40 rounded-2xl h-12 font-semibold focus:border-indigo-500/70 focus:ring-indigo-500/15 focus:bg-white/[0.05] transition-all duration-300"
+              className="rounded-xl h-12 font-semibold"
             />
           </div>
         )}
@@ -582,13 +577,13 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
         {/* Receipt Phone Number */}
         {customerName && (
           <div>
-            <label className="text-[11px] font-black uppercase tracking-widest text-white/80 block mb-2 ml-1">SMS Notification Phone Number</label>
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground block mb-2 ml-1">SMS Notification Phone Number</label>
             <Input
               type="tel"
               placeholder="e.g. 0241234567"
               value={receiptPhone}
               onChange={(e) => setReceiptPhone(e.target.value)}
-              className="bg-white/[0.02] border-white/10 text-white placeholder:text-white/40 rounded-2xl h-12 font-semibold focus:border-indigo-500/70 focus:ring-indigo-500/15 focus:bg-white/[0.05] transition-all duration-300"
+              className="rounded-xl h-12 font-semibold"
             />
           </div>
         )}
@@ -596,20 +591,20 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
         {/* Payment Method Selector */}
         {customerName && user && walletBalance !== null && (
           <div>
-            <label className="text-[11px] font-black uppercase tracking-widest text-white/80 block mb-2.5 ml-1">Payment Method</label>
+            <label className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground block mb-2.5 ml-1">Payment Method</label>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setPaymentMethod("wallet")}
                 className={cn(
-                  "p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all duration-300",
-                  paymentMethod === "wallet" 
-                    ? "bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] border-transparent scale-102" 
-                    : "border-white/10 bg-white/[0.03] text-white/80 hover:text-white hover:bg-white/[0.08] hover:border-white/20"
+                  "p-3.5 rounded-xl border text-left flex flex-col justify-between transition-colors duration-300",
+                  paymentMethod === "wallet"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border bg-secondary text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span className="text-xs font-black">API Wallet</span>
-                <span className={cn("text-[10px] mt-1.5 font-bold", paymentMethod === "wallet" ? "text-white/80" : "text-white/50")}>
+                <span className="text-xs font-semibold">API Wallet</span>
+                <span className={cn("text-[10px] mt-1.5 font-medium", paymentMethod === "wallet" ? "opacity-80" : "opacity-70")}>
                   Bal: {formatGHS(walletBalance)}
                 </span>
               </button>
@@ -617,14 +612,14 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                 type="button"
                 onClick={() => setPaymentMethod("momo")}
                 className={cn(
-                  "p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all duration-300",
-                  paymentMethod === "momo" 
-                    ? "bg-gradient-to-br from-[#10b981] to-[#059669] text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] border-transparent scale-102" 
-                    : "border-white/10 bg-white/[0.03] text-white/80 hover:text-white hover:bg-white/[0.08] hover:border-white/20"
+                  "p-3.5 rounded-xl border text-left flex flex-col justify-between transition-colors duration-300",
+                  paymentMethod === "momo"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border bg-secondary text-muted-foreground hover:text-foreground"
                 )}
               >
-                <span className="text-xs font-black">Mobile Money</span>
-                <span className={cn("text-[10px] mt-1.5 font-bold", paymentMethod === "momo" ? "text-white/80" : "text-white/50")}>
+                <span className="text-xs font-semibold">Mobile Money</span>
+                <span className={cn("text-[10px] mt-1.5 font-medium", paymentMethod === "momo" ? "opacity-80" : "opacity-70")}>
                   Momo prompt
                 </span>
               </button>
@@ -636,16 +631,17 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
           <Button
             onClick={handleStartCheckout}
             disabled={!amount || !receiptPhone}
-            className="w-full bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-750 text-white py-6 rounded-2xl text-base font-black tracking-wide shadow-[0_0_25px_rgba(99,102,241,0.25)] hover:shadow-[0_0_35px_rgba(99,102,241,0.45)] hover:scale-[1.02] active:scale-[0.98] mt-2 transition-all duration-300"
+            size="lg"
+            className="w-full rounded-xl mt-2"
           >
             <span>Proceed to Payment</span>
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         ) : (
-          <div className="p-4 bg-white/[0.02] border border-white/10 rounded-2xl flex items-start gap-2.5 mt-2">
-            <Tv className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-white/70 leading-normal font-medium">
-              Enter your Smartcard or Meter Number and click <span className="font-black text-white">Verify</span> to retrieve owner details before making a payment.
+          <div className="p-4 bg-background border border-border rounded-xl flex items-start gap-2.5 mt-2">
+            <Tv className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground leading-normal font-medium">
+              Enter your Smartcard or Meter Number and click <span className="font-semibold text-foreground">Verify</span> to retrieve owner details before making a payment.
             </p>
           </div>
         )}
@@ -653,41 +649,32 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
       {/* Confirmation Dialog */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="bg-slate-950/95 border border-white/10 backdrop-blur-2xl text-white max-w-sm rounded-[2rem] p-6 shadow-2xl">
+        <DialogContent className="bg-card border border-border max-w-sm rounded-[1.75rem] p-6">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-center text-white">Confirm Bill Payment</DialogTitle>
-            <DialogDescription className="text-center text-slate-400 text-sm">
+            <DialogTitle className="text-lg font-bold text-center text-foreground">Confirm Bill Payment</DialogTitle>
+            <DialogDescription className="text-center text-muted-foreground text-sm">
               Verify your utility payment details before executing.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="bg-white/[0.03] border border-white/5 rounded-2xl p-4 my-4 space-y-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Provider:</span>
-              <span className="font-semibold text-white">{billType}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Card / Meter #:</span>
-              <span className="font-mono font-semibold text-white">{accountNumber}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-400">Owner Name:</span>
-              <span className="font-semibold text-white uppercase text-xs">{customerName}</span>
-            </div>
-            <div className="flex justify-between text-sm border-t border-white/5 pt-3">
-              <span className="text-slate-400">Total Price:</span>
-              <span className="font-bold text-indigo-400 text-base">{formatGHS(Number(amount))}</span>
-            </div>
-          </div>
+          <OrderSummary
+            className="my-2"
+            rows={[
+              { label: "Provider", value: billType },
+              { label: "Card / Meter #", value: accountNumber },
+              { label: "Owner Name", value: <span className="uppercase">{customerName}</span> },
+              { label: "Total Price", value: formatGHS(Number(amount)), emphasis: true },
+            ]}
+          />
 
           {paymentMethod === "momo" && (
             <div className="space-y-3 pt-0.5 mb-4 animate-in fade-in duration-300">
               {/* Toggle for same number vs different number */}
-              <div className="flex items-center justify-between pb-1 border-b border-white/[0.04]">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              <div className="flex items-center justify-between pb-1 border-b border-border">
+                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   MoMo Payment Number
                 </span>
-                <div className="flex gap-1.5 bg-slate-900/60 p-1 rounded-xl">
+                <div className="flex gap-1.5 bg-secondary p-1 rounded-lg">
                   <button
                     type="button"
                     onClick={() => {
@@ -695,10 +682,10 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                       setMomoNumber("");
                     }}
                     className={cn(
-                      "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all duration-300",
+                      "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
                       payWithSameNumber
-                        ? "bg-slate-800 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-400"
+                        ? "bg-background text-foreground shadow-soft"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     Same Number
@@ -709,10 +696,10 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                       setPayWithSameNumber(false);
                     }}
                     className={cn(
-                      "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all duration-300",
+                      "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
                       !payWithSameNumber
-                        ? "bg-slate-800 text-white shadow-sm"
-                        : "text-slate-500 hover:text-slate-400"
+                        ? "bg-background text-foreground shadow-soft"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
                   >
                     Different
@@ -721,24 +708,24 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
               </div>
 
               {payWithSameNumber ? (
-                <div className="text-[11px] font-bold text-slate-400 bg-white/[0.02] p-3 rounded-xl border border-white/[0.04] flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 text-indigo-400 shrink-0" />
-                  <span>Request prompt on notification number: <span className="font-mono text-white">{receiptPhone}</span></span>
+                <div className="text-[11px] font-semibold text-muted-foreground bg-background p-3 rounded-xl border border-border flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 text-primary shrink-0" />
+                  <span>Request prompt on notification number: <span className="font-mono text-foreground">{receiptPhone}</span></span>
                 </div>
               ) : (
                 <div className="space-y-1.5 pt-0.5 animate-in slide-in-from-top-2 duration-300">
                   <div className="flex gap-2">
                     <div className="relative w-[90px] shrink-0">
-                      <select 
-                        className="w-full h-11 rounded-xl border border-white/[0.08] bg-slate-900/60 pl-3 pr-7 text-xs font-semibold shadow-inner outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all cursor-pointer appearance-none text-white"
+                      <select
+                        className="w-full h-11 rounded-xl border border-border bg-background pl-3 pr-7 text-xs font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
                         value={momoNetwork}
                         onChange={(e) => setMomoNetwork(e.target.value)}
                       >
-                        <option value="MTN" className="bg-slate-900 text-white">MTN</option>
-                        <option value="TELECEL" className="bg-slate-900 text-white">Telecel</option>
-                        <option value="AIRTELTIGO" className="bg-slate-900 text-white">AT</option>
+                        <option value="MTN">MTN</option>
+                        <option value="TELECEL">Telecel</option>
+                        <option value="AIRTELTIGO">AT</option>
                       </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                     </div>
                     <div className="relative flex-1 group">
                       <Input
@@ -746,26 +733,26 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
                         value={momoNumber}
                         onChange={(e) => setMomoNumber(e.target.value)}
                         placeholder="e.g. 024 123 4567"
-                        className="h-11 w-full rounded-xl border border-white/[0.08] bg-slate-900/60 pl-3 pr-8 text-xs font-semibold shadow-sm transition-all duration-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 text-white"
+                        className="h-11 w-full rounded-xl border border-border bg-background pl-3 pr-8 text-xs font-semibold transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
                       />
                       {isVerifying && (
                         <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="block h-3.5 w-3.5 rounded-full border-2 border-slate-300 border-t-indigo-500 animate-spin" />
+                          <span className="block h-3.5 w-3.5 rounded-full border-2 border-border border-t-primary animate-spin" />
                         </div>
                       )}
                     </div>
                   </div>
-                  
+
                   {accountName && !isVerifying && (
-                    <div className="mt-1.5 text-[10px] font-bold px-3 py-1.5 bg-emerald-950/30 text-emerald-400 rounded-xl border border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                    <div className="mt-1.5 text-[10px] font-semibold px-3 py-1.5 bg-emerald-500/5 text-emerald-500 rounded-xl border border-emerald-500/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
                       <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                       <span className="truncate">{accountName}</span>
                     </div>
                   )}
 
                   {isSamePhoneNumber(receiptPhone, momoNumber) && (
-                    <div className="mt-1.5 text-[10px] font-bold px-3 py-1.5 bg-red-950/30 text-red-400 rounded-xl border border-red-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                      <span className="shrink-0 text-red-500">⚠️</span>
+                    <div className="mt-1.5 text-[10px] font-semibold px-3 py-1.5 bg-destructive/5 text-destructive rounded-xl border border-destructive/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                      <span className="shrink-0">⚠️</span>
                       <span className="leading-tight">Notification number cannot be the same as the paying MoMo number. Please use a different number to pay.</span>
                     </div>
                   )}
@@ -775,21 +762,21 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
           )}
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setCheckoutOpen(false)} className="flex-1 rounded-xl border-white/10 bg-transparent hover:bg-white/5 hover:text-white text-slate-300">
+            <Button variant="outline" onClick={() => setCheckoutOpen(false)} className="flex-1 rounded-xl">
               Cancel
             </Button>
-            <Button 
-              onClick={executeCheckout} 
+            <Button
+              onClick={executeCheckout}
               disabled={
                 paymentMethod === "momo" && !payWithSameNumber && (
-                  momoNumber.replace(/\D/g, "").length < 9 || 
-                  isVerifying || 
-                  isSamePhoneNumber(receiptPhone, momoNumber) || 
-                  accountName === "Unknown Account" || 
+                  momoNumber.replace(/\D/g, "").length < 9 ||
+                  isVerifying ||
+                  isSamePhoneNumber(receiptPhone, momoNumber) ||
+                  accountName === "Unknown Account" ||
                   accountName === "Account not found"
                 )
               }
-              className="flex-1 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white font-semibold shadow-lg"
+              className="flex-1 rounded-xl"
             >
               Pay Now
             </Button>

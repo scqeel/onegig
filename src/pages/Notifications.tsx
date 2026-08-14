@@ -126,17 +126,17 @@ export default function NotificationsPage() {
           </Link>
         </div>
 
-        <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft">
-          <div className="border-b border-border/40 bg-card/50 p-6 flex items-center gap-3">
+        <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
+          <div className="border-b border-border p-6 flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Bell className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold">All Notifications</h2>
+              <h2 className="text-lg font-bold text-foreground">All Notifications</h2>
               <p className="text-sm text-muted-foreground">Stay updated with the latest activity.</p>
             </div>
           </div>
-          
+
           <div className="p-0">
             {isLoading ? (
               <div className="flex items-center justify-center p-12 text-muted-foreground">
@@ -145,18 +145,18 @@ export default function NotificationsPage() {
             ) : visibleNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-12 text-center">
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-muted-foreground">
-                  <Bell className="h-8 w-8 opacity-20" />
+                  <Bell className="h-8 w-8 opacity-40" />
                 </div>
-                <h3 className="text-lg font-bold">You're all caught up!</h3>
+                <h3 className="text-lg font-bold text-foreground">You're all caught up!</h3>
                 <p className="mt-2 text-sm text-muted-foreground max-w-sm">
                   You have no new notifications at the moment. We'll alert you when something happens.
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="divide-y divide-border">
                 {visibleNotifications.map((n: any) => (
-                  <div 
-                    key={n.id} 
+                  <div
+                    key={n.id}
                     onClick={() => setSelectedNotification(n)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
@@ -166,15 +166,15 @@ export default function NotificationsPage() {
                     }}
                     role="button"
                     tabIndex={0}
-                    className="flex w-full text-left gap-3 sm:gap-4 p-4 sm:p-5 hover:bg-secondary/40 focus:bg-secondary/40 transition-colors group cursor-pointer outline-none"
+                    className="flex w-full text-left gap-3 sm:gap-4 p-4 sm:p-5 hover:bg-accent focus:bg-accent transition-colors group cursor-pointer outline-none"
                   >
                     <div className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${getBg(n.type)}`}>
                       {getIcon(n.type)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-foreground truncate">{n.title}</h3>
-                        <span className="shrink-0 text-[10px] uppercase font-bold tracking-wider text-muted-foreground ml-auto">{timeAgo(n.created_at)}</span>
+                        <h3 className="font-semibold text-foreground truncate">{n.title}</h3>
+                        <span className="shrink-0 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground ml-auto">{timeAgo(n.created_at)}</span>
                       </div>
                       <p className="mt-1 text-sm text-muted-foreground truncate">{n.message}</p>
                     </div>
@@ -204,7 +204,7 @@ export default function NotificationsPage() {
       </div>
 
       <Dialog open={!!selectedNotification} onOpenChange={(open) => !open && setSelectedNotification(null)}>
-        <DialogContent className="sm:max-w-md rounded-[2rem]">
+        <DialogContent className="sm:max-w-md rounded-[1.75rem]">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               {selectedNotification && (
@@ -216,7 +216,7 @@ export default function NotificationsPage() {
               <DialogDescription className="sr-only">Notification details</DialogDescription>
             </div>
             {selectedNotification && (
-               <p className="text-xs font-medium text-muted-foreground pb-2 border-b border-border/40">
+               <p className="text-xs font-medium text-muted-foreground pb-2 border-b border-border">
                  {new Date(selectedNotification.created_at).toLocaleString()}
                </p>
             )}
@@ -226,7 +226,7 @@ export default function NotificationsPage() {
               {selectedNotification?.message}
             </p>
           </div>
-          <div className="flex justify-end gap-2 pt-4 border-t border-border/40">
+          <div className="flex justify-end gap-2 pt-4 border-t border-border">
             <Button
               variant="outline"
               className="rounded-xl"

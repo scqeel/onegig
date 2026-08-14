@@ -23,10 +23,10 @@ export default function DashboardTrackPage() {
       badge="Tracking"
       sidebarItems={sidebarItems}
     >
-      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-6 py-5 md:px-8">
-          <h2 className="text-lg font-bold text-white">Track Orders</h2>
-          <p className="mt-0.5 text-sm text-white/50">Enter the recipient phone number to check your order status.</p>
+      <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
+        <div className="border-b border-border bg-secondary/40 px-6 py-5 md:px-8">
+          <h2 className="text-lg font-bold text-foreground">Track Orders</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">Enter the recipient phone number to check your order status.</p>
         </div>
         <div className="p-5 md:p-8">
           <TrackOrder />

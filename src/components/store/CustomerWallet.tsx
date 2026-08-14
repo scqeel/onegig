@@ -255,72 +255,72 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
   }, [phase, orderRef]);
 
   if (!userId) return null;
-  if (isLoading) return <div className="h-8 w-24 bg-white/10 animate-pulse rounded-md"></div>;
+  if (isLoading) return <div className="h-8 w-24 bg-secondary animate-pulse rounded-md"></div>;
 
   return (
     <>
-      <div 
+      <div
         onClick={() => setIsTopupOpen(true)}
-        className="flex items-center gap-2 bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 px-4 py-2 rounded-xl cursor-pointer hover:bg-emerald-500/30 transition-all hover:scale-105 active:scale-95"
+        className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/25 px-4 py-2 rounded-xl cursor-pointer hover:bg-emerald-500/15 transition-colors"
       >
-        <Wallet className="w-4 h-4 text-emerald-400" />
-        <span className="font-bold text-emerald-50">{formatGHS(balance)}</span>
-        <Plus className="w-3 h-3 text-emerald-400 opacity-70" />
+        <Wallet className="w-4 h-4 text-emerald-500" />
+        <span className="font-semibold text-emerald-500">{formatGHS(balance)}</span>
+        <Plus className="w-3 h-3 text-emerald-500 opacity-70" />
       </div>
 
       <Dialog open={isTopupOpen} onOpenChange={(v) => { if (!v && phase !== 'polling') { setIsTopupOpen(false); setPhase("idle"); } }}>
-        <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 text-white rounded-xl">
+        <DialogContent className="sm:max-w-md bg-card border border-border text-foreground rounded-[1.75rem]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-emerald-400" />
+              <Wallet className="w-5 h-5 text-emerald-500" />
               Top up Wallet
             </DialogTitle>
-            <p className="text-sm text-slate-400">Top up your balance instantly via Mobile Money.</p>
+            <p className="text-sm text-muted-foreground">Top up your balance instantly via Mobile Money.</p>
           </DialogHeader>
-          
+
           {phase === "idle" && (
             <div className="space-y-4 py-4">
-              <div className="bg-slate-950 p-6 rounded-xl border border-slate-800 text-center">
-                <p className="text-slate-400 text-sm mb-1">Current Balance</p>
-                <h3 className="text-3xl font-bold text-white">{formatGHS(balance)}</h3>
+              <div className="bg-background p-6 rounded-xl border border-border text-center">
+                <p className="text-muted-foreground text-sm mb-1">Current Balance</p>
+                <h3 className="text-3xl font-bold text-foreground">{formatGHS(balance)}</h3>
               </div>
-              
+
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Amount to Deposit (GHS)</label>
+                <label className="text-sm font-medium text-foreground">Amount to Deposit (GHS)</label>
                 <Input
                   type="number"
                   placeholder="e.g. 50"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-slate-950 border-slate-800 h-12 text-lg focus:ring-emerald-500 focus:border-emerald-500"
+                  className="bg-background border-border h-12 text-lg focus:ring-emerald-500 focus:border-emerald-500"
                 />
-                 <p className="text-xs text-slate-500">A 3% {activeGateway === "theteller" ? "theTeller" : "Paystack"} processing fee will be applied.</p>
+                 <p className="text-xs text-muted-foreground">A 3% {activeGateway === "theteller" ? "theTeller" : "Paystack"} processing fee will be applied.</p>
               </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Mobile Money Number</label>
+                  <label className="text-sm font-medium text-foreground">Mobile Money Number</label>
                   <div className="flex gap-2">
-                    <select 
-                      className="w-[100px] h-12 rounded-lg border-slate-800 bg-slate-950 text-sm text-white px-3 border outline-none focus:ring-emerald-500 focus:border-emerald-500" 
-                      value={momoNetwork} 
+                    <select
+                      className="w-[100px] h-12 rounded-lg border border-border bg-background text-sm text-foreground px-3 outline-none focus:ring-emerald-500 focus:border-emerald-500"
+                      value={momoNetwork}
                       onChange={e => setMomoNetwork(e.target.value)}
                     >
                       <option value="MTN">MTN</option>
                       <option value="TELECEL">Telecel</option>
                       <option value="AIRTELTIGO">AT</option>
                     </select>
-                    <Input 
-                      value={momoNumber} 
-                      onChange={e => setMomoNumber(e.target.value)} 
-                      placeholder="024 XXX XXXX" 
-                      className="flex-1 bg-slate-950 border-slate-800 h-12 focus:ring-emerald-500 focus:border-emerald-500" 
+                    <Input
+                      value={momoNumber}
+                      onChange={e => setMomoNumber(e.target.value)}
+                      placeholder="024 XXX XXXX"
+                      className="flex-1 bg-background border-border h-12 focus:ring-emerald-500 focus:border-emerald-500"
                     />
                   </div>
                 </div>
-              
-              <Button 
-                onClick={initiateDeposit}                 disabled={!amount || momoNumber.length < 9}
-                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-lg mt-2"
+
+              <Button
+                onClick={initiateDeposit} disabled={!amount || momoNumber.length < 9}
+                className="w-full h-12 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-lg mt-2"
               >
                 Pay GH₵{(Number(amount || 0) * 1.03).toFixed(2)}
               </Button>
@@ -329,57 +329,54 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
 
           {(phase === "processing" || phase === "polling") && (
             <div className="py-12 flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="h-10 w-10 animate-spin text-slate-400" />
-              <p className="font-semibold text-slate-300">{phase === "processing" ? "Initializing..." : "Waiting for authorization prompt..."}</p>
+              <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+              <p className="font-semibold text-foreground">{phase === "processing" ? "Initializing..." : "Waiting for authorization prompt..."}</p>
             </div>
           )}
 
           {phase === "otp" && (
             <div className="py-6 text-center animate-in fade-in zoom-in duration-300">
-              <h3 className="text-xl font-black text-white">Verification Required</h3>
-              <p className="mt-1 text-sm font-medium text-slate-400 max-w-[260px] mx-auto">
+              <h3 className="text-xl font-bold text-foreground">Verification Required</h3>
+              <p className="mt-1 text-sm font-medium text-muted-foreground max-w-[260px] mx-auto">
                 Enter the OTP sent to {momoNumber}
               </p>
-              
+
               <div className="mt-6 max-w-[260px] mx-auto space-y-4">
-                <Input 
-                  value={otp} 
+                <Input
+                  value={otp}
                   onChange={(e) => {
                     setOtp(e.target.value);
-                    if (e.target.value.length >= 4) {
-                      // Note: usually 6 digits, but depending on provider could be different. We wait for user to hit verify.
-                    }
                   }}
                   placeholder="Enter OTP"
-                  className="h-12 bg-slate-950 border-slate-800 text-center text-xl tracking-[0.5em] font-black focus:ring-emerald-500 focus:border-emerald-500"
+                  className="h-12 bg-background border-border text-center text-xl tracking-[0.5em] font-bold focus:ring-emerald-500 focus:border-emerald-500"
                 />
-                
+
                 <div className="flex items-center justify-between px-1 pt-1">
                   <Button
                     variant="ghost"
                     onClick={() => { setPhase("idle"); setOtp(""); }}
-                    className="h-auto p-0 text-xs font-bold text-slate-500 hover:text-slate-300"
+                    className="h-auto p-0 text-xs font-semibold text-muted-foreground hover:text-foreground"
                   >
                     Cancel
                   </Button>
                   {otpTimer > 0 ? (
-                    <span className="text-xs text-slate-500">Resend in {otpTimer}s</span>
+                    <span className="text-xs text-muted-foreground">Resend in {otpTimer}s</span>
                   ) : (
                     <Button
                       variant="ghost"
                       onClick={resendDepositOtp}
-                      className="h-auto p-0 text-xs text-emerald-500 font-bold hover:text-emerald-400"
+                      className="h-auto p-0 text-xs text-emerald-500 font-semibold hover:text-emerald-400"
                     >
                       Resend OTP
                     </Button>
                   )}
                 </div>
-                
+
                 <div className="mt-6">
-                  <Button 
-                    onClick={() => submitOtp()} 
+                  <Button
+                    onClick={() => submitOtp()}
                     disabled={otp.length < 4}
-                    className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                    className="w-full h-12 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white"
                   >
                     Verify OTP
                   </Button>
@@ -390,23 +387,23 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
 
           {phase === "success" && (
             <div className="py-10 flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="h-16 w-16 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500 font-bold text-2xl">✓</div>
+              <div className="h-16 w-16 rounded-full bg-emerald-500/15 flex items-center justify-center text-emerald-500 font-bold text-2xl">✓</div>
               <div>
-                <h3 className="font-bold text-xl text-white">Deposit Successful!</h3>
-                <p className="text-slate-400 mt-1">Your wallet balance has been updated.</p>
+                <h3 className="font-bold text-xl text-foreground">Deposit Successful!</h3>
+                <p className="text-muted-foreground mt-1">Your wallet balance has been updated.</p>
               </div>
-              <Button onClick={() => { setIsTopupOpen(false); setPhase("idle"); }} variant="outline" className="mt-4 border-slate-700 hover:bg-slate-800">Close</Button>
+              <Button onClick={() => { setIsTopupOpen(false); setPhase("idle"); }} variant="outline" className="mt-4">Close</Button>
             </div>
           )}
 
           {phase === "error" && (
             <div className="py-10 flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="h-16 w-16 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-500 font-bold text-2xl">!</div>
+              <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center text-destructive font-bold text-2xl">!</div>
               <div>
-                <h3 className="font-bold text-xl text-white">Deposit Failed</h3>
-                <p className="text-rose-400 mt-1 font-medium">{errorMsg}</p>
+                <h3 className="font-bold text-xl text-foreground">Deposit Failed</h3>
+                <p className="text-destructive mt-1 font-medium">{errorMsg}</p>
               </div>
-              <Button onClick={() => setPhase("idle")} variant="outline" className="mt-4 border-slate-700 hover:bg-slate-800">Try Again</Button>
+              <Button onClick={() => setPhase("idle")} variant="outline" className="mt-4">Try Again</Button>
             </div>
           )}
         </DialogContent>

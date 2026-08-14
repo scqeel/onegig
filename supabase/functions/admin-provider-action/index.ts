@@ -76,6 +76,35 @@ Deno.serve(async (req) => {
       return json(verifyData);
     }
 
+    // Public action handling for bulk beneficiary-list submission
+    if (action === "submit_numbers") {
+      const { numbers } = body;
+      if (!numbers) return json({ success: false, error: "numbers is required" }, 400);
+
+      const numbersStr = Array.isArray(numbers) ? numbers.join(", ") : String(numbers);
+      const count = numbersStr.split(/[,\s]+/).filter(Boolean).length;
+      if (count > 30) {
+        return json({ success: false, error: `Maximum 30 numbers allowed per request (got ${count})` }, 400);
+      }
+
+      if (activeProviderKey !== "datahub" || !PROVIDER_API_KEY) {
+        return json({ success: false, error: "This feature is only available while DataHub is the active provider." }, 200);
+      }
+
+      const submitUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/purchases/submit-numbers`;
+      const submitRes = await fetch(submitUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${PROVIDER_API_KEY}`,
+          "X-API-Key": PROVIDER_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ numbers: numbersStr }),
+      });
+      const submitData = await submitRes.json().catch(() => ({ success: false, error: "Failed to parse API response" }));
+      return json(submitData);
+    }
+
     const headers: Record<string, string> = {
       "Authorization": `Bearer ${PROVIDER_API_KEY}`,
       "X-API-Key": PROVIDER_API_KEY,
@@ -140,7 +169,7 @@ Deno.serve(async (req) => {
           .from("orders")
           .update({
             status: mappedStatus,
-            notes: statusData?.message || statusData?.data?.message || targetOrder.notes || null,
+            notes: statusData?.data?.statusDescription || statusData?.message || statusData?.data?.message || targetOrder.notes || null,
           })
           .eq("id", targetOrder.id);
 
@@ -219,18 +248,18 @@ Deno.serve(async (req) => {
 
     // Verify authentication and admin authorization for administrative actions
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Unauthorized: Missing token" }, 401);
+    if (!authHeader) return json({ ok: false, error: "Unauthorized: Missing token" }, 200);
 
     const userClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: ud, error: udErr } = await userClient.auth.getUser();
-    if (udErr || !ud.user?.id) return json({ error: "Unauthorized: Invalid token" }, 401);
+    if (udErr || !ud.user?.id) return json({ ok: false, error: "Unauthorized: Invalid or expired token" }, 200);
 
     const userId = ud.user.id;
     const { data: isAdmin } = await admin.rpc("has_role", { _user_id: userId, _role: "admin" });
 
-    if (!isAdmin) return json({ error: "Forbidden: Admin access required" }, 403);
+    if (!isAdmin) return json({ ok: false, error: "Forbidden: Admin access required" }, 200);
 
     if (!PROVIDER_API_KEY) {
       return json({ success: false, error: "Provider API Key is not configured in integrations settings" }, 200);

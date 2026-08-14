@@ -71,11 +71,11 @@ export const MtnStatusWidget: React.FC<MtnStatusWidgetProps> = ({
 
   return (
     <div
-      className={`relative flex items-center justify-between gap-3 rounded-2xl border border-emerald-500/20 bg-slate-950/80 px-4 py-3 shadow-lg backdrop-blur-md transition-all ${className}`}
+      className={`relative flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3 transition-all ${className}`}
     >
       <div className="flex items-center gap-3 overflow-hidden text-xs">
-        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-          <Zap className="h-4 w-4 animate-pulse fill-emerald-400/20" />
+        <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/30">
+          <Zap className="h-4 w-4 fill-emerald-500/20" />
           <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
@@ -83,15 +83,15 @@ export const MtnStatusWidget: React.FC<MtnStatusWidgetProps> = ({
         </div>
 
         <div className="truncate">
-          <div className="flex items-center gap-1.5 font-bold text-slate-200">
-            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+          <div className="flex items-center gap-1.5 font-semibold text-foreground">
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
             <span>Network Live Status</span>
           </div>
-          <div className="truncate text-[11px] text-slate-400">
+          <div className="truncate text-[11px] text-muted-foreground">
             {loading && !data ? (
-              <span className="animate-pulse">Checking latest MTN deliveries...</span>
+              <span>Checking latest MTN deliveries...</span>
             ) : error || !data?.message ? (
-              <span className="text-slate-400">MTN Orders active & delivering smoothly ⚡</span>
+              <span>MTN Orders active & delivering smoothly</span>
             ) : (
               <span>{data.message}</span>
             )}
@@ -103,9 +103,9 @@ export const MtnStatusWidget: React.FC<MtnStatusWidgetProps> = ({
         onClick={fetchStatus}
         disabled={loading}
         title="Refresh live status"
-        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-colors"
+        className="rounded-lg p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
       >
-        <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-emerald-400" : ""}`} />
+        <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-emerald-500" : ""}`} />
       </button>
     </div>
   );

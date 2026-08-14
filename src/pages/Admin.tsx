@@ -49,7 +49,7 @@ export default function AdminPage() {
       topActions={
         <a
           href="/dashboard"
-          className="flex items-center gap-2 rounded-xl border border-border/40 bg-card/50 px-4 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-foreground"
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
         >
           <RefreshCw className="h-3 w-3" />
           Back to Dashboard

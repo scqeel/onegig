@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { OrderSummary } from "@/components/buy/OrderSummary";
 
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
 
@@ -35,47 +36,35 @@ function getNetStyle(code: string) {
   const c = code.toUpperCase();
   if (c === "MTN")
     return {
-      idle: "border-amber-400/40 bg-amber-400/10 text-amber-900 dark:text-amber-300 hover:border-amber-400/80 hover:bg-amber-400/20",
-      active: "border-amber-400 bg-amber-400 text-slate-950 font-black shadow-float",
-      activeRing: "ring-2 ring-amber-400/50",
-      badge: "bg-amber-500 text-slate-950 font-black",
-      cardIdle: "border-amber-500/30 bg-amber-500/10 text-amber-950 dark:text-amber-200 hover:bg-amber-500/20 transition-colors",
-      cardActive: "border-amber-400 bg-amber-400 text-slate-950 shadow-float ring-2 ring-amber-400",
-      dot: "bg-amber-400",
-      tagBg: "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800",
+      idle: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300 hover:border-amber-500/60 hover:bg-amber-500/15",
+      active: "border-amber-500 bg-amber-500 text-amber-950 font-bold shadow-soft",
+      activeRing: "ring-2 ring-amber-500/40",
+      cardIdle: "border-amber-500/25 bg-amber-500/5 text-amber-900 dark:text-amber-200 hover:bg-amber-500/10 transition-colors",
+      cardActive: "border-amber-500 bg-amber-500 text-amber-950 shadow-soft ring-2 ring-amber-500/40",
     };
   if (c === "TELECEL")
     return {
-      idle: "border-red-500/40 bg-red-500/10 text-red-900 dark:text-red-300 hover:border-red-500/80 hover:bg-red-500/20",
-      active: "border-red-500 bg-red-600 text-white font-black shadow-float",
-      activeRing: "ring-2 ring-red-500/50",
-      badge: "bg-red-600 text-white font-black",
-      cardIdle: "border-red-600/30 bg-red-600/10 text-red-950 dark:text-red-200 hover:bg-red-600/20 transition-colors",
-      cardActive: "border-red-500 bg-red-600 text-white shadow-float ring-2 ring-red-500",
-      dot: "bg-red-500",
-      tagBg: "bg-red-100 dark:bg-red-950/60 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800",
+      idle: "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300 hover:border-red-500/60 hover:bg-red-500/15",
+      active: "border-red-500 bg-red-600 text-white font-bold shadow-soft",
+      activeRing: "ring-2 ring-red-500/40",
+      cardIdle: "border-red-500/25 bg-red-500/5 text-red-900 dark:text-red-200 hover:bg-red-500/10 transition-colors",
+      cardActive: "border-red-500 bg-red-600 text-white shadow-soft ring-2 ring-red-500/40",
     };
   if (c === "AIRTELTIGO" || c === "AT")
     return {
-      idle: "border-blue-500/40 bg-blue-500/10 text-blue-900 dark:text-blue-300 hover:border-blue-500/80 hover:bg-blue-500/20",
-      active: "border-blue-500 bg-blue-600 text-white font-black shadow-float",
-      activeRing: "ring-2 ring-blue-500/50",
-      badge: "bg-blue-600 text-white font-black",
-      cardIdle: "border-blue-600/30 bg-blue-600/10 text-blue-950 dark:text-blue-200 hover:bg-blue-600/20 transition-colors",
-      cardActive: "border-blue-500 bg-blue-600 text-white shadow-float ring-2 ring-blue-500",
-      dot: "bg-blue-500",
-      tagBg: "bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800",
+      idle: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300 hover:border-blue-500/60 hover:bg-blue-500/15",
+      active: "border-blue-500 bg-blue-600 text-white font-bold shadow-soft",
+      activeRing: "ring-2 ring-blue-500/40",
+      cardIdle: "border-blue-500/25 bg-blue-500/5 text-blue-900 dark:text-blue-200 hover:bg-blue-500/10 transition-colors",
+      cardActive: "border-blue-500 bg-blue-600 text-white shadow-soft ring-2 ring-blue-500/40",
     };
-  
+
   return {
-    idle: "border-purple-500/40 bg-purple-500/10 text-purple-900 dark:text-purple-300 hover:border-purple-500/80 hover:bg-purple-500/20",
-    active: "border-purple-500 bg-purple-600 text-white font-black shadow-float",
-    activeRing: "ring-2 ring-purple-500/50",
-    badge: "bg-purple-600 text-white font-black",
-    cardIdle: "border-purple-600/30 bg-purple-600/10 text-purple-950 dark:text-purple-200 hover:bg-purple-600/20 transition-colors",
-    cardActive: "border-purple-500 bg-purple-600 text-white shadow-float ring-2 ring-purple-500",
-    dot: "bg-purple-500",
-    tagBg: "bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800",
+    idle: "border-border bg-secondary text-foreground hover:border-primary/40 hover:bg-primary/5",
+    active: "border-primary bg-primary text-primary-foreground font-bold shadow-soft",
+    activeRing: "ring-2 ring-primary/40",
+    cardIdle: "border-border bg-secondary text-foreground hover:bg-primary/5 transition-colors",
+    cardActive: "border-primary bg-primary text-primary-foreground shadow-soft ring-2 ring-primary/40",
   };
 }
 
@@ -118,7 +107,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
                     ? "bg-primary text-primary-foreground"
                     : active
                     ? "border-2 border-primary bg-primary/10 text-primary"
-                    : "border-2 border-border bg-background dark:bg-slate-900 text-muted-foreground"
+                    : "border-2 border-border bg-background text-muted-foreground"
                 )}
               >
                 {done ? <CheckCircle2 className="h-4 w-4" /> : n}
@@ -557,28 +546,26 @@ export function BuyDataFlow({
       <div className="relative py-8 px-4 w-full max-w-md mx-auto animate-in fade-in zoom-in duration-500">
         <Confetti />
         
-        {/* Premium Receipt Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] border border-slate-100 dark:border-slate-800 overflow-hidden relative">
-          <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-400 bg-[length:200%_auto] animate-gradient"></div>
-          
+        {/* Receipt Card */}
+        <div className="bg-card rounded-[1.75rem] border border-border overflow-hidden relative">
           <div className="p-8 pb-6 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-500/10 mb-5 ring-[10px] ring-emerald-50/50 dark:ring-emerald-500/5">
+            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 mb-5">
               <CheckCircle2 className="h-10 w-10 text-emerald-500" />
             </div>
-            <h3 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Payment Successful</h3>
-            <p className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">
-              Your <span className="font-bold text-slate-700 dark:text-slate-300">{bundle?.size_label}</span> is on its way to
+            <h3 className="text-2xl font-bold text-foreground tracking-tight">Payment Successful</h3>
+            <p className="mt-3 text-sm font-medium text-muted-foreground">
+              Your <span className="font-semibold text-foreground">{bundle?.size_label}</span> is on its way to
             </p>
-            <div className="mt-2 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800 text-lg font-black text-slate-800 dark:text-slate-200">
+            <div className="mt-2 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-secondary text-lg font-bold text-foreground">
               {phone}
             </div>
           </div>
-          
+
           <div className="px-8 pb-8">
-            <div className="pt-6 border-t border-dashed border-slate-200 dark:border-slate-700 space-y-4">
+            <div className="pt-6 border-t border-dashed border-border space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Payment Method</span>
-                <span className="text-sm font-bold flex items-center gap-1.5 text-slate-700 dark:text-slate-200">
+                <span className="text-sm text-muted-foreground font-medium">Payment Method</span>
+                <span className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
                   {payWithWallet ? (
                     <><div className="h-2 w-2 rounded-full bg-primary" /> Wallet</>
                   ) : (
@@ -586,16 +573,16 @@ export function BuyDataFlow({
                   )}
                 </span>
               </div>
-              
+
               <div className="flex justify-between items-center">
-                <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Amount Paid</span>
-                <span className="text-sm font-black text-slate-800 dark:text-slate-100">{formatGHS(finalPrice)}</span>
+                <span className="text-sm text-muted-foreground font-medium">Amount Paid</span>
+                <span className="text-sm font-bold text-foreground">{formatGHS(finalPrice)}</span>
               </div>
-              
+
               {orderRef && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500 dark:text-slate-400 font-medium">Transaction Ref</span>
-                  <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">{orderRef.split('-')[0] + '...'}</span>
+                  <span className="text-sm text-muted-foreground font-medium">Transaction Ref</span>
+                  <span className="font-mono text-xs font-semibold text-muted-foreground uppercase">{orderRef.split('-')[0] + '...'}</span>
                 </div>
               )}
             </div>
@@ -607,11 +594,11 @@ export function BuyDataFlow({
         </p>
 
         <div className="mt-6 grid grid-cols-2 gap-3 max-w-sm mx-auto">
-          <Button variant="outline" className="h-14 rounded-2xl font-bold border-2" onClick={reset}>
+          <Button variant="outline" className="h-14 rounded-2xl" onClick={reset}>
             Buy Again
           </Button>
           <Button
-            className="h-14 rounded-2xl font-bold bg-slate-900 text-white hover:bg-slate-800 dark:bg-emerald-500 dark:text-emerald-950 dark:hover:bg-emerald-400 shadow-lg shadow-emerald-500/20"
+            className="h-14 rounded-2xl"
             onClick={() => {
               if (onSuccess) onSuccess();
               else nav(`/track?ref=${orderRef}`);
@@ -628,23 +615,23 @@ export function BuyDataFlow({
   if (phase === "otp") {
     return (
       <div className="py-10 text-center animate-in fade-in zoom-in duration-300">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4 border border-primary/20 shadow-lg">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4 border border-primary/20">
           <Lock className="h-10 w-10 text-primary" />
         </div>
-        <h3 className="text-2xl font-black text-foreground">Verification Required</h3>
+        <h3 className="text-2xl font-bold text-foreground">Verification Required</h3>
         <p className="mt-2 text-sm font-medium text-muted-foreground max-w-[280px] mx-auto">
           Please enter the OTP or Voucher Code sent to your mobile number ({momoNumber}).
         </p>
-        
+
         {errorMsg && (
-          <p className="mt-3 text-xs font-bold text-destructive">{errorMsg}</p>
+          <p className="mt-3 text-xs font-semibold text-destructive">{errorMsg}</p>
         )}
 
         <div className="mt-8 max-w-[280px] mx-auto space-y-5">
           <div className="flex justify-center pb-2">
-            <InputOTP 
-              maxLength={6} 
-              value={otp} 
+            <InputOTP
+              maxLength={6}
+              value={otp}
               onChange={(val) => {
                 setOtp(val);
                 if (val.length === 6 && phase === "otp") {
@@ -654,39 +641,39 @@ export function BuyDataFlow({
             >
               <InputOTPGroup className="gap-2">
                 {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot 
-                    key={i} 
-                    index={i} 
-                    className="h-14 w-12 rounded-[14px] border border-border bg-background text-xl font-black shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20" 
+                  <InputOTPSlot
+                    key={i}
+                    index={i}
+                    className="h-14 w-12 rounded-xl border border-border bg-background text-xl font-bold shadow-soft transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20"
                   />
                 ))}
               </InputOTPGroup>
             </InputOTP>
           </div>
-          
+
           <div className="flex items-center justify-between px-2 pt-2">
             <Button
               variant="ghost"
               onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
-              className="h-auto p-0 text-xs font-bold text-muted-foreground hover:text-foreground"
+              className="h-auto p-0 text-xs font-semibold text-muted-foreground hover:text-foreground"
             >
               Cancel Order
             </Button>
             <Button
               variant="ghost"
               onClick={buy}
-              className="h-auto p-0 text-xs text-primary font-bold hover:underline"
+              className="h-auto p-0 text-xs text-primary font-semibold hover:underline"
             >
               Try again
             </Button>
           </div>
           {/* Visible submit button to allow manual submission */}
           <div className="mt-6">
-            <Button 
-              id="btn-buy-otp-submit" 
-              onClick={() => submitOtp()} 
+            <Button
+              id="btn-buy-otp-submit"
+              onClick={() => submitOtp()}
               disabled={otp.length < 4}
-              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
+              className="w-full h-12 rounded-xl"
             >
               Verify OTP
             </Button>
@@ -700,45 +687,26 @@ export function BuyDataFlow({
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
     return (
       <div className="py-14 text-center space-y-8 animate-in fade-in duration-300">
-        <div className="relative mx-auto flex h-28 w-28 items-center justify-center">
-          {/* Glowing background ring */}
-          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-spin [animation-duration:3s] blur-md opacity-35"></div>
-          {/* Inner glass/bg circle */}
-          <div className="absolute inset-1 rounded-full bg-slate-50 dark:bg-[#0c1224] flex items-center justify-center border border-slate-100 dark:border-white/5 shadow-inner"></div>
-          {/* Pulse center icon */}
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 shadow-lg shadow-purple-500/30 animate-float-pulse">
-            <Zap className="h-7 w-7 text-white" />
+        <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin [animation-duration:1.2s]" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Zap className="h-7 w-7 text-primary" />
           </div>
         </div>
-        
+
         <div className="space-y-3">
-          <h3 className="text-xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
-            {phase === "processing" && (
-              <>
-                <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">Initiating Payment</span>
-                <span className="flex h-1.5 w-1.5 rounded-full bg-purple-500 animate-ping" />
-              </>
-            )}
-            {phase === "polling" && (
-              <>
-                <span className="bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent">Awaiting Authorization</span>
-                <span className="flex h-1.5 w-1.5 rounded-full bg-indigo-500 animate-ping" />
-              </>
-            )}
-            {phase === "delivering" && (
-              <>
-                <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">Sending Data Bundle</span>
-                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
-              </>
-            )}
+          <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center justify-center gap-2">
+            {phase === "processing" && <span>Initiating Payment</span>}
+            {phase === "polling" && <span>Awaiting Authorization</span>}
+            {phase === "delivering" && <span>Sending Data Bundle</span>}
           </h3>
 
           {phase === "processing" && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-2.5 rounded-full border border-indigo-100 dark:border-indigo-900/40 shadow-sm max-w-sm">
+              <div className="flex items-center gap-2.5 text-xs font-semibold text-primary bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
                 A payment prompt is being sent to your phone. Please check your screen and enter PIN.
               </div>
@@ -747,10 +715,10 @@ export function BuyDataFlow({
 
           {phase === "polling" && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 px-5 py-2.5 rounded-full border border-indigo-100 dark:border-indigo-900/40 shadow-sm max-w-sm">
+              <div className="flex items-center gap-2.5 text-xs font-semibold text-primary bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                 </span>
                 {authMessage || `Please check your phone (${momoNumber}) to authorize...`}
               </div>
@@ -758,8 +726,8 @@ export function BuyDataFlow({
           )}
 
           {phase === "delivering" && (
-            <div className="flex flex-col items-center animate-pulse">
-              <div className="flex items-center gap-2.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-5 py-2.5 rounded-full border border-emerald-100 dark:border-emerald-900/40 shadow-sm">
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-2.5 text-xs font-semibold text-emerald-500 bg-emerald-500/5 px-5 py-2.5 rounded-full border border-emerald-500/20">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -769,7 +737,7 @@ export function BuyDataFlow({
             </div>
           )}
 
-          <p className="text-xs font-medium text-slate-400 dark:text-slate-500">
+          <p className="text-xs font-medium text-muted-foreground">
             Do not close this window. Your bundle will be delivered automatically.
           </p>
         </div>
@@ -793,17 +761,17 @@ export function BuyDataFlow({
           <RefreshCcw className="h-8 w-8 text-destructive animate-spin [animation-duration:10s]" />
         </div>
         <p className="mt-4 font-semibold text-destructive px-4 max-w-sm mx-auto">{errorMsg}</p>
-        
+
         {/* USSD Manual Approval Alert */}
-        <div className="mt-6 mx-auto max-w-sm rounded-2xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-950/30 dark:bg-amber-950/15 text-left">
+        <div className="mt-6 mx-auto max-w-sm rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-left">
           <div className="flex gap-3">
-            <Smartphone className="h-5 w-5 text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
+            <Smartphone className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="space-y-1">
-              <h4 className="text-xs font-black text-amber-800 dark:text-amber-400 uppercase tracking-wider">Didn't receive the prompt?</h4>
-              <p className="text-xs text-amber-700/95 dark:text-amber-500/95 font-medium leading-relaxed">
+              <h4 className="text-xs font-semibold text-amber-500 uppercase tracking-wider">Didn't receive the prompt?</h4>
+              <p className="text-xs text-muted-foreground font-medium leading-relaxed">
                 Sometimes telecom networks delay push notifications. You can manually authorize your payment:
               </p>
-              <div className="mt-2 bg-white/70 dark:bg-black/20 rounded-lg p-2.5 font-mono text-[11px] font-bold text-amber-900 dark:text-amber-300 border border-amber-100/50 dark:border-amber-950/20">
+              <div className="mt-2 bg-background rounded-lg p-2.5 font-mono text-[11px] font-semibold text-foreground border border-border">
                 {getApprovalInstructions(momoNetwork).steps}
               </div>
             </div>
@@ -812,14 +780,14 @@ export function BuyDataFlow({
 
         <div className="mt-7 flex flex-col gap-3 max-w-[280px] mx-auto">
           <Button
-            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
+            className="h-12 rounded-xl w-full flex items-center justify-center gap-2"
             onClick={payWithRedirect}
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
             Pay via Secure Web Page
           </Button>
           <Button
-            className="h-13 rounded-2xl w-full font-bold border-2"
+            className="h-12 rounded-xl w-full"
             variant="outline"
             onClick={() => setPhase("select")}
           >
@@ -904,7 +872,7 @@ export function BuyDataFlow({
         ) : (
           <>
             {/* Category Filter Sub-tabs */}
-            <div className="mb-4 flex gap-1 p-1 bg-[#0b0f19]/30 border border-white/5 rounded-2xl max-w-sm">
+            <div className="mb-4 flex gap-1 p-1 bg-secondary rounded-xl max-w-sm">
               {[
                 { id: "all", label: "All" },
                 { id: "non-expiry", label: "Non-Expiry" },
@@ -915,10 +883,10 @@ export function BuyDataFlow({
                   type="button"
                   onClick={() => setCategoryFilter(cat.id as any)}
                   className={cn(
-                    "flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-200",
+                    "flex-1 py-2 text-[10px] font-semibold uppercase tracking-wider rounded-lg transition-colors duration-200",
                     categoryFilter === cat.id
-                      ? "bg-slate-900 text-white shadow-sm border border-white/10"
-                      : "text-slate-400 hover:text-white"
+                      ? "bg-background text-foreground shadow-soft"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
                   {cat.label}
@@ -963,51 +931,32 @@ export function BuyDataFlow({
                       >
                         {/* Badges */}
                         {isPopular && !active && (
-                          <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary-foreground shadow-soft z-10">
+                          <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary-foreground z-10">
                             Popular
                           </span>
                         )}
                         {isBestValue && !active && (
-                          <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-success-foreground shadow-soft z-10">
+                          <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-success-foreground z-10">
                             Best Value
                           </span>
                         )}
 
                         <div className="flex w-full justify-between items-start mb-5">
-                          {network?.code.toUpperCase() === 'MTN' ? (
-                            <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
-                              <span className="text-[10px] font-black">MTN</span>
-                            </div>
-                          ) : network?.code.toUpperCase() === 'TELECEL' ? (
-                            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
-                              <div className="flex h-4 w-4 items-center justify-center rounded-full bg-[#cc0000]">
-                                <span className="text-[10px] font-bold text-white">t</span>
-                              </div>
-                            </div>
-                          ) : (network?.code.toUpperCase() === 'AIRTELTIGO' || network?.code.toUpperCase() === 'AT') ? (
-                            <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
-                              <span className="text-[10px] font-black text-white">AT</span>
-                            </div>
-                          ) : (
-                            <div className="flex h-6 items-center justify-center">
-                              <span className="text-[10px] font-black uppercase">{network?.name}</span>
-                            </div>
-                          )}
-                          
+                          <span className="text-[10px] font-bold uppercase opacity-70">{network?.name}</span>
                           <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                           </div>
                         </div>
 
-                        <span className="text-3xl font-black leading-none tracking-tight">
+                        <span className="text-3xl font-bold leading-none tracking-tight">
                           {b.size_label}
                         </span>
                         <span className={cn("mt-1 text-xs font-medium opacity-80")}>
                           {network?.name} Bundle
                         </span>
-                        
+
                         <div className="mt-6 flex w-full items-end justify-between">
-                          <span className={cn("text-xl font-black tracking-tight")}>
+                          <span className={cn("text-xl font-bold tracking-tight")}>
                             {formatGHS(priceFor(b))}
                           </span>
                           <span className="text-[10px] font-semibold opacity-75">
@@ -1025,54 +974,35 @@ export function BuyDataFlow({
 
       {/* ── Checkout Dialog ── */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[92vw] max-w-[370px] rounded-[2.5rem] border border-white/25 dark:border-white/[0.08] bg-white/70 dark:bg-slate-950/70 p-0 overflow-hidden shadow-[0_32px_64px_rgba(0,0,0,0.22)] backdrop-blur-3xl transition-all duration-300">
+        <DialogContent className="w-[92vw] max-w-[370px] rounded-[1.75rem] border border-border bg-card p-0 overflow-hidden">
           {/* Header */}
           <div className="flex flex-col items-center justify-center pt-7 pb-3 px-5 text-center">
-            <div className="mb-3 relative flex h-16 w-16 items-center justify-center">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-violet-500 via-fuchsia-500 to-indigo-500 animate-spin [animation-duration:5s] opacity-40 blur-md" />
-              <div className="absolute inset-1 rounded-full bg-white/90 dark:bg-slate-900/90 border border-white/30 dark:border-white/10 shadow-inner" />
-              <div className="relative flex h-11 w-11 items-center justify-center rounded-full bg-slate-50 dark:bg-slate-950 shadow-md animate-float-pulse">
-                {network ? (
-                  <span className="text-2xl filter drop-shadow-sm transition-transform duration-300 hover:scale-110">{network.logo_emoji}</span>
-                ) : (
-                  <Zap className="h-5 w-5 text-primary animate-pulse" />
-                )}
-              </div>
+            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              {network ? (
+                <span className="text-2xl">{network.logo_emoji}</span>
+              ) : (
+                <Zap className="h-5 w-5 text-primary" />
+              )}
             </div>
-            <DialogTitle className="text-xl font-black tracking-tight text-slate-900 dark:text-white">
+            <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
               Confirm Payment
             </DialogTitle>
-            <DialogDescription className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1">
-              You are purchasing data for a <span className="text-primary font-bold">{network?.name}</span> number.
+            <DialogDescription className="text-xs font-semibold text-muted-foreground mt-1">
+              You are purchasing data for a <span className="text-primary font-semibold">{network?.name}</span> number.
             </DialogDescription>
           </div>
 
           <div className="px-5 space-y-4 pb-7">
             {/* Order summary */}
             {bundle && network && (
-              <div className="flex flex-col rounded-[1.75rem] bg-white/40 dark:bg-slate-900/20 border border-slate-200/50 dark:border-white/[0.03] p-5 backdrop-blur-xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)]">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">{network.name} Bundle</span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white leading-tight">{bundle.size_label}</span>
-                  </div>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">Total</span>
-                    <span className="text-xl font-black text-primary leading-none">{formatGHS(finalPrice)}</span>
-                  </div>
-                </div>
-                
-                <div className="flex justify-between items-center text-xs font-semibold border-t border-slate-200/50 dark:border-white/[0.05] pt-2.5">
-                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">Price</span>
-                  <span className="text-slate-900 dark:text-white text-[11px] font-black">{formatGHS(basePrice)}</span>
-                </div>
-                {!payWithWallet && (
-                  <div className="flex justify-between items-center text-xs font-semibold pt-1.5">
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">Processing Fee (3%)</span>
-                    <span className="text-slate-900 dark:text-white text-[11px] font-black">{formatGHS(paymentFee)}</span>
-                  </div>
-                )}
-              </div>
+              <OrderSummary
+                heading={{ eyebrow: `${network.name} Bundle`, title: bundle.size_label }}
+                rows={[
+                  { label: "Price", value: formatGHS(basePrice) },
+                  ...(!payWithWallet ? [{ label: "Processing Fee (3%)", value: formatGHS(paymentFee) }] : []),
+                  { label: "Total", value: formatGHS(finalPrice), emphasis: true },
+                ]}
+              />
             )}
 
             {/* Form */}
@@ -1086,7 +1016,7 @@ export function BuyDataFlow({
               />
                 
               {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
-                <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                <div className="mt-1.5 text-[11px] font-semibold px-3 py-2 bg-emerald-500/5 text-emerald-500 rounded-xl border border-emerald-500/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                   <span className="truncate">{recipientAccountName}</span>
                 </div>
@@ -1096,11 +1026,11 @@ export function BuyDataFlow({
               {!payWithWallet && (
                 <div className="space-y-3 pt-0.5 animate-in fade-in duration-300">
                   {/* Toggle for same number vs different number */}
-                  <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.04]">
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+                  <div className="flex items-center justify-between pb-1 border-b border-border">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                       MoMo Payment Number
                     </span>
-                    <div className="flex gap-1.5 bg-slate-100/50 dark:bg-slate-950/40 p-1 rounded-xl">
+                    <div className="flex gap-1.5 bg-secondary p-1 rounded-lg">
                       <button
                         type="button"
                         onClick={() => {
@@ -1108,10 +1038,10 @@ export function BuyDataFlow({
                           setMomoNumber("");
                         }}
                         className={cn(
-                          "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all duration-300",
+                          "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
                           payWithSameNumber
-                            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
-                            : "text-slate-400 dark:text-slate-500 hover:text-slate-600"
+                            ? "bg-background text-foreground shadow-soft"
+                            : "text-muted-foreground hover:text-foreground"
                         )}
                       >
                         Same Number
@@ -1123,10 +1053,10 @@ export function BuyDataFlow({
                           if (network?.code) setMomoNetwork(network.code);
                         }}
                         className={cn(
-                          "px-2.5 py-1 text-[9px] font-black uppercase tracking-wider rounded-lg transition-all duration-300",
+                          "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
                           !payWithSameNumber
-                            ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
-                            : "text-slate-400 dark:text-slate-500 hover:text-slate-600"
+                            ? "bg-background text-foreground shadow-soft"
+                            : "text-muted-foreground hover:text-foreground"
                         )}
                       >
                         Different
@@ -1135,16 +1065,16 @@ export function BuyDataFlow({
                   </div>
 
                   {payWithSameNumber ? (
-                    <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/20 p-3 rounded-xl border border-slate-100/50 dark:border-white/[0.04] flex items-center gap-2">
+                    <div className="text-[11px] font-semibold text-muted-foreground bg-background p-3 rounded-xl border border-border flex items-center gap-2">
                       <Smartphone className="h-4 w-4 text-primary shrink-0" />
-                      <span>Request prompt on recipient number: <span className="font-mono text-slate-800 dark:text-white">{phone}</span></span>
+                      <span>Request prompt on recipient number: <span className="font-mono text-foreground">{phone}</span></span>
                     </div>
                   ) : (
                     <div className="space-y-1.5 pt-0.5 animate-in slide-in-from-top-2 duration-300">
                       <div className="flex gap-2">
                         <div className="relative w-[95px] shrink-0">
-                          <select 
-                            className="w-full h-12 rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-3.5 pr-7 text-xs font-semibold shadow-inner outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 focus:bg-white/80 dark:focus:bg-slate-950/80 transition-all cursor-pointer appearance-none"
+                          <select
+                            className="w-full h-12 rounded-xl border border-border bg-background pl-3.5 pr-7 text-xs font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
                             value={momoNetwork}
                             onChange={(e) => setMomoNetwork(e.target.value)}
                           >
@@ -1152,35 +1082,35 @@ export function BuyDataFlow({
                             <option value="TELECEL">Telecel</option>
                             <option value="AIRTELTIGO">AT</option>
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
                         </div>
                         <div className="relative flex-1 group">
-                          <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
+                          <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
                           <Input
                             inputMode="tel"
                             value={momoNumber}
                             onChange={(e) => setMomoNumber(e.target.value)}
                             placeholder="e.g. 024 123 4567"
-                            className="h-12 w-full rounded-[1.25rem] border border-slate-200/60 dark:border-white/[0.08] bg-white/30 dark:bg-slate-950/20 pl-10 pr-4 text-sm font-semibold shadow-sm transition-all duration-300 focus:bg-white/80 dark:focus:bg-slate-950/80 focus:border-primary focus:ring-4 focus:ring-primary/10 focus-visible:ring-0 focus-visible:ring-offset-0 animate-in fade-in"
+                            className="h-12 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm font-semibold transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
                           />
                           {isVerifying && (
                             <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                              <span className="block h-4 w-4 rounded-full border-2 border-slate-300 border-t-primary animate-spin" />
+                              <span className="block h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
                             </div>
                           )}
                         </div>
                       </div>
-                      
+
                       {accountName && !isVerifying && (
-                        <div className="mt-1.5 text-[11px] font-bold px-3 py-2 bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400 rounded-xl border border-emerald-100/50 dark:border-emerald-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                        <div className="mt-1.5 text-[11px] font-semibold px-3 py-2 bg-emerald-500/5 text-emerald-500 rounded-xl border border-emerald-500/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
                           <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                           <span className="truncate">{accountName}</span>
                         </div>
                       )}
 
                       {isSamePhoneNumber(phone, momoNumber) && (
-                        <div className="mt-1.5 text-[10px] font-bold px-3 py-2 bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400 rounded-xl border border-red-100 dark:border-red-900/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                          <span className="shrink-0 text-red-500">⚠️</span>
+                        <div className="mt-1.5 text-[10px] font-semibold px-3 py-2 bg-destructive/5 text-destructive rounded-xl border border-destructive/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
+                          <span className="shrink-0">⚠️</span>
                           <span className="leading-tight">Recipient number cannot be the same as the paying MoMo number. Please use a different number to pay.</span>
                         </div>
                       )}
@@ -1190,12 +1120,12 @@ export function BuyDataFlow({
               )}
 
               {profile && bundle && (
-                <div 
+                <div
                   className={cn(
-                    "mt-2 cursor-pointer rounded-[1.5rem] border border-white/20 dark:border-white/[0.05] p-4 transition-all duration-300 active:scale-[0.98]",
-                    payWithWallet 
-                      ? "border-primary bg-primary/5 dark:bg-primary/10 shadow-[0_0_12px_rgba(139,92,246,0.06)]" 
-                      : "bg-white/20 dark:bg-slate-950/10 hover:bg-white/40 dark:hover:bg-slate-900/30",
+                    "mt-2 cursor-pointer rounded-2xl border border-border p-4 transition-colors duration-300 active:scale-[0.98]",
+                    payWithWallet
+                      ? "border-primary bg-primary/5"
+                      : "bg-background hover:bg-accent",
                     walletBalance < finalPrice && "opacity-50 cursor-not-allowed border-dashed"
                   )}
                   onClick={() => {
@@ -1208,30 +1138,30 @@ export function BuyDataFlow({
                     <div className="flex items-center gap-2.5">
                       <div className={cn(
                         "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all shrink-0 duration-300",
-                        payWithWallet ? "border-primary bg-primary text-white scale-110" : "border-slate-300 dark:border-slate-700"
+                        payWithWallet ? "border-primary bg-primary" : "border-border"
                       )}>
-                        {payWithWallet && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                        {payWithWallet && <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />}
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className={cn("text-xs font-bold", payWithWallet ? "text-primary" : "text-slate-900 dark:text-white")}>
+                        <span className={cn("text-xs font-semibold", payWithWallet ? "text-primary" : "text-foreground")}>
                           Pay with Wallet
                         </span>
                         {agentSlug && finalPrice > Number(bundle.base_price) ? (
-                          <div className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 flex flex-col gap-1 mt-1">
-                            <span>Balance: <span className="text-primary font-black">{formatGHS(walletBalance)}</span></span>
-                            <span className="text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-1.5 py-0.5 rounded-md border border-emerald-100/50 dark:border-emerald-900/20 inline-block w-fit font-bold animate-pulse">
+                          <div className="text-[9px] font-semibold text-muted-foreground flex flex-col gap-1 mt-1">
+                            <span>Balance: <span className="text-primary font-bold">{formatGHS(walletBalance)}</span></span>
+                            <span className="text-emerald-500 bg-emerald-500/5 px-1.5 py-0.5 rounded-md border border-emerald-500/20 inline-block w-fit font-semibold">
                               Earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
                             </span>
                           </div>
                         ) : (
-                          <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
-                            Balance: <span className="text-slate-700 dark:text-slate-300 font-bold">{formatGHS(walletBalance)}</span>
+                          <span className="text-[9px] font-semibold text-muted-foreground mt-0.5">
+                            Balance: <span className="text-foreground font-semibold">{formatGHS(walletBalance)}</span>
                           </span>
                         )}
                       </div>
                     </div>
                     {walletBalance < finalPrice && (
-                      <span className="text-[9px] font-black text-destructive bg-destructive/10 px-2 py-0.5 rounded-md shrink-0">
+                      <span className="text-[9px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md shrink-0">
                         Insufficient
                       </span>
                     )}
@@ -1247,19 +1177,14 @@ export function BuyDataFlow({
                     phone.replace(/\D/g, "").length < 9 ||
                     !!recipientNetworkError ||
                     (!payWithWallet && !payWithSameNumber && (
-                      momoNumber.replace(/\D/g, "").length < 9 || 
-                      isVerifying || 
-                      accountName === "Unknown Account" || 
+                      momoNumber.replace(/\D/g, "").length < 9 ||
+                      isVerifying ||
+                      accountName === "Unknown Account" ||
                       accountName === "Account not found" ||
                       isSamePhoneNumber(phone, momoNumber)
                     ))
                   }
-                  className={cn(
-                    "h-12 w-full rounded-[1.25rem] text-xs font-black tracking-wider uppercase shadow-md hover:shadow-lg transition-all active:scale-[0.97] hover:scale-[1.01] duration-300 flex items-center justify-center gap-1.5",
-                    payWithWallet 
-                      ? "bg-slate-950 text-white hover:bg-slate-900 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100" 
-                      : "gradient-primary text-white"
-                  )}
+                  className="h-12 w-full rounded-xl text-xs tracking-wider uppercase flex items-center justify-center gap-1.5"
                 >
                   {payWithWallet ? (
                     <>
@@ -1278,11 +1203,11 @@ export function BuyDataFlow({
 
               {!payWithWallet && activeGateway !== "theteller" && (
                 <div className="text-center pt-0.5 animate-in fade-in duration-300">
-                  <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Issues with prompts? </span>
-                  <button 
+                  <span className="text-[10px] font-semibold text-muted-foreground">Issues with prompts? </span>
+                  <button
                     type="button"
                     onClick={payWithRedirect}
-                    className="text-[10px] font-black text-blue-600 hover:text-blue-700 hover:underline dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                    className="text-[10px] font-semibold text-primary hover:underline transition-colors"
                   >
                     Pay via Web Page instead
                   </button>
@@ -1290,8 +1215,8 @@ export function BuyDataFlow({
               )}
 
               {/* Trust strip */}
-              <div className="flex items-center justify-center gap-1 text-[9px] font-black text-slate-400/80 dark:text-slate-500 uppercase tracking-widest pt-3.5 border-t border-slate-100/50 dark:border-white/[0.04]">
-                <Lock className="h-3 w-3 text-green-500/70" />
+              <div className="flex items-center justify-center gap-1 text-[9px] font-semibold text-muted-foreground uppercase tracking-widest pt-3.5 border-t border-border">
+                <Lock className="h-3 w-3 text-emerald-500/80" />
                 Secured Payments · PCI-DSS
               </div>
             </div>

@@ -37,16 +37,16 @@ export function InstallPromptModal() {
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 animate-in slide-in-from-bottom-5 md:left-auto md:w-96 md:bottom-8 md:right-8">
-      <div className="rounded-2xl border border-primary/20 bg-card/95 p-5 shadow-2xl backdrop-blur-xl">
-        <button 
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-float">
+        <button
           onClick={() => setShowPrompt(false)}
           className="absolute right-3 top-3 rounded-full p-1 text-muted-foreground hover:bg-muted"
         >
           <X className="h-4 w-4" />
         </button>
-        
+
         <div className="flex items-start gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-inner">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <Smartphone className="h-6 w-6" />
           </div>
           <div>
@@ -55,7 +55,7 @@ export function InstallPromptModal() {
               Add to your home screen for faster access, offline features, and a better mobile experience!
             </p>
             <div className="mt-4 flex gap-2">
-              <Button onClick={handleInstall} className="flex-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-md shadow-primary/20">
+              <Button onClick={handleInstall} className="flex-1 rounded-xl">
                 <Download className="mr-2 h-4 w-4" /> Install Now
               </Button>
             </div>

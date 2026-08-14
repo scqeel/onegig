@@ -56,15 +56,15 @@ export default function DashboardBuyPage() {
       badge="Purchase"
       sidebarItems={sidebarItems}
     >
-      <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
+      <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
         {/* Dynamic Card Header */}
-        <div className="border-b border-border/60 bg-[#080c1a] px-6 py-5 md:px-8">
-          <h2 className="text-lg font-bold text-white transition-all duration-300">{details.cardTitle}</h2>
-          <p className="mt-0.5 text-sm text-white/50 transition-all duration-300">{details.cardSubtitle}</p>
+        <div className="border-b border-border bg-secondary/40 px-6 py-5 md:px-8">
+          <h2 className="text-lg font-bold text-foreground transition-all duration-300">{details.cardTitle}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground transition-all duration-300">{details.cardSubtitle}</p>
         </div>
 
         {/* Tab Switcher Headers */}
-        <div className="border-b border-border/40 bg-secondary/5 dark:bg-slate-900/5 p-2 flex gap-1">
+        <div className="border-b border-border bg-secondary/20 p-2 flex gap-1">
           {[
             { id: "data", label: "Buy Data", icon: Zap },
             { id: "airtime", label: "Buy Airtime", icon: Smartphone },
@@ -76,13 +76,13 @@ export default function DashboardBuyPage() {
                 key={t.id}
                 onClick={() => setActiveTab(t.id)}
                 className={cn(
-                  "flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-bold text-xs md:text-sm transition-all duration-150",
+                  "flex-1 py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 font-semibold text-xs md:text-sm transition-colors duration-150",
                   activeTab === t.id
-                    ? "bg-slate-950 text-white shadow-float border border-slate-800"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/15 dark:hover:bg-slate-900/15"
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                 )}
               >
-                <Icon className={cn("h-4 w-4", activeTab === t.id ? "text-primary" : "text-slate-400")} />
+                <Icon className="h-4 w-4" />
                 <span>{t.label}</span>
               </button>
             );

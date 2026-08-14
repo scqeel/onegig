@@ -42,7 +42,7 @@ export default function InvitePage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-[#05080f]">
+      <div className="dark flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -50,31 +50,27 @@ export default function InvitePage() {
 
   if (!agent) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-[#05080f] px-5 py-12 overflow-hidden relative">
-        {/* Ambient glows */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden flex items-center justify-center">
-          <div className="absolute h-[600px] w-[600px] rounded-full opacity-[0.08] blur-[100px] bg-rose-500" />
-          <div className="absolute inset-0 grid-pattern-dark opacity-50" />
-        </div>
+      <div className="dark flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-12 overflow-hidden relative">
+        <div className="pointer-events-none absolute inset-0 grid-pattern-dark opacity-40" />
 
         <div className="relative z-10 w-full max-w-[420px] text-center animate-fade-up">
           <div className="mb-8 flex flex-col items-center">
-            <div className="inline-flex h-20 w-20 items-center justify-center rounded-[25px] bg-rose-500/10 border border-rose-500/20 shadow-2xl backdrop-blur-xl mb-6 relative group">
-              <div className="absolute inset-0 rounded-[25px] bg-rose-500/5 blur-md group-hover:blur-lg transition-all" />
-              <XCircle className="h-10 w-10 text-rose-500 relative z-10 animate-pulse" />
+            <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl bg-destructive/10 border border-destructive/20 mb-6">
+              <XCircle className="h-10 w-10 text-destructive" />
             </div>
-            
-            <h1 className="text-2xl font-black tracking-tight text-white sm:text-3xl">
+
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
               Invalid Invitation Link
             </h1>
-            <p className="mt-4 text-sm leading-relaxed text-white/50 px-4 font-semibold">
-              The referral code <span className="font-mono text-rose-400 bg-rose-500/5 px-2 py-0.5 rounded border border-rose-500/10">"{ref}"</span> is not registered or has expired. Please double-check the link or contact your parent agent for a valid invite.
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground px-4">
+              The referral code <span className="font-mono text-destructive bg-destructive/5 px-2 py-0.5 rounded border border-destructive/10">"{ref}"</span> is not registered or has expired. Please double-check the link or contact your parent agent for a valid invite.
             </p>
           </div>
 
-          <Button 
+          <Button
             onClick={() => nav("/")}
-            className="h-14 w-full rounded-[16px] text-[15px] font-black text-white bg-slate-900 border border-white/10 hover:bg-slate-800 transition-all duration-300 shadow-xl"
+            variant="outline"
+            className="h-14 w-full rounded-xl text-[15px]"
           >
             <ArrowLeft className="mr-2 h-5 w-5" /> Return to Homepage
           </Button>
@@ -84,39 +80,32 @@ export default function InvitePage() {
   }
 
   const storeName = agent.store_name;
-  const brandColor = agent.store_brand_color || "#7c3aed";
+  const brandColor = agent.store_brand_color || "hsl(var(--primary))";
 
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center bg-[#05080f] px-5 py-12 overflow-hidden relative">
-      {/* Ambient glows based on agent brand color */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden flex items-center justify-center">
-        <div 
-          className="absolute h-[600px] w-[600px] rounded-full opacity-[0.15] blur-[100px] transition-colors duration-1000" 
-          style={{ backgroundColor: brandColor }}
-        />
-        <div className="absolute inset-0 grid-pattern-dark opacity-50" />
-      </div>
+    <div className="dark flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-12 overflow-hidden relative">
+      <div className="pointer-events-none absolute inset-0 grid-pattern-dark opacity-40" />
 
       <div className="relative z-10 w-full max-w-[420px] animate-fade-up">
         {/* Top Logo / Brand */}
         <div className="mb-10 text-center flex flex-col items-center">
-          <div className="inline-flex h-20 w-20 items-center justify-center rounded-[20px] bg-white/[0.03] border border-white/[0.08] shadow-2xl backdrop-blur-xl mb-6 overflow-hidden transition-transform hover:scale-105 duration-300">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-card mb-6 overflow-hidden">
             {agent.store_logo_url ? (
               <img src={agent.store_logo_url} alt={storeName} className="h-full w-full object-cover" />
             ) : (
               <Store className="h-9 w-9" style={{ color: brandColor }} />
             )}
           </div>
-          
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-white mb-5 backdrop-blur-md">
+
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-foreground mb-5">
             <Star className="h-3.5 w-3.5" style={{ fill: brandColor, color: brandColor }} />
             Exclusive Agent Invitation
           </div>
-          
-          <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl">
+
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Join <span style={{ color: brandColor }}>{storeName}</span>'s Network
           </h1>
-          <p className="mt-3.5 text-sm leading-relaxed text-white/50 px-4">
+          <p className="mt-3.5 text-sm leading-relaxed text-muted-foreground px-4">
             You've been invited to become an official data reseller. Get wholesale prices, set your own margins, and start earning today.
           </p>
         </div>
@@ -124,63 +113,44 @@ export default function InvitePage() {
         {/* Feature List */}
         <div className="mb-10 space-y-3">
           {[
-            {
-              icon: TrendingUp,
-              title: "Wholesale data prices",
-              desc: "Buy at base rates and keep 100% of your profit.",
-              color: "text-violet-400", bg: "bg-violet-500/10", border: "border-violet-500/10"
-            },
-            {
-              icon: Store,
-              title: "Your own storefront",
-              desc: "Get a custom link for customers to buy from you.",
-              color: "text-blue-400", bg: "bg-blue-500/10", border: "border-blue-500/10"
-            },
-            {
-              icon: ShieldCheck,
-              title: "Secure daily payouts",
-              desc: "Withdraw your earnings directly to Mobile Money.",
-              color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/10"
-            },
-          ].map(({ icon: Icon, title, desc, color, bg, border }, i) => (
-            <div 
-              key={title} 
-              className={`flex items-start gap-4 rounded-[18px] border border-white/[0.04] bg-white/[0.02] p-4 backdrop-blur-md transition-all hover:bg-white/[0.04] hover:border-white/[0.08]`}
-              style={{ animationDelay: `${i * 100}ms` }}
+            { icon: TrendingUp, title: "Wholesale data prices", desc: "Buy at base rates and keep 100% of your profit." },
+            { icon: Store, title: "Your own storefront", desc: "Get a custom link for customers to buy from you." },
+            { icon: ShieldCheck, title: "Secure daily payouts", desc: "Withdraw your earnings directly to Mobile Money." },
+          ].map(({ icon: Icon, title, desc }) => (
+            <div
+              key={title}
+              className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/30"
             >
-              <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border ${bg} ${border}`}>
-                <Icon className={`h-5 w-5 ${color}`} />
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Icon className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">{title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-white/40">{desc}</p>
+                <p className="text-sm font-semibold text-foreground">{title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{desc}</p>
               </div>
             </div>
           ))}
         </div>
 
         {/* Action button */}
-        <Button 
+        <Button
           onClick={handleAccept}
           disabled={isRedirecting}
-          className="group h-14 w-full rounded-[16px] text-[15px] font-black text-white shadow-xl transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
-          style={{ 
-            backgroundColor: brandColor, 
-            boxShadow: `0 12px 30px -10px ${brandColor}`
-          }}
+          className="group h-14 w-full rounded-xl text-[15px] text-white transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
+          style={{ backgroundColor: brandColor }}
         >
           {isRedirecting ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <div className="flex items-center justify-center">
-              Accept Invitation & Join 
+              Accept Invitation & Join
               <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
             </div>
           )}
         </Button>
-        
+
         <div className="mt-8 text-center">
-          <Link to="/" className="text-xs font-medium text-white/30 hover:text-white/70 transition-colors">
+          <Link to="/" className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors">
             No thanks, return to homepage
           </Link>
         </div>

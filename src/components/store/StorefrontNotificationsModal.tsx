@@ -54,41 +54,41 @@ export function StorefrontNotificationsModal({ open, onOpenChange }: { open: boo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border-none rounded-[32px] p-6 shadow-2xl">
+      <DialogContent className="sm:max-w-md bg-card border border-border rounded-[1.75rem] p-6">
         <DialogTitle className="sr-only">Notice</DialogTitle>
         <DialogDescription className="sr-only">Authentication or Verification Notice</DialogDescription>
         <DialogHeader>
-          <DialogTitle className="text-xl font-black text-slate-800 dark:text-white flex items-center gap-2">
-            <Bell className="h-5 w-5 text-indigo-500" /> Notifications
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" /> Notifications
           </DialogTitle>
-          <DialogDescription className="text-xs font-medium text-slate-500">
+          <DialogDescription className="text-xs font-medium text-muted-foreground">
             Latest announcements and updates.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="mt-4 space-y-3 max-h-[60vh] overflow-y-auto pr-2">
           {loading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-slate-300" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
           ) : activeNotifications.length === 0 ? (
-            <div className="text-center py-10 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">
-              <p className="text-sm font-bold text-slate-400">All caught up!</p>
-              <p className="text-xs text-slate-500 mt-1">No new notifications.</p>
+            <div className="text-center py-10 bg-secondary/40 rounded-2xl border border-dashed border-border">
+              <p className="text-sm font-semibold text-muted-foreground">All caught up!</p>
+              <p className="text-xs text-muted-foreground mt-1">No new notifications.</p>
             </div>
           ) : (
             activeNotifications.map(n => (
-              <div key={n.id} className="relative p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 group transition-all">
-                <button 
+              <div key={n.id} className="relative p-4 rounded-2xl bg-primary/5 border border-primary/15 group transition-all">
+                <button
                   onClick={(e) => {
                     e.currentTarget.blur();
                     handleDismiss(n.id);
                   }}
-                  className="absolute top-3 right-3 text-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className="absolute top-3 right-3 text-primary/50 hover:text-primary transition-colors"
                 >
                   <X className="h-4 w-4" />
                 </button>
-                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200 pr-6">{n.title}</h4>
-                <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">{n.message}</p>
-                <div className="mt-2 text-[9px] font-black uppercase text-indigo-400/80">
+                <h4 className="text-sm font-semibold text-foreground pr-6">{n.title}</h4>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.message}</p>
+                <div className="mt-2 text-[9px] font-semibold uppercase text-primary/70">
                   {new Date(n.created_at).toLocaleDateString()}
                 </div>
               </div>

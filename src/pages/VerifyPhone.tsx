@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { useSettings } from "@/hooks/useSettings";
+import { cn } from "@/lib/utils";
 
 export default function VerifyPhonePage() {
   const nav = useNavigate();
@@ -38,7 +39,7 @@ export default function VerifyPhonePage() {
     },
   });
 
-  const brandColor = parentAgent?.store_brand_color || "#7c3aed";
+  const brandColor = parentAgent?.store_brand_color || "";
   const storeName = parentAgent?.store_name || "Data Platform";
 
   const phoneParam = searchParams.get("phone") || "";
@@ -178,29 +179,21 @@ export default function VerifyPhonePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-50 dark:bg-slate-950">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   const displayPhone = phoneParam || session?.user?.new_phone || session?.user?.phone;
-  const phoneMasked = displayPhone 
+  const phoneMasked = displayPhone
     ? displayPhone.replace(/(\+?\d{3})(\d{2})(\d{3})(\d{4})/, "$1 *** *** $4")
     : "your phone";
 
   return (
-    <div className="flex min-h-dvh bg-slate-50 dark:bg-slate-950 relative overflow-hidden">
-      {/* Background decorations */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div 
-          className="absolute -top-40 left-1/2 -translate-x-1/2 h-[400px] w-[800px] rounded-[100%] blur-[100px]" 
-          style={{ backgroundColor: parentAgent ? `${brandColor}1F` : 'rgba(124, 58, 237, 0.1)' }}
-        />
-      </div>
-
+    <div className="flex min-h-dvh bg-background relative overflow-hidden">
       <div className="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
-        
+
         {/* Card Container */}
         <div className="w-full max-w-md animate-fade-up">
           <div className="mb-8">
@@ -209,37 +202,31 @@ export default function VerifyPhonePage() {
              </Link>
           </div>
 
-          <div className="rounded-3xl border border-slate-200/60 bg-white/80 p-8 shadow-xl shadow-slate-200/50 backdrop-blur-xl dark:border-slate-800/60 dark:bg-slate-900/80 dark:shadow-none relative overflow-hidden">
-            
-            {/* Top decorative line using brandColor */}
-            <div className="absolute top-0 inset-x-0 h-1" style={{ backgroundColor: brandColor }} />
-            
+          <div className="rounded-[1.75rem] border border-border bg-card p-8 relative overflow-hidden">
+
+            {/* Top brand line */}
+            <div className="absolute top-0 inset-x-0 h-1" style={{ backgroundColor: brandColor || "hsl(var(--primary))" }} />
+
             <div className="flex justify-center mb-6">
-              <div className="relative">
-                <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl animate-pulse" style={parentAgent ? { backgroundColor: `${brandColor}33` } : {}} />
-                <div 
-                  className="relative flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg"
-                  style={{ 
-                    backgroundColor: brandColor, 
-                    boxShadow: `0 10px 20px -5px ${brandColor}`
-                  }}
-                >
-                  <KeyRound className="h-7 w-7 text-white" />
-                </div>
+              <div
+                className="flex h-16 w-16 items-center justify-center rounded-2xl"
+                style={{ backgroundColor: brandColor || "hsl(var(--primary))" }}
+              >
+                <KeyRound className="h-7 w-7" style={{ color: brandColor ? "#fff" : "hsl(var(--primary-foreground))" }} />
               </div>
             </div>
 
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-black tracking-tight text-foreground mb-2">Verify Your Phone</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2">Verify Your Phone</h1>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                To secure your account, please enter the 6-digit code we just sent to <span className="font-bold text-foreground">{phoneMasked}</span>
+                To secure your account, please enter the 6-digit code we just sent to <span className="font-semibold text-foreground">{phoneMasked}</span>
               </p>
             </div>
 
             <div className="flex justify-center mb-8">
-              <InputOTP 
-                maxLength={6} 
-                value={otp} 
+              <InputOTP
+                maxLength={6}
+                value={otp}
                 onChange={(val) => {
                   setOtp(val);
                   if (val.length === 6 && !busy) {
@@ -249,22 +236,22 @@ export default function VerifyPhonePage() {
               >
                 <InputOTPGroup className="gap-2 sm:gap-3">
                   {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <InputOTPSlot 
-                      key={i} 
-                      index={i} 
-                      className="h-12 w-10 sm:h-14 sm:w-12 rounded-[12px] border-2 border-slate-200 bg-white text-xl sm:text-2xl font-black text-foreground shadow-sm transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10 dark:border-slate-800 dark:bg-slate-950/50" 
-                      style={otp.length > i && parentAgent ? { borderColor: brandColor } : {}}
+                    <InputOTPSlot
+                      key={i}
+                      index={i}
+                      className="h-12 w-10 sm:h-14 sm:w-12 rounded-xl border border-border bg-background text-xl sm:text-2xl font-bold text-foreground shadow-soft transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/10"
+                      style={otp.length > i && brandColor ? { borderColor: brandColor } : {}}
                     />
                   ))}
                 </InputOTPGroup>
               </InputOTP>
             </div>
 
-            <Button 
-              onClick={() => verifyOtp()} 
-              disabled={busy || otp.length < 6} 
-              className="h-12 w-full rounded-[14px] text-sm font-black transition-all disabled:opacity-50 text-white"
-              style={{ backgroundColor: brandColor, boxShadow: `0 10px 20px -5px ${brandColor}` }}
+            <Button
+              onClick={() => verifyOtp()}
+              disabled={busy || otp.length < 6}
+              className={cn("h-12 w-full rounded-xl text-sm transition-all disabled:opacity-50", brandColor && "text-white")}
+              style={brandColor ? { backgroundColor: brandColor } : undefined}
             >
               {busy ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <ShieldCheck className="mr-2 h-5 w-5" />}
               {busy ? "Verifying..." : "Verify & Continue"}
@@ -276,18 +263,18 @@ export default function VerifyPhonePage() {
                   Resend code in <span className="text-foreground">{timer}s</span>
                 </p>
               ) : (
-                <button 
-                  onClick={resendCode} 
+                <button
+                  onClick={resendCode}
                   disabled={busy}
-                  className="text-sm font-bold hover:underline transition-all"
-                  style={{ color: brandColor }}
+                  className="text-sm font-semibold hover:underline transition-all text-primary"
+                  style={brandColor ? { color: brandColor } : undefined}
                 >
                   Didn't receive the code? Resend
                 </button>
               )}
             </div>
           </div>
-          
+
           <p className="mt-8 text-center text-xs text-muted-foreground flex items-center justify-center gap-1.5">
             <ShieldCheck className="h-3.5 w-3.5" /> Secured by 256-bit encryption
           </p>

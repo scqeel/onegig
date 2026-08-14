@@ -94,19 +94,14 @@ export default function PaymentCallbackPage() {
   }, [nav, transaction_id, toast, refresh]);
 
   return (
-    <div className="relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-[#080c1a] px-6 text-center">
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-primary/20 blur-[120px]" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-fuchsia-500/10 blur-3xl" />
-
+    <div className="dark relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-6 text-center">
       <div className="relative flex flex-col items-center">
-        {/* Spinner in gradient box */}
-        <div className="flex h-20 w-20 items-center justify-center rounded-3xl gradient-primary shadow-glow">
-          <Loader2 className="h-8 w-8 animate-spin text-white" />
+        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-foreground" />
         </div>
 
-        <h2 className="mt-6 text-xl font-bold text-white">Verifying payment</h2>
-        <p className="mt-2 max-w-xs text-sm text-white/45">
+        <h2 className="mt-6 text-xl font-bold text-foreground">Verifying payment</h2>
+        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
           Please wait while we securely confirm your transaction…
         </p>
 
@@ -117,7 +112,7 @@ export default function PaymentCallbackPage() {
           <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse [animation-delay:0.5s]" />
         </div>
 
-        <p className="mt-8 text-xs text-white/20">Do not close this page</p>
+        <p className="mt-8 text-xs text-muted-foreground/60">Do not close this page</p>
       </div>
     </div>
   );

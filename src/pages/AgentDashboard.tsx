@@ -132,7 +132,7 @@ export default function AgentDashboard() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Sticky header ── */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-white/90 backdrop-blur-sm dark:bg-background/90">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-3">
             <Logo size="sm" />
@@ -189,7 +189,7 @@ export default function AgentDashboard() {
 
             {/* Store badge */}
             <div className="hidden items-center gap-2 rounded-full border border-border/60 bg-secondary/50 py-1 pl-1.5 pr-3 md:flex">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full gradient-primary text-[10px] font-bold text-white shadow-soft">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground shadow-soft">
                 {initial}
               </div>
               <span className="max-w-[120px] truncate text-xs font-semibold text-foreground">
@@ -205,22 +205,21 @@ export default function AgentDashboard() {
         <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
 
           {/* ── Sidebar ── */}
-          <aside className="sticky top-20 hidden h-fit overflow-hidden rounded-3xl border border-border/60 bg-card shadow-float lg:flex lg:flex-col">
+          <aside className="sticky top-20 hidden h-fit overflow-hidden rounded-2xl border border-border/60 bg-card shadow-float lg:flex lg:flex-col">
             {/* Agent profile header */}
-            <div className="relative overflow-hidden bg-[#080c1a] p-4">
-              <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/20 blur-2xl" />
+            <div className="dark relative overflow-hidden bg-background p-4">
               <div className="relative flex items-center gap-3">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl gradient-primary text-xl font-bold text-white shadow-soft">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground shadow-soft">
                   {initial}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-white">{agentProfile.store_name}</p>
-                  <p className="truncate text-[10px] text-white/40">/store/{agentProfile.store_slug}</p>
+                  <p className="truncate text-sm font-bold text-foreground">{agentProfile.store_name}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">/store/{agentProfile.store_slug}</p>
                 </div>
               </div>
               <div className="relative mt-3 flex items-center gap-1.5">
-                <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[10px] font-bold text-green-400">{isSubAgent ? "Active Sub-Agent" : "Active Agent"}</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] font-bold text-emerald-400">{isSubAgent ? "Active Sub-Agent" : "Active Agent"}</span>
               </div>
             </div>
 
@@ -236,7 +235,7 @@ export default function AgentDashboard() {
                     className={cn(
                       "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-all relative overflow-hidden",
                       active
-                        ? "bg-primary/10 text-primary border-l-4 border-primary font-semibold shadow-[inset_0_0_12px_rgba(139,92,246,0.06)]"
+                        ? "bg-primary/10 text-primary border-l-4 border-primary font-semibold"
                         : "text-muted-foreground hover:bg-secondary/60 hover:text-foreground hover:translate-x-1"
                     )}
                   >
@@ -281,7 +280,7 @@ export default function AgentDashboard() {
           {/* ── Main content ── */}
           <main className="min-w-0 w-full animate-in fade-in duration-300">
             {showSetupPrompt && (
-              <div className="mb-6 p-5 rounded-[2rem] glass-card border-amber-500/25 bg-amber-500/5 flex items-start justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+              <div className="mb-6 p-5 rounded-2xl border border-amber-500/25 bg-amber-500/5 flex items-start justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex gap-4">
                   <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-inner">
                     <Zap className="h-5 w-5" />
@@ -329,7 +328,7 @@ export default function AgentDashboard() {
 
       {/* ── Mobile bottom bar (Modern Floating Pill) ── */}
       <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
-        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-slate-200/50 bg-white/95 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90 pointer-events-auto transition-all">
+        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-border bg-card px-4 shadow-float pointer-events-auto transition-all">
           {[
             { value: "buy", label: "Buy Data", icon: <Signal className="h-5 w-5" /> },
             { value: "store", label: "My Store", icon: <Store className="h-5 w-5" /> },
@@ -343,11 +342,11 @@ export default function AgentDashboard() {
                 onClick={() => setTab(t.value as AgentTab)}
                 className={cn(
                   "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300",
-                  active ? "text-primary font-bold" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  active ? "text-primary font-bold" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {active && (
-                  <span className="absolute -top-3 h-1 w-8 rounded-full bg-primary shadow-[0_0_10px_rgba(139,92,246,0.8)] animate-in zoom-in" />
+                  <span className="absolute -top-3 h-1 w-8 rounded-full bg-primary animate-in zoom-in" />
                 )}
                 <span className="transition-transform duration-300">{t.icon}</span>
                 <span className="text-[10px] font-semibold">{t.label}</span>
@@ -360,15 +359,15 @@ export default function AgentDashboard() {
               <button
                 type="button"
                 onClick={(e) => e.currentTarget.blur()}
-                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all duration-300"
+                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground transition-all duration-300"
               >
                 <Menu className="h-5 w-5" />
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </DrawerTrigger>
-            <DrawerContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-t-[32px]">
-              <DrawerHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
-                <DrawerTitle className="text-left text-lg font-black tracking-tight">All Tools</DrawerTitle>
+            <DrawerContent className="bg-background border-border rounded-t-2xl">
+              <DrawerHeader className="border-b border-border pb-4">
+                <DrawerTitle className="text-left text-lg font-bold tracking-tight">All Tools</DrawerTitle>
                 <DrawerDescription className="sr-only">Access all dashboard tools and settings</DrawerDescription>
               </DrawerHeader>
               <div className="p-4 grid grid-cols-3 gap-4 pb-12">
@@ -384,14 +383,14 @@ export default function AgentDashboard() {
                       }}
                       className={cn(
                         "flex flex-col items-center gap-2 rounded-2xl p-4 transition-all duration-300",
-                        active 
-                          ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/25" 
-                          : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        active
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground border border-border hover:bg-accent"
                       )}
                     >
                       <span className={cn(
                         "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
-                        active ? "bg-white/20" : "bg-white dark:bg-slate-950"
+                        active ? "bg-primary-foreground/20" : "bg-background"
                       )}>
                         {t.icon}
                       </span>

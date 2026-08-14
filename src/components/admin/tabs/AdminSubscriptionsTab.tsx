@@ -101,36 +101,36 @@ export function AdminSubscriptionsTab() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
-          <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-500">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-float transition-all duration-300">
+          <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
             <RefreshCw className="h-4.5 w-4.5 animate-spin-slow" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Total Subscriptions</p>
-          <p className="mt-1.5 text-xl sm:text-2xl font-black text-foreground tabular-nums">{subs.length}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/75">Total Subscriptions</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-bold text-foreground tabular-nums">{subs.length}</p>
         </div>
 
-        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-float transition-all duration-300">
           <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-500">
             <CheckCircle2 className="h-4.5 w-4.5" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Active Subscriptions</p>
-          <p className="mt-1.5 text-xl sm:text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{activeSubs.length}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/75">Active Subscriptions</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{activeSubs.length}</p>
         </div>
 
-        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-float transition-all duration-300">
           <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-500">
             <TrendingUp className="h-4.5 w-4.5" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Monthly Volume</p>
-          <p className="mt-1.5 text-xl sm:text-2xl font-black text-amber-600 dark:text-amber-400 tabular-nums">{formatGHS(recurringVolume)}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/75">Monthly Volume</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400 tabular-nums">{formatGHS(recurringVolume)}</p>
         </div>
 
-        <div className="rounded-[2rem] border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+        <div className="rounded-2xl border border-border bg-card p-5 shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-float transition-all duration-300">
           <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-500">
             <Clock className="h-4.5 w-4.5" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">Plans (Wk / Mo)</p>
-          <p className="mt-1.5 text-xl sm:text-2xl font-black text-rose-600 dark:text-rose-400 tabular-nums">{weeklyCount} / {monthlyCount}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/75">Plans (Wk / Mo)</p>
+          <p className="mt-1.5 text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400 tabular-nums">{weeklyCount} / {monthlyCount}</p>
         </div>
       </div>
 
@@ -142,11 +142,11 @@ export function AdminSubscriptionsTab() {
             placeholder="Search subscriber, phone, store…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all"
+            className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all"
           />
         </div>
 
-        <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
+        <div className="flex shrink-0 gap-1 rounded-xl border border-border bg-secondary/40 p-1">
           {([
             { label: "All", value: "all" },
             { label: "Weekly Only", value: "weekly" },
@@ -157,9 +157,9 @@ export function AdminSubscriptionsTab() {
               type="button"
               onClick={() => setFilterFreq(value)}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap",
+                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap",
                 filterFreq === value
-                  ? "bg-background text-foreground shadow-sm font-black"
+                  ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -169,17 +169,17 @@ export function AdminSubscriptionsTab() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/25 shadow-soft backdrop-blur-md">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
             <RefreshCw className="h-10 w-10 text-muted-foreground/30 mb-4 animate-spin" />
-            <p className="text-sm font-bold text-muted-foreground">No recurring subscriptions match filters.</p>
+            <p className="text-sm font-semibold text-muted-foreground">No recurring subscriptions match filters.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-border/40 bg-secondary/20 text-muted-foreground/80 font-black uppercase tracking-widest">
+              <thead className="bg-secondary/40 text-muted-foreground uppercase tracking-widest font-semibold border-b border-border">
+                <tr>
                   <th className="px-6 py-4">Subscriber Details</th>
                   <th className="px-6 py-4">Storefront Origin</th>
                   <th className="px-6 py-4">Bundle Plan</th>
@@ -189,11 +189,11 @@ export function AdminSubscriptionsTab() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/30">
+              <tbody className="divide-y divide-border">
                 {filtered.map((s) => {
                   const net = s.bundle?.networks?.logo_emoji ?? "📶";
                   return (
-                    <tr key={s.id} className="group hover:bg-primary/[0.01] transition-colors">
+                    <tr key={s.id} className="group hover:bg-accent transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-bold text-foreground group-hover:text-primary transition-colors">{s.user?.full_name || "Guest Customer"}</div>
                         <div className="text-[10px] text-muted-foreground/85 mt-0.5">{s.user?.email || "No email"} · {s.recipient_phone}</div>
@@ -211,12 +211,12 @@ export function AdminSubscriptionsTab() {
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-black uppercase tracking-wider text-[9px] text-primary">{s.frequency}</td>
-                      <td className="px-6 py-4 font-bold text-foreground">{new Date(s.next_billing_at).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 font-semibold uppercase tracking-wider text-[9px] text-primary">{s.frequency}</td>
+                      <td className="px-6 py-4 font-semibold text-foreground">{new Date(s.next_billing_at).toLocaleDateString()}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
-                          s.status === "active" 
-                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" 
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider ${
+                          s.status === "active"
+                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                             : "bg-secondary text-muted-foreground border border-border"
                         }`}>
                           {s.status}
@@ -229,7 +229,7 @@ export function AdminSubscriptionsTab() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                className="h-8 rounded-xl text-xs font-bold text-amber-500 border border-amber-500/20 bg-background/50 hover:bg-amber-500 hover:text-white transition-all shadow-sm"
+                                className="h-8 rounded-xl text-xs font-semibold text-amber-500 border border-amber-500/20 bg-background hover:bg-amber-500 hover:text-white transition-all shadow-sm"
                                 onClick={() => triggerRebill(s.id)}
                               >
                                 Trigger Rebill

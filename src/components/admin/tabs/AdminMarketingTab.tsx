@@ -70,18 +70,18 @@ export function AdminMarketingTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card shadow-soft">
         <div className="border-b border-border/40 bg-card/50 p-6">
           <div className="flex items-center gap-2 mb-2">
             <Megaphone className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-black tracking-tight text-foreground">SMS Marketing</h2>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">SMS Marketing</h2>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">Send bulk SMS messages to users or agents.</p>
         </div>
 
         <div className="p-6 space-y-6 max-w-2xl">
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Select Audience</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Select Audience</label>
             <select 
               value={audience} 
               onChange={(e) => setAudience(e.target.value)}
@@ -93,7 +93,7 @@ export function AdminMarketingTab() {
           </div>
 
           <div className="space-y-2 pb-4 border-b border-border/30">
-            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Load SMS Template (Optional)</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Load SMS Template (Optional)</label>
             <select 
               onChange={(e) => {
                 const tmpl = SMS_TEMPLATES[Number(e.target.value)];
@@ -101,7 +101,7 @@ export function AdminMarketingTab() {
                   setMessage(tmpl.message);
                 }
               }}
-              className="w-full rounded-xl border border-border/60 bg-primary/5 px-4 py-3 text-sm font-black outline-none focus:ring-2 focus:ring-primary/25 transition-all text-primary cursor-pointer"
+              className="w-full rounded-xl border border-border/60 bg-primary/5 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/25 transition-all text-primary cursor-pointer"
             >
               {SMS_TEMPLATES.map((t, idx) => (
                 <option key={idx} value={idx}>{t.label}</option>
@@ -110,14 +110,14 @@ export function AdminMarketingTab() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Message</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Message</label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your SMS campaign message here..."
               className="w-full min-h-[120px] rounded-xl border border-border/60 bg-background/50 px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20 transition-all resize-none text-foreground placeholder:text-muted-foreground/40"
             />
-            <p className="text-[10px] font-black text-muted-foreground/80 text-right uppercase tracking-wider">{message.length} characters</p>
+            <p className="text-[10px] font-bold text-muted-foreground/80 text-right uppercase tracking-wider">{message.length} characters</p>
           </div>
 
           <Button 
@@ -131,18 +131,18 @@ export function AdminMarketingTab() {
         </div>
       </div>
       
-      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card shadow-soft">
         <div className="border-b border-border/40 bg-card/50 p-6">
           <div className="flex items-center gap-2 mb-2">
             <BellRing className="h-5 w-5 text-primary" />
-            <h2 className="text-xl font-black tracking-tight text-foreground">In-App Push Notifications</h2>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">In-App Push Notifications</h2>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">Send real-time alerts with sound to all users currently online.</p>
         </div>
 
         <div className="p-6 space-y-6 max-w-2xl">
           <div className="space-y-2 pb-4 border-b border-border/30">
-            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Load Template (Optional)</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Load Template (Optional)</label>
             <select 
               onChange={(e) => {
                 const tmpl = PUSH_TEMPLATES[Number(e.target.value)];
@@ -153,7 +153,7 @@ export function AdminMarketingTab() {
                   setPushSound(tmpl.sound);
                 }
               }}
-              className="w-full rounded-xl border border-border/60 bg-primary/5 px-4 py-3 text-sm font-black outline-none focus:ring-2 focus:ring-primary/25 transition-all text-primary cursor-pointer"
+              className="w-full rounded-xl border border-border/60 bg-primary/5 px-4 py-3 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/25 transition-all text-primary cursor-pointer"
             >
               {PUSH_TEMPLATES.map((t, idx) => (
                 <option key={idx} value={idx}>{t.label}</option>
@@ -162,7 +162,7 @@ export function AdminMarketingTab() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Title</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Title</label>
             <Input 
               value={pushTitle} 
               onChange={(e) => setPushTitle(e.target.value)} 
@@ -172,7 +172,7 @@ export function AdminMarketingTab() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Message</label>
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Message</label>
             <textarea
               value={pushMessage}
               onChange={(e) => setPushMessage(e.target.value)}
@@ -183,7 +183,7 @@ export function AdminMarketingTab() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Type</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Type</label>
               <select 
                 value={pushType} 
                 onChange={(e) => setPushType(e.target.value)}
@@ -196,7 +196,7 @@ export function AdminMarketingTab() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Sound</label>
+              <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Sound</label>
               <select 
                 value={pushSound} 
                 onChange={(e) => {

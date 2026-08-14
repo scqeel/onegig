@@ -140,9 +140,9 @@ export function AdminCouponsTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[2rem] border border-border/45 bg-card/40 p-6 md:p-8 backdrop-blur-md shadow-soft">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-[2rem] border border-border/45 bg-card p-6 md:p-8 shadow-soft">
         <div>
-          <h2 className="text-xl font-black flex items-center gap-2 text-foreground">
+          <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
             <Gift className="h-5.5 w-5.5 text-rose-500" /> Promo Coupons & Vouchers
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">Manage global platform-wide vouchers and track agent-sponsored discount codes.</p>
@@ -180,11 +180,11 @@ export function AdminCouponsTab() {
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/25 shadow-soft backdrop-blur-md">
+        <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card shadow-soft">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b border-border/40 bg-secondary/30 text-muted-foreground/80 font-black uppercase tracking-widest">
+                <tr className="border-b border-border/40 bg-secondary/30 text-muted-foreground/80 font-bold uppercase tracking-widest">
                   <th className="px-6 py-4">Promo Code</th>
                   <th className="px-6 py-4">Discount</th>
                   <th className="px-6 py-4">Sponsor / Store</th>
@@ -199,8 +199,8 @@ export function AdminCouponsTab() {
                   const isActive = c.active && !isExhausted;
                   return (
                     <tr key={c.id} className="group hover:bg-primary/[0.01] transition-colors">
-                      <td className="px-6 py-4 font-mono font-black uppercase text-foreground text-sm tracking-wider group-hover:text-primary transition-colors">{c.code}</td>
-                      <td className="px-6 py-4 font-extrabold text-rose-500 text-sm">{formatGHS(c.discount_amount)}</td>
+                      <td className="px-6 py-4 font-mono font-bold uppercase text-foreground text-sm tracking-wider group-hover:text-primary transition-colors">{c.code}</td>
+                      <td className="px-6 py-4 font-bold text-rose-500 text-sm">{formatGHS(c.discount_amount)}</td>
                       <td className="px-6 py-4">
                         {c.agent_profiles ? (
                           <div className="flex flex-col">
@@ -208,7 +208,7 @@ export function AdminCouponsTab() {
                             <span className="text-[9px] text-muted-foreground/85 font-mono">Store: /store/{c.agent_profiles.store_slug}</span>
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-primary/10 text-primary border border-primary/20 shadow-sm">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-primary/10 text-primary border border-primary/20 shadow-sm">
                             Global Platform
                           </span>
                         )}
@@ -217,7 +217,7 @@ export function AdminCouponsTab() {
                         {c.current_uses} / {c.max_uses}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}`}>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider ${isActive ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-secondary text-muted-foreground border border-border'}`}>
                           {isActive ? "Active" : isExhausted ? "Exhausted" : "Inactive"}
                         </span>
                       </td>
@@ -251,9 +251,9 @@ export function AdminCouponsTab() {
       )}
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="w-[94vw] max-w-md rounded-[2rem] border border-border/50 p-6 md:p-8 bg-card backdrop-blur-xl shadow-float">
+        <DialogContent className="w-[94vw] max-w-md rounded-[2rem] border border-border/50 p-6 md:p-8 bg-card shadow-float">
           <DialogHeader>
-            <DialogTitle className="text-left text-lg font-black text-foreground flex items-center gap-2">
+            <DialogTitle className="text-left text-lg font-bold text-foreground flex items-center gap-2">
               <Gift className="h-5.5 w-5.5 text-rose-500" /> Create Platform Coupon
             </DialogTitle>
             <DialogDescription className="text-left text-xs text-muted-foreground/80 mt-1 leading-relaxed">
@@ -263,7 +263,7 @@ export function AdminCouponsTab() {
 
           <form onSubmit={handleCreateCoupon} className="space-y-4 pt-3">
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Promo Code</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Promo Code</label>
               <Input
                 placeholder="e.g. WELCOME10"
                 value={code}
@@ -276,7 +276,7 @@ export function AdminCouponsTab() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Discount (GHS)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Discount (GHS)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -289,7 +289,7 @@ export function AdminCouponsTab() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Max Uses</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Max Uses</label>
                 <Input
                   type="number"
                   placeholder="e.g. 500"
@@ -302,7 +302,7 @@ export function AdminCouponsTab() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="block text-xs font-black uppercase tracking-wider text-muted-foreground">Assign to Store (Optional)</label>
+              <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground">Assign to Store (Optional)</label>
               <select
                 value={agentId}
                 onChange={(e) => setAgentId(e.target.value)}

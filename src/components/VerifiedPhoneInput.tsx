@@ -101,11 +101,11 @@ export const VerifiedPhoneInput: React.FC<VerifiedPhoneInputProps> = ({
     <div className={`space-y-1.5 ${className}`}>
       {label && (
         <div className="flex items-center justify-between">
-          <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400">
+          <label className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {label}
           </label>
           {datahubStatus?.verified && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 border border-emerald-500/20">
               <ShieldCheck className="h-3 w-3" /> Beneficiary Verified
             </span>
           )}
@@ -148,7 +148,7 @@ export const VerifiedPhoneInput: React.FC<VerifiedPhoneInputProps> = ({
           )}
           {datahubStatus && (
             <div
-              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-black shadow-md ${
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-bold shadow-md ${
                 datahubStatus.verified
                   ? "border-emerald-600/50 bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 dark:bg-emerald-950/90 dark:border-emerald-500/40"
                   : "border-amber-600/50 bg-amber-500/20 text-amber-950 dark:text-amber-300 dark:bg-amber-950/90 dark:border-amber-500/40"

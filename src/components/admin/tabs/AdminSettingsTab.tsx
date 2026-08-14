@@ -88,7 +88,7 @@ export function AdminSettingsTab() {
   };
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in duration-300">
+    <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft animate-in fade-in duration-300">
       <div className="border-b border-border/40 bg-card/50 p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Platform Configuration</h2>
@@ -265,7 +265,7 @@ export function AdminSettingsTab() {
                 <button 
                   type="button" 
                   onClick={() => setHomePageBgVideo("")}
-                  className="text-xs font-black text-rose-500 hover:text-rose-600 transition-colors"
+                  className="text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors"
                 >
                   Remove Video
                 </button>

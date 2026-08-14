@@ -627,13 +627,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const getCardClass = () => {
     switch (theme) {
       case "glassmorphism":
-      case "minimalist":
-      default:
-        return "glass-card text-slate-800 dark:text-slate-100";
+        return "bg-white/65 dark:bg-slate-900/55 backdrop-blur-xl border border-white/25 dark:border-white/5 shadow-lg text-slate-800 dark:text-slate-100";
       case "cyberpunk":
         return "bg-zinc-950 border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)] text-cyan-400 font-mono";
       case "luxury":
         return "bg-gradient-to-br from-stone-900 to-stone-950 border border-amber-500/25 shadow-xl text-stone-100";
+      case "minimalist":
+      default:
+        return "bg-card border border-border shadow-soft text-foreground";
     }
   };
 
@@ -932,9 +933,9 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-lg">
           <CheckCircle2 className="h-12 w-12 text-emerald-500" />
         </div>
-        <h3 className="mt-6 text-3xl font-black text-slate-800 dark:text-white">Order Successful! 🎉</h3>
+        <h3 className="mt-6 text-3xl font-bold text-slate-800 dark:text-white">Order Successful! 🎉</h3>
         <p className="mt-2 font-medium text-slate-500 dark:text-slate-400">
-          Data has been delivered to <span className="font-extrabold text-slate-800 dark:text-slate-200">{phone}</span>
+          Data has been delivered to <span className="font-bold text-slate-800 dark:text-slate-200">{phone}</span>
         </p>
         <div className="mt-8">
           <Button onClick={() => setPhase("select")} className="h-12 rounded-2xl bg-slate-950 text-white dark:bg-slate-800 font-bold px-8">
@@ -951,12 +952,12 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 shadow-lg">
           <RefreshCcw className="h-12 w-12 text-red-500 animate-spin [animation-duration:10s]" />
         </div>
-        <h3 className="mt-6 text-xl font-black text-slate-800 dark:text-white">Payment Failed</h3>
+        <h3 className="mt-6 text-xl font-bold text-slate-800 dark:text-white">Payment Failed</h3>
         <p className="mt-2 font-medium text-red-500 px-4 max-w-md mx-auto">{errorMsg}</p>
         <div className="mt-8 flex flex-col gap-3 max-w-[280px] w-full mx-auto">
           <Button
             onClick={payWithRedirect}
-            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-black shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
+            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
             Pay via Secure Web Page
@@ -978,7 +979,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg">
           <Lock className="h-10 w-10 text-blue-500" />
         </div>
-        <h3 className="mt-6 text-2xl font-black text-slate-800 dark:text-white">Verification Required</h3>
+        <h3 className="mt-6 text-2xl font-bold text-slate-800 dark:text-white">Verification Required</h3>
         <p className="mt-2 font-medium text-slate-500 dark:text-slate-400 max-w-[280px]">
           Please enter the OTP or Voucher Code sent to your mobile number ({momoNumber}).
         </p>
@@ -1004,7 +1005,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                   <InputOTPSlot 
                     key={i} 
                     index={i} 
-                    className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-black shadow-sm transition-all focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900" 
+                    className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-bold shadow-sm transition-all focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900" 
                   />
                 ))}
               </InputOTPGroup>
@@ -1055,7 +1056,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg animate-pulse">
           {phase === "delivering" ? <CheckCircle2 className="h-14 w-14 text-emerald-500" /> : <Loader2 className="h-14 w-14 text-blue-500 animate-spin" />}
         </div>
-        <h3 className="mt-8 text-2xl font-black text-slate-800 dark:text-white">
+        <h3 className="mt-8 text-2xl font-bold text-slate-800 dark:text-white">
           {phase === "processing" && "Initiating Payment..."}
           {phase === "polling" && "Awaiting Authorization"}
           {phase === "delivering" && "Payment Received! Sending Data..."}
@@ -1181,7 +1182,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       <div className="relative z-10">
         {/* ── PROMO BANNER ── */}
         {agent.store_promo_banner && (
-          <div className={`w-full py-3 overflow-hidden border-b flex items-center font-extrabold text-xs uppercase tracking-wider relative shadow-sm ${
+          <div className={`w-full py-3 overflow-hidden border-b flex items-center font-bold text-xs uppercase tracking-wider relative shadow-sm ${
             agent.store_promo_banner_style === 'midnight-gold' 
               ? 'bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 text-yellow-400 border-yellow-500/25'
               : agent.store_promo_banner_style === 'fire-ruby'
@@ -1224,13 +1225,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           <div className="relative z-10 space-y-5">
             {/* Logo + Name row */}
             <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-rose-500 p-[2px] shadow-xl shadow-indigo-500/20 animate-float-gentle flex-shrink-0">
+              <div className="h-14 w-14 rounded-2xl bg-primary p-[2px] shadow-xl shadow-primary/20 animate-float-gentle flex-shrink-0">
                 <div className="h-full w-full rounded-[14px] bg-slate-900 flex items-center justify-center">
                   <Store className="h-6 w-6 text-white" />
                 </div>
               </div>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-extrabold text-white tracking-tight truncate">
+                <h1 className="text-2xl font-bold text-white tracking-tight truncate">
                   {agent.store_name}
                 </h1>
                 <p className="text-sm text-slate-400 font-medium truncate">
@@ -1320,14 +1321,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         {/* ── CONDITIONAL RENDERING OF TABS ── */}
 
         {activeTab === "orders" && (
-          <div className="space-y-6 animate-morph-in">
+          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
 
             {/* ══════════════════════════════════════════════════════ */}
             {/* ── NETWORK SELECTOR — Pill-style horizontal strip ── */}
             {/* ══════════════════════════════════════════════════════ */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   Choose Network
                 </h2>
                 {selectedNetwork && (
@@ -1365,7 +1366,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                         }
                       }}
                       className={cn(
-                        "net-pill flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-extrabold text-sm",
+                        "net-pill flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-bold text-sm",
                         isActive 
                           ? cn(net.bg, net.text, net.border, "ring-2", net.ring, "active shadow-lg") 
                           : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-slate-200 dark:hover:border-slate-700 shadow-sm"
@@ -1382,8 +1383,8 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             {/* ── BUNDLE GRID — Solid colored cards                ── */}
             {/* ══════════════════════════════════════════════════════ */}
             {selectedNetwork && (
-              <div className="space-y-3 animate-morph-in">
-                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   Select Bundle
                 </h3>
 
@@ -1409,7 +1410,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                           type="button"
                           onClick={() => setCategoryFilter(cat.id as any)}
                           className={cn(
-                            "flex-1 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all duration-200",
+                            "flex-1 py-1.5 text-[9px] font-bold uppercase tracking-wider rounded-xl transition-all duration-200",
                             categoryFilter === cat.id
                               ? "bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-white/10"
                               : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
@@ -1442,7 +1443,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                             const active = selectedBundle?.id === b.id;
                             const isPopular = idx === 1 || idx === 4;
                             const sellPrice = priceFor(b);
-                            const netStyle = getNetStyle(selectedNetwork.code);
+                            const netStyle = {
+                              cardActive: cn(currentAccent.border, currentAccent.bg),
+                              cardIdle: "border-border bg-card hover:border-border/80",
+                            };
 
                             return (
                               <button
@@ -1466,7 +1470,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                                 <div className="flex w-full justify-between items-start mb-5">
                                   {selectedNetwork.code.toUpperCase() === 'MTN' ? (
                                     <div className="flex items-center justify-center rounded-full border-[1.5px] border-black px-2 py-0.5 h-6">
-                                      <span className="text-[10px] font-black">MTN</span>
+                                      <span className="text-[10px] font-bold">MTN</span>
                                     </div>
                                   ) : selectedNetwork.code.toUpperCase() === 'TELECEL' ? (
                                     <div className="flex h-6 w-6 items-center justify-center rounded-md bg-white">
@@ -1476,11 +1480,11 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                                     </div>
                                   ) : (selectedNetwork.code.toUpperCase() === 'AIRTELTIGO' || selectedNetwork.code.toUpperCase() === 'AT') ? (
                                     <div className="flex h-6 w-8 items-center justify-center rounded-md bg-gradient-to-r from-red-500 to-blue-500">
-                                      <span className="text-[10px] font-black text-white">AT</span>
+                                      <span className="text-[10px] font-bold text-white">AT</span>
                                     </div>
                                   ) : (
                                     <div className="flex h-6 items-center justify-center">
-                                      <span className="text-[10px] font-black uppercase">{selectedNetwork.name}</span>
+                                      <span className="text-[10px] font-bold uppercase">{selectedNetwork.name}</span>
                                     </div>
                                   )}
                                   
@@ -1489,7 +1493,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                                   </div>
                                 </div>
 
-                                <span className="text-3xl font-black leading-none tracking-tight">
+                                <span className="text-3xl font-bold leading-none tracking-tight">
                                   {b.size_label}
                                 </span>
                                 <span className={cn("mt-1 text-xs font-medium opacity-80")}>
@@ -1497,7 +1501,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                                 </span>
                                 
                                 <div className="mt-6 flex w-full items-end justify-between">
-                                  <span className={cn("text-xl font-black tracking-tight")}>
+                                  <span className={cn("text-xl font-bold tracking-tight")}>
                                     {formatGHS(sellPrice)}
                                   </span>
                                   <span className="text-[10px] font-semibold opacity-75">
@@ -1518,9 +1522,9 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         )}
 
         {activeTab === "trans" && (
-          <div className="space-y-4 animate-morph-in">
+          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
             <div className={`p-5 rounded-[28px] shadow-sm space-y-2 ${getCardClass()}`}>
-              <h2 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                 Track Order Status
               </h2>
               <p className="text-xs text-slate-400 font-medium">
@@ -1534,10 +1538,10 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         )}
 
         {activeTab === "bulk" && (
-          <div className="space-y-4 animate-morph-in">
+          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
             <div className={`p-5 rounded-[28px] shadow-sm space-y-4 ${getCardClass()}`}>
               <div>
-                <h2 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">
+                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                   Bulk Data Orders
                 </h2>
                 <p className="text-xs text-slate-400 font-medium">
@@ -1573,14 +1577,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         )}
 
         {activeTab === "store" && (
-          <div className="space-y-4 animate-morph-in">
+          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
             <div className={`p-6 rounded-[28px] shadow-sm space-y-4 ${getCardClass()}`}>
               <div className="flex items-center gap-3">
                 <div className="h-12 w-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
                   <Store className="h-6 w-6" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-extrabold text-slate-800 dark:text-slate-100">
+                  <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
                     {agent.store_name}
                   </h2>
                   <p className="text-xs text-rose-500 font-bold uppercase tracking-wider">
@@ -1596,7 +1600,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/40">
                   <span>Activation Status</span>
-                  <span className="text-emerald-500 font-extrabold flex items-center gap-1">
+                  <span className="text-emerald-500 font-bold flex items-center gap-1">
                     <CheckCircle2 className="h-3.5 w-3.5" /> Fully Activated
                   </span>
                 </div>
@@ -1628,7 +1632,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         )}
 
         {activeTab === "wallet" && (
-          <div className="space-y-4 animate-morph-in">
+          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
             <WalletManager />
           </div>
         )}
@@ -1655,7 +1659,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white px-6 py-5 border-b border-slate-800/40 relative overflow-hidden">
             <div className="absolute right-0 top-0 w-24 h-24 rounded-full bg-rose-500/10 blur-xl pointer-events-none" />
             <DialogHeader>
-              <DialogTitle className="text-left text-lg font-black text-white flex items-center gap-1.5">
+              <DialogTitle className="text-left text-lg font-bold text-white flex items-center gap-1.5">
                 <Sparkles className="h-4 w-4 text-yellow-400 fill-yellow-400/20" /> Confirm Order
               </DialogTitle>
               <DialogDescription className="text-left text-xs text-slate-400">
@@ -1666,14 +1670,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             {selectedBundle && selectedNetwork && (
               <div className="mt-4 flex items-center justify-between rounded-2xl bg-white/5 border border-white/10 px-4 py-3 backdrop-blur-sm">
                 <div>
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase">{selectedNetwork.name} bundle</p>
-                  <p className="text-2xl font-black leading-tight text-white">
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">{selectedNetwork.name} bundle</p>
+                  <p className="text-2xl font-bold leading-tight text-white">
                     {selectedBundle.size_label}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase">Total</p>
-                  <p className="text-2xl font-black text-rose-400">{formatGHS(finalPrice)}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Total</p>
+                  <p className="text-2xl font-bold text-rose-400">{formatGHS(finalPrice)}</p>
                 </div>
               </div>
             )}
@@ -1770,7 +1774,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                       setAppliedCoupon(null);
                       setCouponCodeInput("");
                     }}
-                    className="h-6 px-1.5 text-[10px] text-rose-500 hover:text-rose-600 font-extrabold"
+                    className="h-6 px-1.5 text-[10px] text-rose-500 hover:text-rose-600 font-bold"
                   >
                     Remove
                   </Button>
@@ -1872,7 +1876,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 (!payWithWallet && momoNumber.replace(/\D/g, "").length < 9) ||
                 isVerifying
               }
-              className="h-12 w-full rounded-2xl text-xs font-black uppercase bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-md shadow-rose-500/10 transition-all duration-300"
+              className="h-12 w-full rounded-2xl text-xs font-bold uppercase bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-md shadow-rose-500/10 transition-all duration-300"
             >
               <Zap className="mr-1.5 h-3.5 w-3.5 fill-current" /> Pay {selectedBundle ? formatGHS(finalPrice) : ""}
             </Button>
@@ -1894,7 +1898,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                 <Sparkles className="h-5 w-5" />
               </div>
               <DialogHeader>
-                <DialogTitle className="text-left text-base font-black text-slate-800 dark:text-white">
+                <DialogTitle className="text-left text-base font-bold text-slate-800 dark:text-white">
                   {infoPopup.title}
                 </DialogTitle>
                 <DialogDescription className="sr-only">Information details</DialogDescription>
@@ -1948,7 +1952,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
               <Trophy className="h-6 w-6" />
             </div>
             <DialogHeader>
-              <DialogTitle className="text-left text-lg font-black text-slate-800 dark:text-white">
+              <DialogTitle className="text-left text-lg font-bold text-slate-800 dark:text-white">
                 Loyalty Rewards Hub
               </DialogTitle>
               <DialogDescription className="text-left text-xs text-slate-400">
@@ -1982,8 +1986,8 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
             {loyaltyPointsBalance !== null && (
               <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 text-center space-y-2 animate-in fade-in duration-300">
-                <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Your Balance</p>
-                <p className="text-3xl font-black text-amber-500">{loyaltyPointsBalance} <span className="text-xs font-bold text-slate-400">GigPoints</span></p>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Your Balance</p>
+                <p className="text-3xl font-bold text-amber-500">{loyaltyPointsBalance} <span className="text-xs font-bold text-slate-400">GigPoints</span></p>
                 
                 {loyaltyPointsBalance >= 10 ? (
                   <div className="pt-2">
@@ -1992,7 +1996,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
                     </p>
                     <Button
                       onClick={redeemLoyaltyPoints}
-                      className="w-full h-10 rounded-xl bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-extrabold"
+                      className="w-full h-10 rounded-xl bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold"
                     >
                       Redeem Discount Now
                     </Button>
@@ -2015,13 +2019,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             {aiOpen && (
               <div className="mb-4 w-80 h-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
                 {/* Header */}
-                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white p-4 flex items-center justify-between shadow-md">
+                <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md">
                   <div className="flex items-center gap-2">
                     <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center animate-pulse">
                       <Sparkles className="h-4 w-4 text-yellow-300 fill-yellow-300" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-sm leading-tight">Storefront AI</h3>
+                      <h3 className="font-bold text-sm leading-tight">Storefront AI</h3>
                       <p className="text-[10px] text-indigo-200">Online & Ready</p>
                     </div>
                   </div>
@@ -2070,7 +2074,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             {/* Toggle Button */}
             <button
               onClick={() => setAiOpen(!aiOpen)}
-              className="h-14 w-14 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 border border-violet-500/20"
+              className="h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
             >
               <MessageCircle className="h-6 w-6 animate-pulse" />
             </button>

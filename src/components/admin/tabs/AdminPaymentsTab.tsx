@@ -20,7 +20,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   const cfg = map[status] ?? { bg: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground", label: status };
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${cfg.bg}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${cfg.bg}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>
@@ -115,26 +115,26 @@ export function AdminPaymentsTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card/40 backdrop-blur-md p-5 rounded-[2rem] border border-border/40 shadow-soft">
+      <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-card p-5 rounded-2xl border border-border shadow-soft">
         <div>
-          <h2 className="text-lg font-black tracking-tight text-foreground">Payments Monitor</h2>
+          <h2 className="text-lg font-bold tracking-tight text-foreground">Payments Monitor</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Track and force-resolve incoming platform payments.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/60" />
-            <Input 
-              placeholder="Search reference, phone, error..." 
+            <Input
+              placeholder="Search reference, phone, error..."
               value={search} onChange={e => setSearch(e.target.value)}
-              className="w-56 h-10 rounded-xl bg-background/50 pl-9 pr-3 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/20 border-border/60 hover:border-border/80 transition-all text-foreground" 
+              className="w-56 h-10 rounded-xl bg-background pl-9 pr-3 text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary/20 border-border hover:border-border/80 transition-all text-foreground"
             />
           </div>
-          <div className="flex bg-secondary/40 p-1 rounded-xl border border-border/40">
+          <div className="flex bg-secondary/40 p-1 rounded-xl border border-border">
             {["all", "paid", "failed", "initialized"].map(s => (
-              <button 
-                key={s} 
+              <button
+                key={s}
                 onClick={() => setStatusFilter(s)}
-                className={cn("px-3.5 py-1.5 text-xs font-bold rounded-lg transition-all", statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+                className={cn("px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all", statusFilter === s ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
               >
                 {s.charAt(0).toUpperCase() + s.slice(1)}
               </button>
@@ -142,19 +142,19 @@ export function AdminPaymentsTab() {
           </div>
         </div>
       </div>
-      
-      <div className="bg-card/25 rounded-[2rem] border border-border/45 backdrop-blur-md divide-y divide-border/30 overflow-hidden shadow-soft">
+
+      <div className="bg-card rounded-2xl border border-border divide-y divide-border overflow-hidden shadow-soft">
         {filtered.length === 0 ? (
           <div className="p-16 text-center text-sm font-semibold text-muted-foreground">No transactions match your filters.</div>
         ) : (
           filtered.map((p: any) => (
-            <div key={p.id} className="p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-primary/[0.01] transition-colors">
+            <div key={p.id} className="p-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center hover:bg-accent transition-colors">
               <div className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-base font-black tracking-tight text-foreground">{formatGHS(p.amount)}</span>
+                  <span className="text-base font-bold tracking-tight text-foreground">{formatGHS(p.amount)}</span>
                   <StatusBadge status={p.status} />
-                  <span className="text-[10px] font-mono bg-secondary/60 border border-border/40 px-2.5 py-0.5 rounded-md text-muted-foreground">{p.reference}</span>
-                  <span className="text-[9px] uppercase font-black text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">{p.purpose}</span>
+                  <span className="text-[10px] font-mono bg-secondary border border-border px-2.5 py-0.5 rounded-md text-muted-foreground">{p.reference}</span>
+                  <span className="text-[9px] uppercase font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md">{p.purpose}</span>
                 </div>
                 <div className="text-xs font-semibold text-muted-foreground/90">
                   {p.customer?.full_name || "Guest"} • <span className="text-foreground">{p.customer?.phone || p.payload?.recipient_phone || "N/A"}</span> • {timeAgo(p.created_at)}
@@ -165,13 +165,13 @@ export function AdminPaymentsTab() {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
                 {p.status === "failed" && (
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    className="h-9 rounded-xl text-xs font-bold border-emerald-500/30 text-emerald-600 bg-background/50 hover:bg-emerald-500 hover:text-white transition-all"
+                    className="h-9 rounded-xl text-xs font-semibold border-emerald-500/30 text-emerald-600 bg-background hover:bg-emerald-500 hover:text-white transition-all"
                     disabled={!!busyId}
                     onClick={() => forceResolve(p)}
                   >

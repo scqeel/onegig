@@ -9,7 +9,7 @@ export default function PublicTrackPage() {
       <div className="fixed inset-0 -z-10 grid-pattern-dark opacity-40" />
 
       {/* Top Navbar */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur-md sticky top-0 z-50">
+      <nav className="border-b border-border bg-background sticky top-0 z-50">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-5 py-4 md:px-8">
           <Link
             to="/"

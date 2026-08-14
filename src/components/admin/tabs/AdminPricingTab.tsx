@@ -83,15 +83,15 @@ export function AdminPricingTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card shadow-soft">
         <div className="border-b border-border/40 bg-card/50 p-6">
-          <h2 className="text-xl font-black tracking-tight text-foreground">{editingId ? "Edit Package" : "Create New Package"}</h2>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">{editingId ? "Edit Package" : "Create New Package"}</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Configure data bundle pricing and network availability.</p>
         </div>
         <div className="p-6 md:p-8">
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
-              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Network Provider</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Network Provider</label>
               <select
                 value={form.network_id}
                 onChange={(e) => setForm((p) => ({ ...p, network_id: e.target.value }))}
@@ -103,7 +103,7 @@ export function AdminPricingTab() {
             </div>
             
             <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
-              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Bundle Label</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Bundle Label</label>
               <select 
                 value={form.size_label} 
                 onChange={(e) => {
@@ -143,7 +143,7 @@ export function AdminPricingTab() {
             </div>
             
             <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
-              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Data Size (GB)</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Data Size (GB)</label>
               <select 
                 value={form.size_gb} 
                 onChange={(e) => setForm((p) => ({ ...p, size_gb: e.target.value }))} 
@@ -174,7 +174,7 @@ export function AdminPricingTab() {
             </div>
             
             <div className="group relative border border-border/50 rounded-2xl p-4 bg-background/30 transition-all focus-within:ring-2 focus-within:ring-primary/20 hover:bg-background/40">
-              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-muted-foreground">Regular User Price (GHS)</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Regular User Price (GHS)</label>
               <input 
                 placeholder="e.g. 5.50" 
                 type="number" 
@@ -186,7 +186,7 @@ export function AdminPricingTab() {
             </div>
             
             <div className="group relative border border-primary/30 rounded-2xl p-4 bg-primary/5 transition-all focus-within:ring-2 focus-within:ring-primary/25 hover:bg-primary/10">
-              <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-primary">Agent Wholesale Price (GHS)</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-widest text-primary">Agent Wholesale Price (GHS)</label>
               <input 
                 placeholder="e.g. 4.50" 
                 type="number" 
@@ -212,9 +212,9 @@ export function AdminPricingTab() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
+        <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card shadow-soft">
           <div className="border-b border-border/40 bg-card/50 p-6">
-            <h3 className="text-lg font-black tracking-tight text-foreground">Active Inventory</h3>
+            <h3 className="text-lg font-bold tracking-tight text-foreground">Active Inventory</h3>
             <p className="text-xs text-muted-foreground mt-0.5">All currently active data packages.</p>
           </div>
           <div className="max-h-[600px] space-y-4 overflow-y-auto p-5 no-scrollbar">
@@ -223,7 +223,7 @@ export function AdminPricingTab() {
               if (!items.length) return null;
               return (
                 <div key={n.id} className="rounded-2xl border border-border/40 bg-background/20 p-4">
-                  <h4 className="mb-3.5 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground/80">
+                  <h4 className="mb-3.5 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/80">
                     <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                     {n.name}
                   </h4>
@@ -234,7 +234,7 @@ export function AdminPricingTab() {
                           <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">{b.size_label}</p>
                           <p className="text-[10px] font-semibold uppercase tracking-tight text-muted-foreground/95 mt-0.5">
                             User: <span className="text-foreground font-bold">{formatGHS(Number(b.user_price ?? b.base_price))}</span>{" "}
-                            · Agent: <span className="font-black text-primary">{formatGHS(Number(b.base_price))}</span>
+                            · Agent: <span className="font-bold text-primary">{formatGHS(Number(b.base_price))}</span>
                           </p>
                         </div>
                         <div className="flex gap-1.5">
@@ -259,13 +259,13 @@ export function AdminPricingTab() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
+          <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card shadow-soft">
             <div className="border-b border-border/40 bg-card/50 p-6">
-              <h3 className="text-lg font-black tracking-tight text-foreground">Onboarding Settings</h3>
+              <h3 className="text-lg font-bold tracking-tight text-foreground">Onboarding Settings</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Configure costs for new agent registrations.</p>
             </div>
             <div className="p-6 space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Activation Fee (GHS)</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Activation Fee (GHS)</label>
               <div className="flex gap-3">
                 <Input value={activationFee} onChange={(e) => setActivationFee(e.target.value)} className="h-11 rounded-xl bg-background/50 font-bold text-sm text-foreground focus-visible:ring-2 focus-visible:ring-primary/20 border-border/60" />
                 <Button className="h-11 rounded-xl bg-foreground px-6 font-bold text-background transition-all hover:opacity-90 active:scale-95 text-xs" onClick={saveActivationFee}>

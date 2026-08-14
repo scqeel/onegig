@@ -351,7 +351,7 @@ export function AdminIntegrationsTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft">
         <div className="flex flex-col gap-4 border-b border-border/40 bg-card/50 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-xl font-bold tracking-tight">Data Providers</h2>
@@ -364,15 +364,15 @@ export function AdminIntegrationsTab() {
 
         {/* Dynamic Provider Routing Toggles */}
         <div className="border-b border-border/40 bg-card/10 p-6 space-y-4">
-          <h3 className="text-sm font-black uppercase tracking-wider text-primary">Service Fulfillment Routing</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-primary">Service Fulfillment Routing</h3>
           <p className="text-xs text-muted-foreground -mt-2">Dynamically switch which provider API is active for each type of service purchase.</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Data Packages</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Data Packages</label>
               <select
                 value={config.active_data || "swiftdata"}
                 onChange={(e) => setConfig((prev: any) => ({ ...prev, active_data: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-slate-800 bg-[#0b1021] px-3.5 text-xs text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                className="w-full h-11 rounded-xl border border-input bg-background px-3.5 text-xs text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
               >
                 {Object.entries(config.providers).map(([key, p]: [string, any]) => (
                   <option key={key} value={key}>{p.name}</option>
@@ -380,11 +380,11 @@ export function AdminIntegrationsTab() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Airtime Top-ups</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Airtime Top-ups</label>
               <select
                 value={config.active_airtime || "swft"}
                 onChange={(e) => setConfig((prev: any) => ({ ...prev, active_airtime: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-slate-800 bg-[#0b1021] px-3.5 text-xs text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                className="w-full h-11 rounded-xl border border-input bg-background px-3.5 text-xs text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
               >
                 {Object.entries(config.providers).map(([key, p]: [string, any]) => (
                   <option key={key} value={key}>{p.name}</option>
@@ -392,11 +392,11 @@ export function AdminIntegrationsTab() {
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Utility Bills</label>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Utility Bills</label>
               <select
                 value={config.active_utility || "swft"}
                 onChange={(e) => setConfig((prev: any) => ({ ...prev, active_utility: e.target.value }))}
-                className="w-full h-11 rounded-xl border border-slate-800 bg-[#0b1021] px-3.5 text-xs text-slate-300 focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                className="w-full h-11 rounded-xl border border-input bg-background px-3.5 text-xs text-foreground focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
               >
                 {Object.entries(config.providers).map(([key, p]: [string, any]) => (
                   <option key={key} value={key}>{p.name}</option>
@@ -418,17 +418,17 @@ export function AdminIntegrationsTab() {
                 {isActiveAny && (
                   <div className="absolute right-4 top-4 flex flex-col gap-1.5 items-end">
                     {isActiveForData && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-indigo-400 border border-indigo-500/30">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-indigo-500/20 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-indigo-400 border border-indigo-500/30">
                         Active for Data
                       </span>
                     )}
                     {isActiveForAirtime && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-400 border border-amber-500/30">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/30">
                         Active for Airtime
                       </span>
                     )}
                     {isActiveForUtility && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-sky-400 border border-sky-500/30">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-sky-500/20 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-sky-400 border border-sky-500/30">
                         Active for Utilities
                       </span>
                     )}
@@ -438,11 +438,11 @@ export function AdminIntegrationsTab() {
                 <p className="mt-1 text-xs text-muted-foreground">Configure {provider.name} settings</p>
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Base URL</label>
+                    <label className="ml-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Base URL</label>
                     <Input value={provider.base_url} onChange={(e) => updateProvider(key, "base_url", e.target.value)} className="h-12 rounded-xl bg-background/80 focus:ring-2 focus:ring-primary/20" />
                   </div>
                   <div className="space-y-2">
-                    <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-muted-foreground">API Key / Secret</label>
+                    <label className="ml-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">API Key / Secret</label>
                     <Input type="password" value={provider.api_key} onChange={(e) => updateProvider(key, "api_key", e.target.value)} placeholder="Enter API key…" className="h-12 rounded-xl bg-background/80 focus:ring-2 focus:ring-primary/20" />
                   </div>
                 </div>
@@ -501,44 +501,44 @@ export function AdminIntegrationsTab() {
       {isSwiftActive && (
         <div className="grid gap-6 md:grid-cols-2">
           {/* Balances & Transfer */}
-          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft p-6 space-y-6">
+          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-border/45 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">SwiftData Wallet Balances</h3>
+                <h3 className="text-lg font-bold text-foreground">SwiftData Wallet Balances</h3>
                 <p className="text-xs text-muted-foreground">Live Main and API wallets balance tracking</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button 
-                  size="sm" 
-                  variant="outline" 
-                  onClick={handleSyncPlans} 
-                  disabled={isSyncing} 
-                  className="rounded-xl h-9 gap-1.5 border-primary/20 bg-primary/5 px-3 text-xs font-bold text-primary hover:bg-primary hover:text-white"
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSyncPlans}
+                  disabled={isSyncing}
+                  className="rounded-xl h-9 gap-1.5 border-primary/20 bg-primary/5 px-3 text-xs font-bold text-primary hover:bg-primary hover:text-primary-foreground"
                 >
                   <RefreshCw className={cn("h-3.5 w-3.5", isSyncing && "animate-spin")} />
                   Sync Packages
                 </Button>
                 <Button size="icon" variant="ghost" onClick={fetchSwiftDataState} disabled={loadingBalances} className="rounded-xl h-9 w-9">
-                  <RefreshCw className={cn("h-4 w-4 text-slate-400", loadingBalances && "animate-spin")} />
+                  <RefreshCw className={cn("h-4 w-4 text-muted-foreground", loadingBalances && "animate-spin")} />
                 </Button>
               </div>
             </div>
 
             {/* Wallet cards */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="bg-[#0b1021] border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Main Wallet</span>
-                <span className="text-xl font-bold text-white mt-2">
-                  {balances?.balance?.mainBalance !== undefined 
-                    ? formatGHS(Number(balances.balance.mainBalance)) 
+              <div className="bg-background border border-border rounded-2xl p-4 flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Main Wallet</span>
+                <span className="text-xl font-bold text-foreground mt-2">
+                  {balances?.balance?.mainBalance !== undefined
+                    ? formatGHS(Number(balances.balance.mainBalance))
                     : (loadingBalances ? "..." : "GHS 0.00")}
                 </span>
               </div>
-              <div className="bg-[#0b1021] border border-slate-800 rounded-2xl p-4 flex flex-col justify-between">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">API (Fulfillment)</span>
-                <span className="text-xl font-bold text-emerald-400 mt-2">
-                  {balances?.balance?.apiBalance !== undefined 
-                    ? formatGHS(Number(balances.balance.apiBalance)) 
+              <div className="bg-background border border-border rounded-2xl p-4 flex flex-col justify-between">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">API (Fulfillment)</span>
+                <span className="text-xl font-bold text-emerald-500 mt-2">
+                  {balances?.balance?.apiBalance !== undefined
+                    ? formatGHS(Number(balances.balance.apiBalance))
                     : (loadingBalances ? "..." : "GHS 0.00")}
                 </span>
               </div>
@@ -546,35 +546,35 @@ export function AdminIntegrationsTab() {
 
             {/* Transfer form */}
             <div className="border-t border-border/40 pt-4 space-y-4">
-              <h4 className="text-sm font-bold text-slate-200">Inter-Wallet Transfer</h4>
+              <h4 className="text-sm font-bold text-foreground">Inter-Wallet Transfer</h4>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Direction</label>
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Direction</label>
                   <select
                     value={transferDirection}
                     onChange={(e) => setTransferDirection(e.target.value as any)}
-                    className="h-10 w-full rounded-xl bg-[#080c1a] border border-slate-800 px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    className="h-10 w-full rounded-xl bg-background border border-border px-3 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                   >
                     <option value="main_to_api">Main ➔ API Wallet</option>
                     <option value="api_to_main">API ➔ Main Wallet</option>
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Amount (GHS)</label>
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest ml-1">Amount (GHS)</label>
                   <Input
                     type="number"
                     min="1"
                     placeholder="Transfer amount..."
                     value={transferAmount}
                     onChange={(e) => setTransferAmount(e.target.value)}
-                    className="h-10 rounded-xl bg-[#080c1a] border-slate-800 text-xs"
+                    className="h-10 rounded-xl bg-background border-border text-xs"
                   />
                 </div>
               </div>
-              <Button 
-                onClick={handleTransfer} 
-                disabled={isTransferring || !transferAmount} 
-                className="w-full h-10 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs"
+              <Button
+                onClick={handleTransfer}
+                disabled={isTransferring || !transferAmount}
+                className="w-full h-10 rounded-xl text-xs"
               >
                 {isTransferring ? "Executing Transfer..." : "Transfer Funds"}
               </Button>
@@ -582,14 +582,14 @@ export function AdminIntegrationsTab() {
           </div>
 
           {/* ISP Gateways Status */}
-          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md shadow-soft p-6 space-y-6">
+          <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft p-6 space-y-6">
             <div className="flex items-center justify-between border-b border-border/45 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-white">ISP Gateway Statuses</h3>
+                <h3 className="text-lg font-bold text-foreground">ISP Gateway Statuses</h3>
                 <p className="text-xs text-muted-foreground">Real-time status of downstream ISP networks</p>
               </div>
               <Button size="icon" variant="ghost" onClick={fetchSwiftDataState} disabled={loadingStatus} className="rounded-xl h-9 w-9">
-                <RefreshCw className={cn("h-4 w-4 text-slate-400", loadingStatus && "animate-spin")} />
+                <RefreshCw className={cn("h-4 w-4 text-muted-foreground", loadingStatus && "animate-spin")} />
               </Button>
             </div>
 
@@ -602,18 +602,18 @@ export function AdminIntegrationsTab() {
                 const gatewayInfo = gatewayStatus?.gateways?.[isp.key];
                 const status = gatewayInfo?.status || "Unknown";
                 const isOp = status?.toLowerCase() === "operational" || status?.toLowerCase() === "active";
-                
+
                 return (
-                  <div key={isp.name} className="flex items-center justify-between p-3.5 bg-[#0b1021] border border-slate-800 rounded-xl">
+                  <div key={isp.name} className="flex items-center justify-between p-3.5 bg-background border border-border rounded-xl">
                     <div>
-                      <span className="text-sm font-semibold text-white block">{isp.name}</span>
-                      <span className="text-[10px] text-slate-500 font-mono">{isp.gateway}</span>
+                      <span className="text-sm font-semibold text-foreground block">{isp.name}</span>
+                      <span className="text-[10px] text-muted-foreground font-mono">{isp.gateway}</span>
                     </div>
                     {loadingStatus ? (
-                      <span className="h-2 w-10 rounded bg-slate-800 animate-pulse" />
+                      <span className="h-2 w-10 rounded bg-secondary animate-pulse" />
                     ) : (
                       <span className={cn(
-                        "text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full",
+                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
                         isOp ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                       )}>
                         {status}

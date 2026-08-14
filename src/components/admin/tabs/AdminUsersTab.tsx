@@ -7,14 +7,14 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { AdminUserDetailsModal } from "@/components/dashboard/AdminUserDetailsModal";
 
-const AVATAR_GRADIENTS = [
-  "from-violet-500 to-purple-700",
-  "from-sky-500 to-blue-600",
-  "from-emerald-500 to-teal-700",
-  "from-amber-500 to-orange-600",
-  "from-rose-500 to-pink-700",
-  "from-indigo-500 to-violet-700",
-  "from-cyan-500 to-sky-700",
+const AVATAR_COLORS = [
+  "bg-sky-600",
+  "bg-emerald-600",
+  "bg-amber-600",
+  "bg-rose-600",
+  "bg-teal-600",
+  "bg-cyan-600",
+  "bg-orange-600",
 ];
 
 function getInitials(name: string) {
@@ -26,14 +26,14 @@ function getInitials(name: string) {
 
 function getAvatarColor(seed: string) {
   const n = seed.split("").reduce((a, c) => a + c.charCodeAt(0), 0);
-  return AVATAR_GRADIENTS[n % AVATAR_GRADIENTS.length];
+  return AVATAR_COLORS[n % AVATAR_COLORS.length];
 }
 
 function UserAvatar({ name }: { name: string }) {
   return (
     <div
       className={cn(
-        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-sm font-black text-white shadow-inner",
+        "flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-bold text-white",
         getAvatarColor(name)
       )}
     >
@@ -156,12 +156,12 @@ export function AdminUsersTab() {
 
   if (isLoading) {
     return (
-      <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/30">
-        <div className="border-b border-border/40 p-6">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div className="border-b border-border p-6">
           <Skeleton className="mb-2 h-6 w-40" />
           <Skeleton className="h-4 w-64" />
         </div>
-        <div className="divide-y divide-border/40">
+        <div className="divide-y divide-border">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center gap-4 px-6 py-5">
               <Skeleton className="h-11 w-11 shrink-0" />
@@ -189,14 +189,14 @@ export function AdminUsersTab() {
   const roleStyle: Record<string, string> = {
     admin: "border-rose-500/30 bg-rose-500/10 text-rose-500",
     agent: "border-amber-500/30 bg-amber-500/10 text-amber-600",
-    user:  "border-border/40 bg-secondary/50 text-muted-foreground",
+    user:  "border-border bg-secondary text-muted-foreground",
   };
 
   return (
-    <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft animate-in fade-in duration-300">
-      <div className="flex flex-col gap-4 border-b border-border/40 bg-card/50 p-6 sm:flex-row sm:items-center sm:justify-between">
+    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft animate-in fade-in duration-300">
+      <div className="flex flex-col gap-4 border-b border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-black tracking-tight text-foreground">Platform Users</h2>
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Platform Users</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Manage accounts and permissions across the system.</p>
         </div>
         <div className="flex items-center gap-3">
@@ -207,20 +207,20 @@ export function AdminUsersTab() {
               placeholder="Search users…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-10 w-56 rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all text-foreground placeholder:text-muted-foreground/50"
+              className="h-10 w-56 rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all text-foreground placeholder:text-muted-foreground/50"
             />
           </div>
-          <div className="shrink-0 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-black text-primary">
+          <div className="shrink-0 rounded-full bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary">
             {filtered.length}{search ? ` of ${data?.length ?? 0}` : " registered"}
           </div>
         </div>
       </div>
 
-      <div className="divide-y divide-border/30">
+      <div className="divide-y divide-border">
         {filtered.map((u: any) => {
           const name = u.full_name || u.username || "Anonymous User";
           return (
-            <div key={u.id} className="group flex flex-col gap-4 p-6 transition-all hover:bg-primary/[0.015] md:flex-row md:items-center md:justify-between">
+            <div key={u.id} className="group flex flex-col gap-4 p-6 transition-all hover:bg-accent md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-4">
                 <UserAvatar name={name} />
                 <div>
@@ -237,7 +237,7 @@ export function AdminUsersTab() {
                           </span>
                         ) : verifiedUserNames[u.id] ? (
                           <span className={cn(
-                            "rounded-full px-2 py-0.5 border text-[9px] font-black leading-none",
+                            "rounded-full px-2 py-0.5 border text-[9px] font-semibold leading-none",
                             verifiedUserNames[u.id] === "Not Found" || verifiedUserNames[u.id] === "Error"
                               ? "border-rose-500/20 bg-rose-500/10 text-rose-500"
                               : "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
@@ -250,7 +250,7 @@ export function AdminUsersTab() {
                         ) : (
                           <button
                             onClick={() => verifyUserMomoName(u.id, u.phone)}
-                            className="text-[10px] text-primary hover:underline hover:text-primary/80 transition-colors font-bold"
+                            className="text-[10px] text-primary hover:underline hover:text-primary/80 transition-colors font-semibold"
                           >
                             Verify Paystack Name
                           </button>
@@ -260,17 +260,17 @@ export function AdminUsersTab() {
                   </div>
                   <div className="mt-2.5 flex flex-wrap gap-1.5">
                     {u.roles.map((r: string) => (
-                      <span key={r} className={cn("rounded-full border px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider", roleStyle[r] ?? roleStyle.user)}>
+                      <span key={r} className={cn("rounded-full border px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider", roleStyle[r] ?? roleStyle.user)}>
                         {r}
                       </span>
                     ))}
                     {u.roles.includes("agent") && (
                       u.agentProfile?.activation_paid ? (
-                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
+                        <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-600 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
                           Active Store
                         </span>
                       ) : (
-                        <span className="rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider">
+                        <span className="rounded-full border border-rose-500/30 bg-rose-500/10 text-rose-500 px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider">
                           Store Inactive
                         </span>
                       )
@@ -278,10 +278,10 @@ export function AdminUsersTab() {
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-2 md:flex items-center gap-2.5 pt-3.5 md:pt-0 border-t border-border/30 md:border-0">
+              <div className="grid grid-cols-2 md:flex items-center gap-2.5 pt-3.5 md:pt-0 border-t border-border md:border-0">
                 <Button
                   variant="outline" size="sm"
-                  className="col-span-full md:col-auto h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-bold hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
+                  className="col-span-full md:col-auto h-9 md:h-8 rounded-xl border-border bg-background text-xs font-semibold hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                   onClick={() => setSelectedUser(u)}
                 >
                   View Details
@@ -289,7 +289,7 @@ export function AdminUsersTab() {
                 {!u.roles.includes("agent") && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-bold hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-600"
+                    className="h-9 md:h-8 rounded-xl border-border bg-background text-xs font-semibold hover:border-amber-500/40 hover:bg-amber-500/5 hover:text-amber-600"
                     disabled={busyId === u.id}
                     onClick={() => makeAgent(u.id)}
                   >
@@ -301,7 +301,7 @@ export function AdminUsersTab() {
                 {u.roles.includes("agent") && !u.agentProfile?.activation_paid && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 md:h-8 rounded-xl border-emerald-500/30 bg-background/50 text-xs font-bold text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
+                    className="h-9 md:h-8 rounded-xl border-emerald-500/30 bg-background text-xs font-semibold text-emerald-600 hover:border-emerald-500 hover:bg-emerald-500 hover:text-white"
                     disabled={busyId === u.id}
                     onClick={() => makeAgent(u.id)}
                   >
@@ -313,7 +313,7 @@ export function AdminUsersTab() {
                 {!u.roles.includes("admin") && (
                   <Button
                     variant="outline" size="sm"
-                    className="h-9 md:h-8 rounded-xl border-border/60 bg-background/50 text-xs font-bold hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:text-emerald-600"
+                    className="h-9 md:h-8 rounded-xl border-border bg-background text-xs font-semibold hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:text-emerald-600"
                     disabled={busyId === u.id}
                     onClick={() => makeAdmin(u.id)}
                   >
@@ -324,13 +324,13 @@ export function AdminUsersTab() {
                 )}
                 <Button
                   variant="ghost" size="sm"
-                  className="col-span-full md:col-auto h-9 md:h-8 md:w-8 rounded-xl text-muted-foreground/45 hover:bg-destructive/10 hover:text-destructive border border-border/60 bg-background/50 md:border-0 md:bg-transparent"
+                  className="col-span-full md:col-auto h-9 md:h-8 md:w-8 rounded-xl text-muted-foreground/45 hover:bg-destructive/10 hover:text-destructive border border-border bg-background md:border-0 md:bg-transparent"
                   disabled={busyId === u.id}
                   onClick={() => removeUser(u.id)}
                 >
                   {busyId === u.id
                     ? <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 animate-spin" />
-                    : <><Trash2 className="md:mr-0 mr-1.5 h-3.5 w-3.5" /><span className="md:hidden font-bold text-xs">Delete User</span></>}
+                    : <><Trash2 className="md:mr-0 mr-1.5 h-3.5 w-3.5" /><span className="md:hidden font-semibold text-xs">Delete User</span></>}
                 </Button>
               </div>
             </div>
@@ -340,10 +340,10 @@ export function AdminUsersTab() {
 
       {filtered.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/50">
+          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
             <Users className="h-6 w-6 text-muted-foreground/30" />
           </div>
-          <p className="text-sm font-bold text-muted-foreground">
+          <p className="text-sm font-semibold text-muted-foreground">
             {search ? "No users match your search." : "No users found in database."}
           </p>
         </div>

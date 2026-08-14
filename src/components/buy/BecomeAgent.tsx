@@ -300,7 +300,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
           <Check className="h-8 w-8 text-success" />
         </div>
         <p className="mt-4 text-lg font-semibold">You're already an agent</p>
-        <Button onClick={() => { onClose(); nav("/agent"); }} className="mt-4 rounded-2xl gradient-primary" style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none' } : {}}>Open Dashboard</Button>
+        <Button onClick={() => { onClose(); nav("/agent"); }} className="mt-4 rounded-2xl bg-primary text-primary-foreground" style={parentAgent ? { backgroundColor: brandColor, backgroundImage: 'none' } : {}}>Open Dashboard</Button>
       </div>
     );
   }
@@ -345,7 +345,7 @@ export function BecomeAgent({ onClose }: { onClose: () => void }) {
     return (
       <div className="py-12 text-center">
         <div 
-          className="mx-auto flex h-20 w-20 animate-float-pulse items-center justify-center rounded-full shadow-glow"
+          className="mx-auto flex h-20 w-20 items-center justify-center rounded-full shadow-glow"
           style={parentAgent ? { backgroundColor: brandColor, boxShadow: `0 10px 25px -5px ${brandColor}` } : { backgroundColor: 'var(--primary)' }}
         >
           <Zap className="h-10 w-10 text-white animate-pulse" />

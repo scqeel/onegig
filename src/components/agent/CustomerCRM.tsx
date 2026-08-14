@@ -280,8 +280,8 @@ export function CustomerCRM() {
             <Users className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white">Customer Address Book (CRM)</h2>
-            <p className="text-sm text-slate-500 font-medium">Segment contacts and trigger high-converting WhatsApp promos.</p>
+            <h2 className="text-xl font-bold text-foreground">Customer Address Book (CRM)</h2>
+            <p className="text-sm text-muted-foreground font-medium">Segment contacts and trigger high-converting WhatsApp promos.</p>
           </div>
         </div>
 
@@ -295,17 +295,17 @@ export function CustomerCRM() {
 
       {/* Editor Form */}
       {(isAdding || editingId) && (
-        <div className="bg-white dark:bg-slate-900 border border-violet-200 dark:border-violet-900/50 p-6 rounded-2xl shadow-sm ring-4 ring-violet-50 dark:ring-violet-500/5 animate-in slide-in-from-top-4">
-          <h3 className="font-bold text-slate-800 dark:text-white mb-4">
+        <div className="bg-card border border-primary/20 p-6 rounded-2xl shadow-soft ring-4 ring-primary/5 animate-in slide-in-from-top-4">
+          <h3 className="font-bold text-foreground mb-4">
             {editingId ? "Edit Customer" : "New Customer"}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Full Name</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Full Name</label>
               <Input value={formName} onChange={e => setFormName(e.target.value)} placeholder="John Doe" className="h-11" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-500 mb-1 block">Phone Number</label>
+              <label className="text-xs font-semibold text-muted-foreground mb-1 block">Phone Number</label>
               <Input value={formPhone} onChange={e => setFormPhone(e.target.value)} placeholder="024 XXX XXXX" className="h-11" />
             </div>
           </div>
@@ -313,7 +313,7 @@ export function CustomerCRM() {
             <Button variant="ghost" onClick={() => { setIsAdding(false); setEditingId(null); }}>
               Cancel
             </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-8">
+            <Button onClick={handleSave} disabled={isSaving} className="bg-foreground text-background px-8">
               {isSaving ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="h-4 w-4 mr-2" />} 
               {isSaving ? "Saving..." : "Save"}
             </Button>
@@ -324,7 +324,7 @@ export function CustomerCRM() {
       {/* CRM SEGMENTATION FILTER BAR */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {[
-          { id: "all", label: "All Contacts", count: statsCount.all, icon: Users, color: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800", activeColor: "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950" },
+          { id: "all", label: "All Contacts", count: statsCount.all, icon: Users, color: "bg-secondary text-muted-foreground border-border", activeColor: "bg-foreground text-background" },
           { id: "vip", label: "🔥 VIP (5+ Orders)", count: statsCount.vip, icon: Sparkles, color: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20", activeColor: "bg-amber-500 text-white border-amber-500" },
           { id: "slipping", label: "⚠️ Slipping (7d+)", count: statsCount.slipping, icon: AlertTriangle, color: "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20", activeColor: "bg-rose-500 text-white border-rose-500" },
           { id: "inactive", label: "💤 Inactive (14d+)", count: statsCount.inactive, icon: Moon, color: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20", activeColor: "bg-blue-500 text-white border-blue-500" },
@@ -345,7 +345,7 @@ export function CustomerCRM() {
                 <Icon className="h-4.5 w-4.5" />
                 <span className="text-xs font-bold">{seg.label}</span>
               </div>
-              <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                 active 
                   ? "bg-white/20 text-white dark:bg-black/10 dark:text-black" 
                   : "bg-black/5 dark:bg-white/10"
@@ -356,31 +356,31 @@ export function CustomerCRM() {
       </div>
 
       {/* List & Search */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-soft">
+        <div className="p-4 border-b border-border bg-secondary/30">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input 
               value={search} 
               onChange={e => setSearch(e.target.value)} 
               placeholder="Search by name or phone number..." 
-              className="pl-10 h-12 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-base"
+              className="pl-10 h-12 bg-background border-border text-base"
             />
           </div>
         </div>
 
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-400 mb-4" />
-            <p className="text-sm text-slate-500">Loading customers...</p>
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-4" />
+            <p className="text-sm text-muted-foreground">Loading customers...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 text-center px-4">
-            <div className="mx-auto h-16 w-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-              <Users className="h-6 w-6 text-slate-400" />
+            <div className="mx-auto h-16 w-16 bg-secondary rounded-full flex items-center justify-center mb-4">
+              <Users className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="font-bold text-slate-700 dark:text-slate-300">No customers found</h3>
-            <p className="text-sm text-slate-500 mt-1 max-w-sm mx-auto">
+            <h3 className="font-bold text-foreground">No customers found</h3>
+            <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
               {search ? "No matches for your search." : "No customers found in this segment. Segment updates automatically based on purchase history."}
             </p>
             {!search && activeSegment === "all" && (
@@ -390,7 +390,7 @@ export function CustomerCRM() {
             )}
           </div>
         ) : (
-          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="divide-y divide-border">
             {filtered.map(c => {
               // WhatsApp Promo templating
               const storeName = customerStats?.agentProfile?.store_name || "our store";
@@ -401,9 +401,9 @@ export function CustomerCRM() {
               const whatsappUrl = `https://wa.me/${c.phone.replace(/\D/g, "")}?text=${encodeURIComponent(promoText)}`;
 
               return (
-                <div key={c.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                <div key={c.id} className="p-4 sm:px-6 flex items-center justify-between hover:bg-accent transition-colors">
                   <div className="flex items-center gap-4">
-                    <div className="h-11 w-11 rounded-full bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900 dark:to-fuchsia-900 flex items-center justify-center text-violet-700 dark:text-violet-300 font-black text-lg relative">
+                    <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg relative">
                       {c.name.charAt(0).toUpperCase()}
                       {c.segment === "vip" && (
                         <span className="absolute -top-1.5 -right-1 text-xs">👑</span>
@@ -411,23 +411,23 @@ export function CustomerCRM() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-slate-900 dark:text-white">{c.name}</h4>
+                        <h4 className="font-bold text-foreground">{c.name}</h4>
                         {c.segment === "vip" && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-extrabold uppercase">VIP</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[9px] font-bold uppercase">VIP</span>
                         )}
                         {c.segment === "slipping" && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9px] font-extrabold uppercase">Slipping</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[9px] font-bold uppercase">Slipping</span>
                         )}
                         {c.segment === "inactive" && (
-                          <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-extrabold uppercase">Inactive</span>
+                          <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[9px] font-bold uppercase">Inactive</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <p className="text-xs text-slate-500 font-mono font-medium">{c.phone}</p>
-                        <span className="text-slate-300 dark:text-slate-700 text-xs">•</span>
+                        <p className="text-xs text-muted-foreground font-mono font-medium">{c.phone}</p>
+                        <span className="text-border text-xs">•</span>
                         <div className="flex items-center gap-1">
-                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Purchases:</span>
-                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{c.orderCount}</span>
+                          <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">Purchases:</span>
+                          <span className="text-xs font-bold text-foreground">{c.orderCount}</span>
                           {/* Sparkline visualization */}
                           {c.orderCount > 0 && (
                             <div className="flex items-end h-3 ml-1.5 gap-0.5">
@@ -480,7 +480,7 @@ export function CustomerCRM() {
                       variant="ghost" 
                       size="icon" 
                       onClick={() => { setFormName(c.name); setFormPhone(c.phone); setEditingId(c.id); setIsAdding(false); }}
-                      className="text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      className="text-muted-foreground hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30"
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>
@@ -488,7 +488,7 @@ export function CustomerCRM() {
                       variant="ghost" 
                       size="icon" 
                       onClick={() => handleDelete(c.id)}
-                      className="text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
+                      className="text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -504,7 +504,7 @@ export function CustomerCRM() {
       <Dialog open={alertOpen} onOpenChange={setAlertOpen}>
         <DialogContent className="w-[94vw] max-w-sm rounded-[32px] border-border p-6 bg-card text-foreground">
           <DialogHeader>
-            <DialogTitle className="text-left text-lg font-black flex items-center gap-1.5 text-foreground">
+            <DialogTitle className="text-left text-lg font-bold flex items-center gap-1.5 text-foreground">
               <Bell className="h-5 w-5 text-violet-600 animate-bounce" /> Send Customer Alert
             </DialogTitle>
             <DialogDescription className="text-left text-xs text-muted-foreground">

@@ -35,13 +35,13 @@ export function AgentPosTab({ agentProfile }: { agentProfile: any }) {
   return (
     <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft animate-in fade-in duration-300">
       {/* Card Header */}
-      <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-        <h2 className="text-base font-bold text-white transition-all duration-300">{header.title}</h2>
-        <p className="mt-0.5 text-xs text-white/50 transition-all duration-300">{header.desc}</p>
+      <div className="border-b border-border/60 bg-primary/5 px-5 py-4 md:px-6">
+        <h2 className="text-base font-bold text-foreground transition-all duration-300">{header.title}</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground transition-all duration-300">{header.desc}</p>
       </div>
 
       {/* Tab Switcher Headers */}
-      <div className="border-b border-border/40 bg-secondary/5 dark:bg-slate-900/5 p-2 flex gap-1">
+      <div className="border-b border-border/40 bg-secondary/30 p-2 flex gap-1.5">
         {[
           { id: "data", label: "Sell Data", icon: Zap },
           { id: "airtime", label: "Sell Airtime", icon: Smartphone },
@@ -53,13 +53,13 @@ export function AgentPosTab({ agentProfile }: { agentProfile: any }) {
               key={t.id}
               onClick={() => setActiveTab(t.id as any)}
               className={cn(
-                "flex-1 py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 font-bold text-xs transition-all duration-150",
+                "flex-1 py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 font-bold text-xs transition-all duration-200",
                 activeTab === t.id
-                  ? "bg-slate-950 text-white shadow-float border border-slate-800"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/15 dark:hover:bg-slate-900/15"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/80"
               )}
             >
-              <Icon className={cn("h-3.5 w-3.5", activeTab === t.id ? "text-primary" : "text-slate-400")} />
+              <Icon className={cn("h-3.5 w-3.5", activeTab === t.id ? "text-primary-foreground" : "text-muted-foreground")} />
               <span>{t.label}</span>
             </button>
           );

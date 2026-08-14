@@ -107,7 +107,7 @@ const Index = () => {
             to="/dashboard/agent"
             className="group flex w-full items-center gap-4 rounded-3xl border border-primary/20 bg-primary/5 p-5 text-left transition-all hover:border-primary/40 hover:bg-primary/8 hover:shadow-soft"
           >
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl gradient-primary shadow-float">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary shadow-float">
               <Wallet className="h-6 w-6 text-white" />
             </div>
             <div className="flex-1">

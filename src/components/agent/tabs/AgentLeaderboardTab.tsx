@@ -42,9 +42,9 @@ export function AgentLeaderboardTab({ agentProfile }: { agentProfile: any }) {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-xl bg-amber-500/15 px-3.5 py-1 text-amber-600 dark:text-amber-500">
               <Trophy className="h-4 w-4 fill-amber-500/20" />
-              <span className="text-[10px] font-black uppercase tracking-widest">Reseller Championship</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Reseller Championship</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">Agent Leaderboard</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Agent Leaderboard</h2>
             <p className="max-w-md text-xs sm:text-sm text-muted-foreground leading-relaxed">
               Compete with other reselling agents, boost your sales volume, rank up your reseller tier, and unlock high-tier VIP cashback rewards!
             </p>
@@ -52,12 +52,12 @@ export function AgentLeaderboardTab({ agentProfile }: { agentProfile: any }) {
           <div className="flex shrink-0 items-center gap-4 bg-background/40 backdrop-blur-md border border-border/50 rounded-2xl p-4 shadow-soft">
             <div className="text-center px-2">
               <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Your Rank</p>
-              <p className="text-2xl font-black text-amber-500 tabular-nums">#{myRank}</p>
+              <p className="text-2xl font-bold text-amber-500 tabular-nums">#{myRank}</p>
             </div>
             <div className="w-px h-8 bg-border" />
             <div className="text-center px-2">
               <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Reseller Tier</p>
-              <p className={cn("text-sm font-black uppercase", tier.color)}>{tier.name}</p>
+              <p className={cn("text-sm font-bold uppercase", tier.color)}>{tier.name}</p>
             </div>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function AgentLeaderboardTab({ agentProfile }: { agentProfile: any }) {
             </div>
             <div className="h-3 w-full bg-secondary/50 rounded-full overflow-hidden border border-border/40 p-0.5">
               <div 
-                className="h-full rounded-full transition-all duration-1000 gradient-primary relative shadow-glow"
+                className="h-full rounded-full transition-all duration-1000 bg-primary relative shadow-glow"
                 style={{ width: `${progress}%` }}
               >
                 <div className="absolute inset-0 bg-white/20 animate-pulse" />
@@ -106,7 +106,7 @@ export function AgentLeaderboardTab({ agentProfile }: { agentProfile: any }) {
               <h3 className="text-sm font-bold text-foreground">Top Performing Resellers</h3>
               <p className="text-[10px] text-muted-foreground mt-0.5">Ranked by complete Reseller Sales Volume (delivered orders)</p>
             </div>
-            <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-500 flex items-center gap-1">
+            <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" /> Live Stats
             </span>
           </div>
@@ -148,7 +148,7 @@ export function AgentLeaderboardTab({ agentProfile }: { agentProfile: any }) {
                           <div className="font-bold text-foreground">
                             {agent.store_name}{" "}
                             {isMe && (
-                              <span className="ml-1.5 rounded bg-primary/15 px-1.5 py-0.5 text-[8px] font-black uppercase text-primary tracking-wide">
+                              <span className="ml-1.5 rounded bg-primary/15 px-1.5 py-0.5 text-[8px] font-bold uppercase text-primary tracking-wide">
                                 You
                               </span>
                             )}
@@ -158,11 +158,11 @@ export function AgentLeaderboardTab({ agentProfile }: { agentProfile: any }) {
                         <td className="px-5 py-3.5 text-center font-bold tabular-nums text-muted-foreground">
                           {agent.count}
                         </td>
-                        <td className="px-5 py-3.5 text-right font-black tabular-nums text-foreground">
+                        <td className="px-5 py-3.5 text-right font-bold tabular-nums text-foreground">
                           GH₵{agent.volume.toFixed(2)}
                         </td>
                         <td className="px-5 py-3.5 text-center">
-                          <span className={cn("inline-block rounded-md border px-2 py-0.5 text-[9px] font-black uppercase tracking-wider", agentTier.bg, agentTier.color, agentTier.border)}>
+                          <span className={cn("inline-block rounded-md border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider", agentTier.bg, agentTier.color, agentTier.border)}>
                             {agentTier.badge}
                           </span>
                         </td>

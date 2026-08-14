@@ -26,7 +26,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   const cfg = map[status] ?? { bg: "bg-muted text-muted-foreground border-border", dot: "bg-muted-foreground", label: status };
   return (
-    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${cfg.bg}`}>
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${cfg.bg}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${cfg.dot}`} />
       {cfg.label}
     </span>
@@ -213,14 +213,14 @@ export function AdminOrdersTab() {
           { label: "Delivered",     value: delivered,          icon: CheckCircle2, iconBg: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20", valCl: "text-emerald-600 dark:text-emerald-400" },
           { label: "In Progress",   value: inProgress,         icon: Clock,        iconBg: "bg-amber-500/10 text-amber-500 border-amber-500/20", valCl: "text-amber-600 dark:text-amber-400" },
           { label: "Failed",        value: failed,             icon: XCircle,      iconBg: "bg-rose-500/10 text-rose-500 border-rose-500/20", valCl: "text-rose-600 dark:text-rose-400" },
-          { label: "Total Revenue", value: formatGHS(revenue), icon: TrendingUp,   iconBg: "bg-violet-500/10 text-violet-500 border-violet-500/20", valCl: "text-violet-600 dark:text-violet-400" },
+          { label: "Total Revenue", value: formatGHS(revenue), icon: TrendingUp,   iconBg: "bg-primary/10 text-primary border-primary/20", valCl: "text-primary" },
         ].map(({ label, value, icon: Icon, iconBg, valCl }) => (
-          <div key={label} className="relative overflow-hidden rounded-2xl border border-border/40 bg-card/40 p-5 backdrop-blur-md shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-lg transition-all duration-300">
+          <div key={label} className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 shadow-soft hover:-translate-y-1 hover:border-primary/20 hover:shadow-float transition-all duration-300">
             <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl border ${iconBg}`}>
               <Icon className="h-4 w-4" />
             </div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/75">{label}</p>
-            <p className={`mt-1.5 text-xl sm:text-2xl font-black tracking-tight tabular-nums ${valCl}`}>{value}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/75">{label}</p>
+            <p className={`mt-1.5 text-xl sm:text-2xl font-bold tracking-tight tabular-nums ${valCl}`}>{value}</p>
           </div>
         ))}
       </div>
@@ -234,36 +234,36 @@ export function AdminOrdersTab() {
             placeholder="Search phone, name, ref…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full rounded-xl border border-border/60 bg-background/50 pl-9 pr-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all"
+            className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-xs font-semibold text-foreground placeholder:text-muted-foreground/50 outline-none focus:ring-2 focus:ring-primary/20 hover:border-border/80 transition-all"
           />
         </div>
         <div className="flex flex-wrap shrink-0 items-center gap-3">
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="h-10 rounded-xl border border-border/60 bg-background/50 px-3 text-xs font-bold text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
+            className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer"
           >
             <option value="today">Today</option>
             <option value="7d">Last 7 Days</option>
             <option value="30d">Last 30 Days</option>
             <option value="all">All Time</option>
           </select>
-          
-          <div className="flex shrink-0 gap-1 rounded-xl border border-border/50 bg-secondary/40 p-1">
+
+          <div className="flex shrink-0 gap-1 rounded-xl border border-border bg-secondary/40 p-1">
             {FILTERS.map(({ label, value, count }) => (
             <button
               key={value}
               type="button"
               onClick={() => setStatusFilter(value)}
-              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
                 statusFilter === value
-                  ? "bg-background text-foreground shadow-sm font-black"
+                  ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {label}
               {count > 0 && (
-                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-black tabular-nums ${
+                <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums ${
                   statusFilter === value ? "bg-primary/20 text-primary border border-primary/30" : "bg-secondary text-muted-foreground"
                 }`}>
                   {count}
@@ -276,36 +276,36 @@ export function AdminOrdersTab() {
       </div>
 
       {/* Table */}
-      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/25 backdrop-blur-md shadow-soft">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-secondary/40 border border-border/30">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary border border-border">
               <Package className="h-6 w-6 text-muted-foreground/50" />
             </div>
-            <p className="text-sm font-bold text-muted-foreground">No orders found</p>
+            <p className="text-sm font-semibold text-muted-foreground">No orders found</p>
             <p className="mt-1 text-xs text-muted-foreground/60">Try adjusting your search or filter.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             {/* Desktop Table */}
             <table className="hidden w-full text-left md:table text-xs">
-              <thead>
-                <tr className="border-b border-border/40 bg-secondary/20 text-muted-foreground/75">
+              <thead className="bg-secondary/40 text-muted-foreground uppercase tracking-wider font-semibold border-b border-border">
+                <tr>
                   {["Bundle", "Recipient", "Customer", "Revenue", "Status", "When", ""].map((h) => (
-                    <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">{h}</th>
+                    <th key={h} className="px-6 py-4 text-[10px] tracking-widest whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/30">
-                {filtered.map((o: any, i: number) => (
-                  <tr key={o.id} className={`group transition-colors hover:bg-primary/[0.01] ${i % 2 !== 0 ? "bg-secondary/[0.02]" : ""}`}>
+              <tbody className="divide-y divide-border">
+                {filtered.map((o: any) => (
+                  <tr key={o.id} className="group transition-colors hover:bg-accent">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary/60 text-lg leading-none border border-border/30">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-secondary text-lg leading-none border border-border">
                           {o.bundle ? (o.network?.logo_emoji ?? "📦") : (o.notes?.includes("Utility") ? "⚡" : "📱")}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-foreground leading-tight group-hover:text-primary transition-colors">
+                          <p className="text-sm font-semibold text-foreground leading-tight group-hover:text-primary transition-colors">
                             {o.bundle?.size_label ?? (o.notes?.split(" - ")[0] ?? "Order")}
                           </p>
                           <p className="text-[10px] text-muted-foreground/90 font-medium">
@@ -315,24 +315,24 @@ export function AdminOrdersTab() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <code className="rounded-lg bg-secondary/70 border border-border/30 px-2 py-1 text-[11px] font-mono font-semibold text-foreground tracking-tight">
+                      <code className="rounded-lg bg-secondary border border-border px-2 py-1 text-[11px] font-mono font-semibold text-foreground tracking-tight">
                         {o.recipient_phone}
                       </code>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="max-w-[150px] truncate text-sm font-bold text-foreground">
+                      <p className="max-w-[150px] truncate text-sm font-semibold text-foreground">
                         {o.customer?.full_name || o.customer?.email || (
                           <span className="font-normal italic text-muted-foreground/70">Guest</span>
                         )}
                       </p>
                       {o.source && (
-                        <span className="mt-1 inline-block rounded-md bg-secondary/80 border border-border/35 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest text-muted-foreground/80">
+                        <span className="mt-1 inline-block rounded-md bg-secondary border border-border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground/80">
                           {o.source.replace("_", " ")}
                         </span>
                       )}
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
+                      <p className="text-sm font-semibold tabular-nums text-foreground">{formatGHS(o.sell_price)}</p>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col gap-1 items-start">
@@ -345,7 +345,7 @@ export function AdminOrdersTab() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="whitespace-nowrap text-xs font-bold text-foreground">
+                      <p className="whitespace-nowrap text-xs font-semibold text-foreground">
                         {new Intl.DateTimeFormat("en-GH", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", hour12: true }).format(new Date(o.created_at))}
                       </p>
                       <p className="whitespace-nowrap text-[10px] text-muted-foreground/80 font-medium">{timeAgo(o.created_at)}</p>
@@ -356,7 +356,7 @@ export function AdminOrdersTab() {
                           size="sm" variant="outline"
                           disabled={syncingId === o.id}
                           onClick={() => syncOrderStatus(o)}
-                          className="h-8 gap-1.5 rounded-xl border-purple-500/30 bg-purple-500/5 px-3 text-xs font-bold text-purple-400 hover:bg-purple-500 hover:border-purple-500 hover:text-white transition-all shadow-sm"
+                          className="h-8 gap-1.5 rounded-xl border-primary/30 bg-primary/5 px-3 text-xs font-semibold text-primary hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all shadow-sm"
                           title="Fetch live provider status & update database + tracker"
                         >
                           {syncingId === o.id
@@ -369,7 +369,7 @@ export function AdminOrdersTab() {
                               size="sm" variant="outline"
                               disabled={retryId === o.id}
                               onClick={() => retryOrder(o, true)}
-                              className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-bold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all shadow-sm"
+                              className="h-8 gap-1.5 rounded-xl border-emerald-500/30 bg-emerald-500/5 px-3 text-xs font-semibold text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all shadow-sm"
                             >
                               {retryId === o.id
                                 ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -379,7 +379,7 @@ export function AdminOrdersTab() {
                               size="sm" variant="outline"
                               disabled={retryId === o.id}
                               onClick={() => retryOrder(o, false)}
-                              className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-bold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
+                              className="h-8 gap-1.5 rounded-xl border-rose-500/30 bg-rose-500/5 px-3 text-xs font-semibold text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all shadow-sm"
                             >
                               {retryId === o.id
                                 ? <Loader2 className="h-3 w-3 animate-spin" />

@@ -98,7 +98,7 @@ export function AgentTransactionsTab({ agentId }: { agentId: string }) {
               <Icon className={cn("h-4 w-4", iconCl)} />
             </div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">{label}</p>
-            <p className={cn("mt-1 text-xl font-black tabular-nums", valCl)}>{value}</p>
+            <p className={cn("mt-1 text-xl font-bold tabular-nums", valCl)}>{value}</p>
           </div>
         ))}
       </div>
@@ -124,7 +124,7 @@ export function AgentTransactionsTab({ agentId }: { agentId: string }) {
               className={cn(
                 "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap",
                 statusFilter === value
-                  ? "gradient-primary text-white shadow-sm"
+                  ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
@@ -199,7 +199,7 @@ export function AgentTransactionsTab({ agentId }: { agentId: string }) {
 
                     <td className="px-5 py-4">
                       <div className="flex flex-col items-start gap-1">
-                        <p className="text-sm font-black tabular-nums text-foreground leading-none">{formatGHS(o.sell_price)}</p>
+                        <p className="text-sm font-bold tabular-nums text-foreground leading-none">{formatGHS(o.sell_price)}</p>
                         {o.payment_reference?.startsWith("WP-") && (
                           <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider">
                             <Wallet className="h-2.5 w-2.5" /> Wallet
@@ -210,7 +210,7 @@ export function AgentTransactionsTab({ agentId }: { agentId: string }) {
 
                     <td className="px-5 py-4">
                       {Number(o.agent_profit) > 0 ? (
-                        <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-black text-emerald-600 dark:text-emerald-400">
+                        <div className="inline-flex items-center gap-1 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                           <TrendingUp className="h-3 w-3" />
                           +{formatGHS(o.agent_profit)}
                         </div>

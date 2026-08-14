@@ -69,9 +69,9 @@ export function AgentSettingsTab({ agentProfile }: { agentProfile: any }) {
 
   return (
     <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft animate-in fade-in duration-300">
-      <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-        <h2 className="text-base font-bold text-white">Store Settings</h2>
-        <p className="mt-0.5 text-xs text-white/50">Customize how your public store looks and feels.</p>
+      <div className="border-b border-border/60 bg-primary/5 px-5 py-4 md:px-6">
+        <h2 className="text-base font-bold text-foreground">Store Settings</h2>
+        <p className="mt-0.5 text-xs text-muted-foreground">Customize how your public store looks and feels.</p>
       </div>
 
       <div className="p-5 md:p-6">
@@ -195,7 +195,7 @@ export function AgentSettingsTab({ agentProfile }: { agentProfile: any }) {
           </div>
           
           <div className="space-y-1.5 md:col-span-2 pt-2 border-t border-border/40">
-            <h4 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
               <Megaphone className="h-4 w-4 text-rose-500 animate-pulse" /> Top 50 Promo Banner Alert
             </h4>
             <p className="text-[11px] text-muted-foreground">Broadcast high-converting promo alerts at the very top of your storefront page.</p>
@@ -222,7 +222,7 @@ export function AgentSettingsTab({ agentProfile }: { agentProfile: any }) {
           </div>
 
           <div className="space-y-1.5 md:col-span-2 pt-4 border-t border-border/40">
-            <h4 className="text-xs font-black text-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
               <Paintbrush className="h-4 w-4 text-violet-500" /> Premium Theme & Aesthetics Builder
             </h4>
             <p className="text-[11px] text-muted-foreground">Select layouts, custom typographies, and dark modes to command premium reseller rates.</p>
@@ -283,7 +283,7 @@ export function AgentSettingsTab({ agentProfile }: { agentProfile: any }) {
                     )}
                     style={font.style}
                   >
-                    <span className="text-sm font-extrabold block text-foreground">Aa</span>
+                    <span className="text-sm font-bold block text-foreground">Aa</span>
                     <span className="text-xs font-bold block text-foreground mt-1">{font.label}</span>
                     <span className="text-[9px] text-muted-foreground mt-0.5 block leading-tight">{font.desc}</span>
                   </button>
@@ -338,7 +338,7 @@ export function AgentSettingsTab({ agentProfile }: { agentProfile: any }) {
           </div>
         </div>
 
-        <Button type="button" className="mt-6 h-11 rounded-xl px-8 font-bold gradient-primary shadow-float" disabled={saving} onClick={save}>
+        <Button type="button" className="mt-6 h-11 rounded-xl px-8 font-bold bg-primary text-primary-foreground shadow-float" disabled={saving} onClick={save}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Settings"}
         </Button>
       </div>

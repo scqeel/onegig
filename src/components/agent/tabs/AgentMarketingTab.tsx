@@ -465,7 +465,7 @@ export function AgentMarketingTab({ agentProfile }: { agentProfile: any }) {
                             <span className="text-sm shrink-0">{b.network?.logo_emoji}</span>
                             <span>{b.network?.name} {b.size_label}</span>
                           </div>
-                          <span className="font-extrabold text-foreground">GH₵{b.sellPrice.toFixed(2)}</span>
+                          <span className="font-bold text-foreground">GH₵{b.sellPrice.toFixed(2)}</span>
                         </button>
                       );
                     })}
@@ -475,7 +475,7 @@ export function AgentMarketingTab({ agentProfile }: { agentProfile: any }) {
 
               <Button
                 onClick={handleDownload}
-                className="w-full h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-slate-900 font-extrabold shadow-lg"
+                className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 font-bold shadow-lg"
               >
                 Download Poster (PNG)
               </Button>
@@ -490,7 +490,7 @@ export function AgentMarketingTab({ agentProfile }: { agentProfile: any }) {
               ref={canvasRef}
               width={1080}
               height={1920}
-              className="w-full h-full bg-slate-950"
+              className="w-full h-full bg-card"
             />
           </div>
         </div>
@@ -498,11 +498,11 @@ export function AgentMarketingTab({ agentProfile }: { agentProfile: any }) {
 
       {/* ── BROADCASTER COMMAND CENTER ── */}
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <div className="border-b border-border/60 bg-primary/5 px-5 py-4 md:px-6">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
             <Megaphone className="h-4.5 w-4.5 text-rose-500 animate-pulse" /> Live Storefront Broadcaster
           </h2>
-          <p className="mt-0.5 text-xs text-white/50">Send real-time alerts and promotional push notifications instantly to all registered storefront buyers.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Send real-time alerts and promotional push notifications instantly to all registered storefront buyers.</p>
         </div>
 
         <div className="p-5 md:p-6 bg-card text-foreground">
@@ -562,7 +562,7 @@ export function AgentMarketingTab({ agentProfile }: { agentProfile: any }) {
             <Button
               type="submit"
               disabled={isBroadcasting || !broadcastTitle.trim() || !broadcastMessage.trim()}
-              className="mt-2 h-11 px-8 rounded-xl font-bold gradient-primary shadow-float flex items-center justify-center gap-2"
+              className="mt-2 h-11 px-8 rounded-xl font-bold bg-primary text-primary-foreground shadow-float flex items-center justify-center gap-2"
             >
               {isBroadcasting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Megaphone className="h-4 w-4" />}
               {isBroadcasting ? "Broadcasting Alert..." : "Send Bulk Broadcast Announcement"}
@@ -573,11 +573,11 @@ export function AgentMarketingTab({ agentProfile }: { agentProfile: any }) {
 
       {/* ── LIVE ORDER PROOF WIDGET ── */}
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+        <div className="border-b border-border/60 bg-primary/5 px-5 py-4 md:px-6">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
             <Activity className="h-4.5 w-4.5 text-indigo-400" /> Live Order Proof Widget
           </h2>
-          <p className="mt-0.5 text-xs text-white/50">Build customer trust on your external website or blog by showing live MTN data delivery proofs.</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">Build customer trust on your external website or blog by showing live MTN data delivery proofs.</p>
         </div>
 
         <div className="p-5 md:p-6 bg-card text-foreground space-y-6">

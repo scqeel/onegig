@@ -23,26 +23,26 @@ function Metric({
   title: string;
   value: string;
   icon: React.ReactNode;
-  variant: "indigo" | "amber" | "emerald" | "rose";
+  variant: "primary" | "amber" | "emerald" | "rose";
   helper?: string;
 }) {
   const styles = {
-    indigo: "border-indigo-500/20 bg-indigo-500/5 text-indigo-500",
+    primary: "border-primary/20 bg-primary/5 text-primary",
     amber: "border-amber-500/20 bg-amber-500/5 text-amber-500",
     emerald: "border-emerald-500/20 bg-emerald-500/5 text-emerald-500",
     rose: "border-rose-500/20 bg-rose-500/5 text-rose-500",
   };
 
   return (
-    <div className="relative overflow-hidden rounded-[2rem] border border-border/45 bg-card/40 p-5 sm:p-6 backdrop-blur-md shadow-soft hover:shadow-lg transition-all duration-300">
+    <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-soft hover:shadow-float transition-all duration-300">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-bold text-muted-foreground">{title}</span>
-        <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl border shadow-inner", styles[variant])}>
+        <span className="text-xs font-semibold text-muted-foreground">{title}</span>
+        <div className={cn("flex h-10 w-10 items-center justify-center rounded-2xl border", styles[variant])}>
           {icon}
         </div>
       </div>
       <div className="mt-4">
-        <p className="text-2xl sm:text-3xl font-black tracking-tight text-foreground tabular-nums">{value}</p>
+        <p className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground tabular-nums">{value}</p>
         {helper && <p className="mt-1 text-[11px] font-semibold text-muted-foreground/80">{helper}</p>}
       </div>
     </div>
@@ -174,36 +174,36 @@ export function AdminOverviewTab() {
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Hero banner */}
-      <div className="relative overflow-hidden rounded-[2rem] border border-border/40 bg-gradient-to-br from-card/60 via-card/30 to-transparent p-6 sm:p-8 backdrop-blur-md shadow-soft">
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-soft">
         <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between z-10">
           <div>
             <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3.5 py-1">
               <Shield className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary">Admin Console</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-primary">Admin Console</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-foreground">Platform Overview</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Platform Overview</h2>
             <p className="mt-1 text-xs sm:text-sm text-muted-foreground">Real-time metrics across the OneGig ecosystem.</p>
           </div>
           <div className="flex flex-col gap-4 sm:items-end">
             <div className="flex items-center gap-3">
               <Link to="/admin/refunds">
-                <Button size="sm" className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-full shadow-lg shadow-purple-500/20">
+                <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs rounded-full">
                   <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Refund Control Center
                 </Button>
               </Link>
               <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-1.5 rounded-full">
                 <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">All Systems Operational</span>
+                <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">All Systems Operational</span>
               </div>
             </div>
             <div className="flex gap-6 sm:gap-8">
               <div className="text-left sm:text-right">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Today's Orders</p>
-                <p className="text-lg sm:text-xl font-black text-foreground tabular-nums">{data?.todayOrders ?? 0}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Today's Orders</p>
+                <p className="text-lg sm:text-xl font-bold text-foreground tabular-nums">{data?.todayOrders ?? 0}</p>
               </div>
               <div className="text-left sm:text-right">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Today's Revenue</p>
-                <p className="text-lg sm:text-xl font-black text-foreground tabular-nums">{formatGHS(data?.todayRevenue ?? 0)}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Today's Revenue</p>
+                <p className="text-lg sm:text-xl font-bold text-foreground tabular-nums">{formatGHS(data?.todayRevenue ?? 0)}</p>
               </div>
             </div>
           </div>
@@ -212,7 +212,7 @@ export function AdminOverviewTab() {
 
       {/* Metric cards */}
       <div className="grid grid-cols-2 gap-3 md:gap-4 xl:grid-cols-4">
-        <Metric title="Total Users"   value={String(data?.totalUsers ?? 0)}    icon={<Users className="h-5 w-5" />}        variant="indigo"  />
+        <Metric title="Total Users"   value={String(data?.totalUsers ?? 0)}    icon={<Users className="h-5 w-5" />}        variant="primary" />
         <Metric title="Active Agents" value={String(data?.totalAgents ?? 0)}   icon={<UserCog className="h-5 w-5" />}      variant="amber"   />
         <Metric title="Total Orders"  value={String(data?.totalOrders ?? 0)}   icon={<ShoppingCart className="h-5 w-5" />} variant="emerald" />
         <Metric title="Total Revenue" value={formatGHS(data?.revenue ?? 0)}    icon={<DollarSign className="h-5 w-5" />}   variant="rose"    helper={`30-day: ${formatGHS(data?.revenue30d ?? 0)}`} />
@@ -220,23 +220,23 @@ export function AdminOverviewTab() {
 
       {/* Activity feed + quick stats */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/40 backdrop-blur-sm lg:col-span-2">
-          <div className="flex items-center justify-between border-b border-border/40 bg-card/60 px-6 py-4">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card lg:col-span-2">
+          <div className="flex items-center justify-between border-b border-border bg-secondary/40 px-6 py-4">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
-              <h3 className="text-sm font-bold">Recent Activity</h3>
+              <h3 className="text-sm font-semibold">Recent Activity</h3>
             </div>
-            <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-500">
+            <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-500">
               Live
             </span>
           </div>
-          <div className="divide-y divide-border/30">
+          <div className="divide-y divide-border">
             {(data?.recentOrders ?? []).length === 0 ? (
               <p className="p-10 text-center text-sm text-muted-foreground">No recent activity.</p>
             ) : (
               (data?.recentOrders ?? []).map((o: any) => (
-                <div key={o.id} className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-accent/20">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary/60 text-lg leading-none">
+                <div key={o.id} className="flex items-center gap-4 px-6 py-3.5 transition-colors hover:bg-accent">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-secondary text-lg leading-none">
                     {o.network?.logo_emoji ?? "📦"}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -249,7 +249,7 @@ export function AdminOverviewTab() {
                     </p>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-sm font-black tabular-nums text-foreground">{formatGHS(o.sell_price)}</span>
+                    <span className="text-sm font-bold tabular-nums text-foreground">{formatGHS(o.sell_price)}</span>
                     <ActivityStatusDot status={o.status} />
                   </div>
                 </div>
@@ -259,14 +259,14 @@ export function AdminOverviewTab() {
         </div>
 
         <div className="flex flex-col gap-4">
-          <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/40 backdrop-blur-sm">
-            <div className="border-b border-border/40 bg-card/60 px-5 py-4">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="border-b border-border bg-secondary/40 px-5 py-4">
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-amber-500" />
-                <h3 className="text-sm font-bold">Platform Stats</h3>
+                <h3 className="text-sm font-semibold">Platform Stats</h3>
               </div>
             </div>
-            <div className="divide-y divide-border/30">
+            <div className="divide-y divide-border">
               {[
                 { label: "Orders Delivered", value: String(data?.delivered ?? 0),        color: "text-emerald-500" },
                 { label: "Orders Failed",     value: String(data?.failed ?? 0),           color: "text-rose-500"   },
@@ -280,16 +280,16 @@ export function AdminOverviewTab() {
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex items-center justify-between px-5 py-3.5">
                   <span className="text-xs text-muted-foreground">{label}</span>
-                  <span className={cn("text-sm font-black tabular-nums", color)}>{value}</span>
+                  <span className={cn("text-sm font-bold tabular-nums", color)}>{value}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-4 rounded-[2rem] border border-border/40 bg-card/30 backdrop-blur-md p-6 shadow-soft hover:shadow-lg transition-all duration-300">
+          <div className="flex flex-1 flex-col gap-4 rounded-2xl border border-border bg-card p-6 shadow-soft hover:shadow-float transition-all duration-300">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-4.5 w-4.5 text-primary" />
-              <h3 className="text-sm font-bold text-foreground">Revenue (Last 7 Days)</h3>
+              <h3 className="text-sm font-semibold text-foreground">Revenue (Last 7 Days)</h3>
             </div>
             <div className="h-48 w-full mt-2">
               <ResponsiveContainer width="100%" height="100%">

@@ -189,7 +189,7 @@ export function DashboardLayout({
       {/* ── Mobile Bottom Navigation (Modern Floating Pill) ── */}
       {sidebarItems.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
-          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-border bg-card/95 backdrop-blur-md px-4 pointer-events-auto">
+          <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-border bg-card px-4 pointer-events-auto">
             {sidebarItems.slice(0, 4).map((item) => {
               const isActive = item.active;
               const content = (

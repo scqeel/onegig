@@ -234,7 +234,7 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
             </h2>
             <p className="mt-0.5 text-xs text-white/50">Monitor storefront traffic, conversion funnel, and live visitor activity.</p>
           </div>
-          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-500 flex items-center gap-1">
+          <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Realtime
           </span>
         </div>
@@ -245,28 +245,28 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
               <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 <Users className="h-3.5 w-3.5 text-primary" /> Unique Visitors
               </div>
-              <p className="mt-2 text-2xl font-black text-foreground tabular-nums">{loadingAnalytics ? "..." : totalVisitors}</p>
+              <p className="mt-2 text-2xl font-bold text-foreground tabular-nums">{loadingAnalytics ? "..." : totalVisitors}</p>
             </div>
             
             <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
               <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 <Eye className="h-3.5 w-3.5 text-blue-500" /> Total Page Views
               </div>
-              <p className="mt-2 text-2xl font-black text-foreground tabular-nums">{loadingAnalytics ? "..." : totalViews}</p>
+              <p className="mt-2 text-2xl font-bold text-foreground tabular-nums">{loadingAnalytics ? "..." : totalViews}</p>
             </div>
 
             <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
               <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 <ShoppingCart className="h-3.5 w-3.5 text-amber-500" /> Checkout Started
               </div>
-              <p className="mt-2 text-2xl font-black text-foreground tabular-nums">{loadingAnalytics ? "..." : totalCheckouts}</p>
+              <p className="mt-2 text-2xl font-bold text-foreground tabular-nums">{loadingAnalytics ? "..." : totalCheckouts}</p>
             </div>
 
             <div className="p-4 rounded-2xl bg-secondary/30 border border-border/40">
               <div className="flex items-center gap-2 text-muted-foreground text-xs font-semibold uppercase tracking-wider">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" /> Conversion Rate
               </div>
-              <p className="mt-2 text-2xl font-black text-emerald-600 dark:text-emerald-400 tabular-nums">{loadingAnalytics ? "..." : `${checkoutConversion}%`}</p>
+              <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{loadingAnalytics ? "..." : `${checkoutConversion}%`}</p>
             </div>
           </div>
 
@@ -281,7 +281,7 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
                   <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">1. Awareness</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-foreground tabular-nums">{totalViews}</p>
+                  <p className="text-2xl font-bold text-foreground tabular-nums">{totalViews}</p>
                   <p className="text-xs text-muted-foreground">Storefront Page Views</p>
                 </div>
                 <div className="mt-4 text-[10px] font-bold text-blue-500">100% Baseline</div>
@@ -299,7 +299,7 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">2. Intent</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-foreground tabular-nums">{totalCheckouts}</p>
+                  <p className="text-2xl font-bold text-foreground tabular-nums">{totalCheckouts}</p>
                   <p className="text-xs text-muted-foreground">Checkout Initiations</p>
                 </div>
                 <div className="mt-4 text-[10px] font-bold text-amber-500">
@@ -319,7 +319,7 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">3. Purchase</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-foreground tabular-nums">{totalSuccesses}</p>
+                  <p className="text-2xl font-bold text-foreground tabular-nums">{totalSuccesses}</p>
                   <p className="text-xs text-muted-foreground">Successful Orders</p>
                 </div>
                 <div className="mt-4 text-[10px] font-bold text-emerald-500">

@@ -24,7 +24,7 @@ export function BottomSheet({ open, onOpenChange, title, description, children, 
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className={`rounded-t-3xl border-t border-border/60 p-0 ${heightCls} overflow-hidden glass`}
+        className={`rounded-t-3xl border-t border-border/60 p-0 ${heightCls} overflow-hidden bg-background`}
       >
         <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-muted-foreground/20" />
         {(title || description) && (

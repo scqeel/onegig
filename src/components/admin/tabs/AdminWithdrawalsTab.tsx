@@ -100,12 +100,12 @@ export function AdminWithdrawalsTab() {
     return (
       <div className="space-y-4">
         <Skeleton className="h-20 w-full" />
-        <div className="overflow-hidden rounded-3xl border border-border/40 bg-card/30">
-          <div className="border-b border-border/40 p-6">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="border-b border-border p-6">
             <Skeleton className="mb-2 h-6 w-40" />
             <Skeleton className="h-4 w-56" />
           </div>
-          <div className="divide-y divide-border/40">
+          <div className="divide-y divide-border">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="flex items-center gap-4 p-6">
                 <Skeleton className="h-12 w-12 shrink-0" />
@@ -129,33 +129,33 @@ export function AdminWithdrawalsTab() {
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Pending banner */}
       {pending.length > 0 && (
-        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between rounded-[2rem] border border-amber-500/25 bg-amber-500/10 px-6 py-5 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row gap-4 items-center justify-between rounded-2xl border border-amber-500/25 bg-amber-500/10 px-6 py-5">
           <div className="flex items-center gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500/15 border border-amber-500/20">
               <Wallet className="h-5 w-5 text-amber-500 animate-pulse" />
             </div>
             <div>
-              <p className="text-sm font-black text-amber-600 dark:text-amber-400">
+              <p className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                 {pending.length} pending withdrawal{pending.length > 1 ? "s" : ""} awaiting approval
               </p>
               <p className="text-xs font-semibold text-amber-500/80 mt-0.5">Review and mark each as paid once transferred.</p>
             </div>
           </div>
           <div className="text-left sm:text-right">
-            <p className="text-[10px] font-black uppercase tracking-widest text-amber-500/80">Total Pending</p>
-            <p className="text-2xl font-black tabular-nums text-amber-600 dark:text-amber-400 mt-0.5">{formatGHS(pendingTotal)}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-amber-500/80">Total Pending</p>
+            <p className="text-2xl font-bold tabular-nums text-amber-600 dark:text-amber-400 mt-0.5">{formatGHS(pendingTotal)}</p>
           </div>
         </div>
       )}
 
-      <div className="overflow-hidden rounded-[2rem] border border-border/45 bg-card/30 backdrop-blur-md shadow-soft">
-        <div className="border-b border-border/40 bg-card/50 p-6">
-          <h2 className="text-xl font-black tracking-tight text-foreground">Withdrawal Requests</h2>
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
+        <div className="border-b border-border bg-card p-6">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">Withdrawal Requests</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Manage and process agent payout requests.</p>
         </div>
-        <div className="divide-y divide-border/30">
+        <div className="divide-y divide-border">
           {(data ?? []).map((w: any) => (
-            <div key={w.id} className="group p-6 transition-all hover:bg-primary/[0.015]">
+            <div key={w.id} className="group p-6 transition-all hover:bg-accent">
               <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 group-hover:scale-105 transition-transform duration-300">
@@ -171,8 +171,8 @@ export function AdminWithdrawalsTab() {
                 </div>
 
                 <div className="flex flex-col items-start md:items-end gap-1.5">
-                  <p className="text-2xl font-black tracking-tighter text-foreground tabular-nums">{formatGHS(w.amount)}</p>
-                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/80">
+                  <p className="text-2xl font-bold tracking-tighter text-foreground tabular-nums">{formatGHS(w.amount)}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
                     <span className="rounded-md bg-secondary/80 border border-border/40 px-2 py-0.5">{w.momo_network}</span>
                     <span className="font-mono">{w.momo_number}</span>
                     <span className="hidden opacity-30 md:inline">|</span>
@@ -184,7 +184,7 @@ export function AdminWithdrawalsTab() {
                       </span>
                     ) : verifiedNames[w.id] ? (
                       <span className={cn(
-                        "rounded-full px-2 py-0.5 border text-[9px] font-black leading-none",
+                        "rounded-full px-2 py-0.5 border text-[9px] font-bold leading-none",
                         verifiedNames[w.id] === "Not Found" || verifiedNames[w.id] === "Error"
                           ? "border-rose-500/20 bg-rose-500/10 text-rose-500"
                           : "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
@@ -206,7 +206,7 @@ export function AdminWithdrawalsTab() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-4 md:pt-0 border-t border-border/30 md:border-0 justify-between md:justify-start w-full md:w-auto">
-                  <div className={`rounded-xl border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${w.status === "paid" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-amber-500/20 bg-amber-500/10 text-amber-500"}`}>
+                  <div className={`rounded-xl border px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest ${w.status === "paid" ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500" : "border-amber-500/20 bg-amber-500/10 text-amber-500"}`}>
                     {w.status}
                   </div>
                   <Button

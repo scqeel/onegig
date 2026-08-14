@@ -103,7 +103,7 @@ export function AgentWalletTab({ userId }: { userId: string }) {
               <Input className="h-11 rounded-xl" placeholder="Name on MoMo account" value={momoName} onChange={(e) => setMomoName(e.target.value)} />
             </div>
           </div>
-          <Button type="button" className="mt-5 h-11 rounded-xl px-8 font-bold gradient-primary shadow-float" disabled={busy} onClick={requestWithdrawal}>
+          <Button type="button" className="mt-5 h-11 rounded-xl px-8 font-bold bg-primary text-primary-foreground shadow-float" disabled={busy} onClick={requestWithdrawal}>
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request Withdrawal"}
           </Button>
         </div>

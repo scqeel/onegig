@@ -57,7 +57,7 @@ export default function SubAgentDashboard() {
 
   const initial = agentProfile?.store_name?.[0]?.toUpperCase() ?? "A";
   const parentInitial = parentAgent?.store_name?.[0]?.toUpperCase() ?? "A";
-  const brandColor = parentAgent?.store_brand_color || "#7c3aed";
+  const brandColor = parentAgent?.store_brand_color || "hsl(var(--primary))";
   const storeName = parentAgent?.store_name || "Data Platform";
   const isSubAgent = !!agentProfile?.parent_agent_id;
 
@@ -91,7 +91,7 @@ export default function SubAgentDashboard() {
   return (
     <div className="min-h-dvh bg-background">
       {/* ── Sticky header ── */}
-      <header className="sticky top-0 z-30 border-b border-border/60 bg-white/90 backdrop-blur-sm dark:bg-background/90">
+      <header className="sticky top-0 z-30 border-b border-border/60 bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-3">
             {parentAgent?.store_logo_url ? (
@@ -170,22 +170,21 @@ export default function SubAgentDashboard() {
         <div className="grid gap-5 lg:grid-cols-[220px_minmax(0,1fr)]">
 
           {/* ── Sidebar ── */}
-          <aside className="sticky top-20 hidden h-fit overflow-hidden rounded-3xl border border-border/60 bg-card shadow-float lg:flex lg:flex-col">
+          <aside className="sticky top-20 hidden h-fit overflow-hidden rounded-2xl border border-border/60 bg-card shadow-float lg:flex lg:flex-col">
             {/* Agent profile header */}
-            <div className="relative overflow-hidden p-4" style={{ backgroundColor: '#080c1a' }}>
-              <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full blur-2xl" style={{ backgroundColor: brandColor, opacity: 0.2 }} />
+            <div className="dark relative overflow-hidden bg-background p-4">
               <div className="relative flex items-center gap-3">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-soft" style={{ backgroundColor: brandColor }}>
                   {initial}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-white">{agentProfile.store_name}</p>
-                  <p className="truncate text-[10px] text-white/40">/store/{agentProfile.store_slug}</p>
+                  <p className="truncate text-sm font-bold text-foreground">{agentProfile.store_name}</p>
+                  <p className="truncate text-[10px] text-muted-foreground">/store/{agentProfile.store_slug}</p>
                 </div>
               </div>
               <div className="relative mt-3 flex items-center gap-1.5">
-                <span className="flex h-1.5 w-1.5 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-[10px] font-bold text-green-400">Active Agent</span>
+                <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-[10px] font-bold text-emerald-400">Active Agent</span>
               </div>
             </div>
 
@@ -258,7 +257,7 @@ export default function SubAgentDashboard() {
 
       {/* ── Mobile bottom bar (Modern Floating Pill) ── */}
       <nav className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
-        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-slate-200/50 bg-white/95 px-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-900/90 pointer-events-auto transition-all">
+        <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-border bg-card px-4 shadow-float pointer-events-auto transition-all">
           {[
             { value: "buy", label: "Buy Data", icon: <Signal className="h-5 w-5" /> },
             { value: "store", label: "My Store", icon: <Store className="h-5 w-5" /> },
@@ -272,7 +271,7 @@ export default function SubAgentDashboard() {
                 onClick={() => setTab(t.value as AgentTab)}
                 className={cn(
                   "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300",
-                  active ? "font-bold" : "text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                  active ? "font-bold" : "text-muted-foreground hover:text-foreground"
                 )}
                 style={active ? { color: brandColor } : {}}
               >
@@ -290,15 +289,15 @@ export default function SubAgentDashboard() {
               <button
                 type="button"
                 onClick={(e) => e.currentTarget.blur()}
-                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-slate-400 dark:text-slate-500 hover:text-slate-900 dark:hover:text-white transition-all duration-300"
+                className="relative flex flex-1 flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground transition-all duration-300"
               >
                 <Menu className="h-5 w-5" />
                 <span className="text-[10px] font-semibold">Menu</span>
               </button>
             </DrawerTrigger>
-            <DrawerContent className="bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-t-[32px]">
-              <DrawerHeader className="border-b border-slate-100 dark:border-slate-800 pb-4">
-                <DrawerTitle className="text-left text-lg font-black tracking-tight">All Tools</DrawerTitle>
+            <DrawerContent className="bg-background border-border rounded-t-2xl">
+              <DrawerHeader className="border-b border-border pb-4">
+                <DrawerTitle className="text-left text-lg font-bold tracking-tight">All Tools</DrawerTitle>
                 <DrawerDescription className="sr-only">Access all dashboard tools and settings</DrawerDescription>
               </DrawerHeader>
               <div className="p-4 grid grid-cols-3 gap-4 pb-12">
@@ -314,15 +313,15 @@ export default function SubAgentDashboard() {
                       }}
                       className={cn(
                         "flex flex-col items-center gap-2 rounded-2xl p-4 transition-all duration-300",
-                        active 
-                          ? "text-white shadow-lg" 
-                          : "bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-100 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        active
+                          ? "text-white"
+                          : "bg-secondary text-muted-foreground border border-border hover:bg-accent"
                       )}
                       style={active ? { backgroundColor: brandColor, boxShadow: `0 8px 16px ${brandColor}40` } : {}}
                     >
                       <span className={cn(
                         "flex h-10 w-10 items-center justify-center rounded-xl transition-all",
-                        active ? "bg-white/20" : "bg-white dark:bg-slate-950"
+                        active ? "bg-white/20" : "bg-background"
                       )}>
                         {t.icon}
                       </span>

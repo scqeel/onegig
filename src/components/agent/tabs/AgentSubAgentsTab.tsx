@@ -163,9 +163,9 @@ export function AgentSubAgentsTab({ agentProfile }: { agentProfile: any }) {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-          <h2 className="text-base font-bold text-white">Sub-Agents</h2>
-          <p className="mt-0.5 text-xs text-white/50">Invite and manage your network of sub-agents.</p>
+        <div className="border-b border-border/60 bg-primary/5 px-5 py-4 md:px-6">
+          <h2 className="text-base font-bold text-foreground">Sub-Agents</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">Invite and manage your network of sub-agents.</p>
         </div>
         <div className="p-5 md:p-6 space-y-6">
           <div className="space-y-2">
@@ -235,9 +235,9 @@ export function AgentSubAgentsTab({ agentProfile }: { agentProfile: any }) {
       <Dialog open={!!selectedSubAgent} onOpenChange={(open) => { if (!open) setSelectedSubAgent(null); }}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-black text-foreground">Configure Wholesale Overrides</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-foreground">Configure Wholesale Overrides</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground">
-              Set custom bundle wholesale costs for <span className="font-extrabold text-foreground">{selectedSubAgent?.store_name}</span>.
+              Set custom bundle wholesale costs for <span className="font-bold text-foreground">{selectedSubAgent?.store_name}</span>.
               Leaving an override empty restores standard pricing (sub-agent pays standard admin base rates).
             </DialogDescription>
           </DialogHeader>
@@ -292,7 +292,7 @@ export function AgentSubAgentsTab({ agentProfile }: { agentProfile: any }) {
                 <Button 
                   disabled={savingOverrides} 
                   onClick={saveOverrides}
-                  className="h-10 px-6 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold"
+                  className="h-10 px-6 rounded-xl bg-primary text-primary-foreground font-bold hover:bg-primary/90"
                 >
                   {savingOverrides ? "Saving..." : "Save Wholesale Rates"}
                 </Button>

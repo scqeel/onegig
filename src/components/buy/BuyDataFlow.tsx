@@ -146,7 +146,7 @@ export function BuyDataFlow({
   onSuccess,
 }: Props) {
   const nav = useNavigate();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const { data: settings } = useSettings();
   const activeGateway = settings?.active_payment_gateway || "paystack";
   console.log("[BuyDataFlow] activeGateway resolved to:", activeGateway);

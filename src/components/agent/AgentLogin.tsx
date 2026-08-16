@@ -23,26 +23,58 @@ export function AgentLogin({ storeName, onClose }: Props) {
     
     setLoading(true);
     try {
-      const isPhone = /^[0-9+() -]{9,}$/.test(identifier.trim());
+      const trimmedId = identifier.trim();
+      const isPhone = /^[0-9+() -]{9,}$/.test(trimmedId);
       let finalPayload: any = { password };
+      let phoneNum = "";
 
       if (isPhone) {
-        let p = identifier.replace(/[^0-9+]/g, "");
+        let p = trimmedId.replace(/[^0-9+]/g, "");
         if (p.startsWith("0")) p = "+233" + p.substring(1);
         else if (p.startsWith("233")) p = "+" + p;
         else if (!p.startsWith("+")) p = "+233" + p;
+        phoneNum = p;
         finalPayload.phone = p;
       } else {
-        finalPayload.email = identifier.trim().toLowerCase();
+        finalPayload.email = trimmedId.toLowerCase();
       }
 
-      const { error } = await supabase.auth.signInWithPassword(finalPayload);
+      let res = await supabase.auth.signInWithPassword(finalPayload);
 
-      if (error) throw error;
+      // Fallback: If phone login failed (e.g. user registered with email), look up email by phone
+      if (res.error && isPhone && phoneNum) {
+        const rawDigits = trimmedId.replace(/\D/g, "");
+        const { data: agentProf } = await supabase
+          .from("agent_profiles")
+          .select("email")
+          .or(`phone.eq.${phoneNum},phone.eq.${rawDigits}`)
+          .maybeSingle();
+
+        let emailToTry = agentProf?.email;
+        if (!emailToTry) {
+          const { data: userProf } = await supabase
+            .from("profiles")
+            .select("email")
+            .or(`phone.eq.${phoneNum},phone.eq.${rawDigits}`)
+            .maybeSingle();
+          if (userProf?.email) emailToTry = userProf.email;
+        }
+
+        if (emailToTry) {
+          res = await supabase.auth.signInWithPassword({ email: emailToTry, password });
+        }
+      }
+
+      if (res.error) {
+        const errorText = res.error.message.includes("Invalid login credentials")
+          ? "Invalid email/phone or password. Please verify your credentials or sign up."
+          : res.error.message;
+        throw new Error(errorText);
+      }
+
       toast({ title: "Welcome back!", description: "Accessing Agent Dashboard..." });
-      // The auth context will update and AgentStore will automatically show the dashboard
     } catch (e: any) {
-      toast({ title: "Login Failed", description: e.message, variant: "destructive" });
+      toast({ title: "Login Failed", description: e.message || "Invalid login credentials", variant: "destructive" });
     } finally {
       setLoading(false);
     }

@@ -147,9 +147,37 @@ export default function AuthPage() {
     if (siMethod === "email") {
       if (!siEmail || !siPassword) return toast({ title: "Enter your email and password", variant: "destructive" });
       setBusy(true);
-      const { error } = await authClient.signInWithPassword({ email: siEmail.trim().toLowerCase(), password: siPassword });
+      const input = siEmail.trim();
+      const isPhoneInput = /^[0-9+() -]{9,}$/.test(input);
+      let res: any = null;
+
+      if (isPhoneInput) {
+        const formattedPhone = formatPhone(input);
+        res = await authClient.signInWithPassword({ phone: formattedPhone, password: siPassword });
+
+        if (res.error) {
+          const rawDigits = input.replace(/\D/g, "");
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("email")
+            .or(`phone.eq.${formattedPhone},phone.eq.${rawDigits}`)
+            .maybeSingle();
+
+          if (prof?.email) {
+            res = await authClient.signInWithPassword({ email: prof.email, password: siPassword });
+          }
+        }
+      } else {
+        res = await authClient.signInWithPassword({ email: input.toLowerCase(), password: siPassword });
+      }
+
       setBusy(false);
-      if (error) toast({ title: "Sign in failed", description: error.message, variant: "destructive" });
+      if (res?.error) {
+        const errorText = res.error.message.includes("Invalid login credentials")
+          ? "Invalid email/phone or password. Please verify your details or sign up."
+          : res.error.message;
+        toast({ title: "Sign in failed", description: errorText, variant: "destructive" });
+      }
     } else {
       if (!otpSent) {
         if (!siPhone) return toast({ title: "Enter your phone number", variant: "destructive" });

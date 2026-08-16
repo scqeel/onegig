@@ -52,7 +52,7 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
   const [isVerifying, setIsVerifying] = useState(false);
   const [payWithSameNumber, setPayWithSameNumber] = useState(true);
 
-  const activeGateway = settings?.active_gateway || "paystack";
+  const activeGateway = settings?.active_payment_gateway || "paystack";
 
   useEffect(() => {
     if (user) {

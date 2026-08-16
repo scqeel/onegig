@@ -62,7 +62,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const activeGateway = settings?.active_gateway || "paystack";
+  const activeGateway = settings?.active_payment_gateway || "paystack";
 
   useEffect(() => {
     if (checkoutOpen && user?.id) {

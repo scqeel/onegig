@@ -44,24 +44,14 @@ export function AgentLogin({ storeName, onClose }: Props) {
       // Fallback: If phone login failed (e.g. user registered with email), look up email by phone
       if (res.error && isPhone && phoneNum) {
         const rawDigits = trimmedId.replace(/\D/g, "");
-        const { data: agentProf } = await supabase
-          .from("agent_profiles")
+        const { data: userProf } = await supabase
+          .from("profiles")
           .select("email")
           .or(`phone.eq.${phoneNum},phone.eq.${rawDigits}`)
           .maybeSingle();
 
-        let emailToTry = agentProf?.email;
-        if (!emailToTry) {
-          const { data: userProf } = await supabase
-            .from("profiles")
-            .select("email")
-            .or(`phone.eq.${phoneNum},phone.eq.${rawDigits}`)
-            .maybeSingle();
-          if (userProf?.email) emailToTry = userProf.email;
-        }
-
-        if (emailToTry) {
-          res = await supabase.auth.signInWithPassword({ email: emailToTry, password });
+        if (userProf?.email) {
+          res = await supabase.auth.signInWithPassword({ email: userProf.email, password });
         }
       }
 

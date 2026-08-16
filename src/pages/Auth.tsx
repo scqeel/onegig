@@ -88,13 +88,14 @@ export default function AuthPage() {
   const [showSuConfirmPassword, setShowSuConfirmPassword] = useState(false);
 
   useEffect(() => {
-    if (parentAgent?.referral_code) {
+    const code = (parentAgent as any)?.referral_code;
+    if (code) {
       const currentRef = localStorage.getItem("agent_ref") || refParam;
       if (!suReferralCode || suReferralCode === refParam || suReferralCode === currentRef) {
-        setSuReferralCode(parentAgent.referral_code);
+        setSuReferralCode(code);
       }
     }
-  }, [parentAgent?.referral_code, refParam]);
+  }, [parentAgent, refParam]);
 
   const [siTimer, setSiTimer] = useState(0);
   const [suTimer, setSuTimer] = useState(0);

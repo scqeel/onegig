@@ -19,8 +19,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
 import { OrderSummary } from "@/components/buy/OrderSummary";
+import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
+import { isAccountIncomplete } from "@/lib/accountCheck";
 
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
 
@@ -163,6 +164,7 @@ export function BuyDataFlow({
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [otp, setOtp] = useState("");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [accountName, setAccountName] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
@@ -922,7 +924,11 @@ export function BuyDataFlow({
                         key={b.id}
                         onClick={() => {
                           setBundle(b);
-                          setCheckoutOpen(true);
+                          if (user && isAccountIncomplete(user, profile)) {
+                            setCompleteModalOpen(true);
+                          } else {
+                            setCheckoutOpen(true);
+                          }
                         }}
                         className={cn(
                           "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
@@ -1223,6 +1229,15 @@ export function BuyDataFlow({
           </div>
         </DialogContent>
       </Dialog>
+
+      <CompleteAccountModal
+        isOpen={completeModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        onComplete={() => {
+          setCompleteModalOpen(false);
+          setCheckoutOpen(true);
+        }}
+      />
     </div>
   );
 }

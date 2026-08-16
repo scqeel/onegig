@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { OrderSummary } from "@/components/buy/OrderSummary";
+import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
+import { isAccountIncomplete } from "@/lib/accountCheck";
 
 type Phase = "select" | "lookup" | "processing" | "polling" | "delivering" | "success" | "error";
 
@@ -26,7 +28,7 @@ interface Props {
 }
 
 export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { data: settings } = useSettings();
   const { toast } = useToast();
 
@@ -55,6 +57,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   const [isSavingMeter, setIsSavingMeter] = useState(false);
 
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -215,6 +218,11 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
     if (paymentMethod === "wallet" && walletBalance !== null && walletBalance < amt) {
       toast({ title: "Insufficient Balance", description: `Your wallet balance is GHS ${walletBalance.toFixed(2)}. Bill cost is GHS ${amt.toFixed(2)}.`, variant: "destructive" });
+      return;
+    }
+
+    if (user && isAccountIncomplete(user, profile)) {
+      setCompleteModalOpen(true);
       return;
     }
 
@@ -779,6 +787,15 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CompleteAccountModal
+        isOpen={completeModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        onComplete={() => {
+          setCompleteModalOpen(false);
+          setCheckoutOpen(true);
+        }}
+      />
     </div>
   );
 }

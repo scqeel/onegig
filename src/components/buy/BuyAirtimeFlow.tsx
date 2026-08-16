@@ -17,6 +17,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { OrderSummary } from "@/components/buy/OrderSummary";
+import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
+import { isAccountIncomplete } from "@/lib/accountCheck";
 
 type Phase = "select" | "processing" | "polling" | "delivering" | "success" | "error";
 
@@ -28,7 +30,7 @@ interface Props {
 }
 
 export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuccess }: Props) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { data: settings } = useSettings();
   const { toast } = useToast();
 
@@ -38,8 +40,8 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "momo">("momo");
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
   const [orderRef, setOrderRef] = useState<string | null>(null);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -144,6 +146,11 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
 
     if (paymentMethod === "wallet" && walletBalance !== null && walletBalance < amt) {
       toast({ title: "Insufficient Balance", description: `Your wallet balance is GHS ${walletBalance.toFixed(2)}. Airtime cost is GHS ${amt.toFixed(2)}.`, variant: "destructive" });
+      return;
+    }
+
+    if (user && isAccountIncomplete(user, profile)) {
+      setCompleteModalOpen(true);
       return;
     }
 
@@ -592,6 +599,15 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
           </div>
         </DialogContent>
       </Dialog>
+
+      <CompleteAccountModal
+        isOpen={completeModalOpen}
+        onClose={() => setCompleteModalOpen(false)}
+        onComplete={() => {
+          setCompleteModalOpen(false);
+          setCheckoutOpen(true);
+        }}
+      />
     </div>
   );
 }

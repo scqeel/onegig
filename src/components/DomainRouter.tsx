@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import AgentStorePage from "@/pages/AgentStore";
-import { Loader2 } from "lucide-react";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 export function DomainRouter({ children }: { children: React.ReactNode }) {
   const [domainSlug, setDomainSlug] = useState<string | null>(null);
@@ -39,12 +39,7 @@ export function DomainRouter({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (loading) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-slate-950 text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <p className="mt-4 text-xs font-semibold text-slate-400 animate-pulse">Loading Storefront...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading Storefront..." submessage="Connecting to custom domain store" variant="dark" />;
   }
 
   // If a custom domain maps to a store slug, render the AgentStorePage directly

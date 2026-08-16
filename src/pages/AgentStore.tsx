@@ -15,6 +15,7 @@ import { AgentLogin } from "@/components/agent/AgentLogin";
 import { CustomerWallet } from "@/components/store/CustomerWallet";
 import { formatGHS, isSamePhoneNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import {
   Store,
   Phone,
@@ -560,12 +561,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
 
   if (loadingAgent || loadingPrices || !agent) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center bg-slate-950 text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <p className="mt-4 text-xs font-semibold text-slate-400 animate-pulse">Loading Reseller Storefront...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading Storefront..." submessage="Fetching agent packages & storefront details" variant="dark" />;
   }
 
   // Theme configuration mappings

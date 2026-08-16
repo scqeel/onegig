@@ -3,17 +3,15 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, AppRole } from "@/contexts/AuthContext";
 import { useSettings } from "@/hooks/useSettings";
 
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
+
 export function RequireAuth({ children, role }: { children: ReactNode; role?: AppRole }) {
   const { session, loading, roles } = useAuth();
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const loc = useLocation();
 
   if (loading || settingsLoading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center">
-        <div className="h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-      </div>
-    );
+    return <LoadingScreen message="Verifying session..." submessage="Loading secure account settings" />;
   }
   if (!session) return <Navigate to="/auth" state={{ from: loc.pathname }} replace />;
   

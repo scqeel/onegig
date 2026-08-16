@@ -11,6 +11,7 @@ import { TrackOrder } from "@/components/buy/TrackOrder";
 import { OrderSummary } from "@/components/buy/OrderSummary";
 import { formatGHS, isSamePhoneNumber } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import {
   Store,
   Phone,
@@ -469,12 +470,7 @@ export default function AgentStorePage() {
   };
 
   if (loadingAgent || loadingPrices || !agent) {
-    return (
-      <div className="dark flex min-h-dvh flex-col items-center justify-center bg-background text-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-4 text-xs font-semibold text-muted-foreground animate-pulse">Loading Reseller Storefront...</p>
-      </div>
-    );
+    return <LoadingScreen message="Loading Storefront..." submessage="Fetching agent packages & live market prices" />;
   }
 
   if (phase === "success") {

@@ -6,45 +6,63 @@ ALTER TABLE IF EXISTS public.withdrawals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS public.payments ENABLE ROW LEVEL SECURITY;
 
--- 2. Wallet Transactions RLS (Users can only view their own transaction history)
+-- 2. Wallet Transactions RLS (Users view own transactions; Admins view all)
 DROP POLICY IF EXISTS "Users can view own transactions" ON public.wallet_transactions;
-CREATE POLICY "Users can view own transactions"
+DROP POLICY IF EXISTS "Users and admins can view wallet transactions" ON public.wallet_transactions;
+CREATE POLICY "Users and admins can view wallet transactions"
   ON public.wallet_transactions FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    OR public.has_role(auth.uid(), 'admin')
+  );
 
--- 3. Withdrawals RLS (Users can only view their own withdrawals)
+-- 3. Withdrawals RLS (Users view own withdrawals; Admins view all)
 DROP POLICY IF EXISTS "Users can view own withdrawals" ON public.withdrawals;
-CREATE POLICY "Users can view own withdrawals"
+DROP POLICY IF EXISTS "Users and admins can view withdrawals" ON public.withdrawals;
+CREATE POLICY "Users and admins can view withdrawals"
   ON public.withdrawals FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    OR public.has_role(auth.uid(), 'admin')
+  );
 
--- 4. Saved Meters RLS (Users can only manage their own saved meters)
+-- 4. Saved Meters RLS (Users manage own meters; Admins view all)
 DROP POLICY IF EXISTS "Users can manage their own saved meters" ON public.saved_meters;
-CREATE POLICY "Users can manage their own saved meters"
+DROP POLICY IF EXISTS "Users and admins can view saved meters" ON public.saved_meters;
+CREATE POLICY "Users and admins can view saved meters"
   ON public.saved_meters FOR ALL
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    OR public.has_role(auth.uid(), 'admin')
+  );
 
--- 5. Orders RLS (Users can view their own orders; Agents can view orders from their store)
+-- 5. Orders RLS (Users view own orders; Agents view store orders; Admins view ALL orders)
 DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
-CREATE POLICY "Users can view own orders"
+DROP POLICY IF EXISTS "Users and admins can view orders" ON public.orders;
+CREATE POLICY "Users and admins can view orders"
   ON public.orders FOR SELECT
   TO authenticated
   USING (
     customer_user_id = auth.uid()
     OR agent_id IN (SELECT id FROM public.agent_profiles WHERE user_id = auth.uid())
+    OR public.has_role(auth.uid(), 'admin')
   );
 
--- 6. Payments RLS (Users can view their own payments)
+-- 6. Payments RLS (Users view own payments; Admins view ALL payments)
 DROP POLICY IF EXISTS "Users can view own payments" ON public.payments;
-CREATE POLICY "Users can view own payments"
+DROP POLICY IF EXISTS "Users and admins can view payments" ON public.payments;
+CREATE POLICY "Users and admins can view payments"
   ON public.payments FOR SELECT
   TO authenticated
-  USING (user_id = auth.uid());
+  USING (
+    user_id = auth.uid()
+    OR public.has_role(auth.uid(), 'admin')
+  );
 
--- 7. App Settings RLS (Hide all sensitive API keys from public anon/authenticated queries)
+-- 7. App Settings RLS (Hide all sensitive API keys from public queries)
 DROP POLICY IF EXISTS "Public view settings" ON public.app_settings;
 CREATE POLICY "Public view settings" ON public.app_settings
   FOR SELECT

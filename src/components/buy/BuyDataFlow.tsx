@@ -19,6 +19,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+} from "@/components/ui/dialog";
 import { OrderSummary } from "@/components/buy/OrderSummary";
 import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
 import { isAccountIncomplete } from "@/lib/accountCheck";

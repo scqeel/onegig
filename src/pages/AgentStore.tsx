@@ -263,7 +263,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     setIsCheckingLoyalty(true);
     try {
       const clean = loyaltyPhone.replace(/\D/g, "");
-      const { data: points, error } = await supabase.rpc("get_loyalty_points", {
+      const { data: points, error } = await (supabase.rpc as any)("get_loyalty_points", {
         phone_number: clean,
         agent_uuid: agent.id
       });
@@ -274,14 +274,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         return;
       }
 
-      if (points === 0) {
+      if (!points || Number(points) === 0) {
         toast({ title: "No loyalty history", description: "You don't have any purchase history on this store yet.", variant: "destructive" });
         setLoyaltyPointsBalance(0);
         setIsCheckingLoyalty(false);
         return;
       }
 
-      setLoyaltyPointsBalance(points);
+      setLoyaltyPointsBalance(Number(points));
     } catch (e) {
       toast({ title: "Failed to check points", variant: "destructive" });
     } finally {
@@ -1631,7 +1631,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
           </div>
         )}
 
-        {activeTab === "wallet" && (
+        {(activeTab as string) === "wallet" && (
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
             <WalletManager />
           </div>
@@ -1653,7 +1653,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
       {/* ── CHECKOUT CONFIRM DIALOG ── */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[94vw] max-w-sm rounded-[32px] border-slate-100 dark:border-slate-800 p-0 overflow-hidden bg-white dark:bg-slate-900">
+        <DialogContent className="w-[94vw] max-w-sm max-h-[90dvh] overflow-y-auto rounded-[32px] border-slate-100 dark:border-slate-800 p-0 bg-white dark:bg-slate-900">
           
           {/* Top header strip */}
           <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white px-6 py-5 border-b border-slate-800/40 relative overflow-hidden">

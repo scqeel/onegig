@@ -174,7 +174,7 @@ export function AdminUserDetailsModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(val) => !val && onClose()}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-background border-border rounded-2xl">
+      <DialogContent className="sm:max-w-[600px] max-h-[90dvh] overflow-y-auto p-0 bg-background border-border rounded-2xl">
         <div className="bg-secondary/40 p-6 border-b border-border">
           <div className="flex justify-between items-start">
             <div>
@@ -385,7 +385,7 @@ export function AdminUserDetailsModal({
                          <div className="text-left sm:text-right">
                            <p className="font-semibold text-lg">{formatGHS(o.sell_price)}</p>
                            <span className={cn("inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider mt-1",
-                             o.status === 'completed' || o.status === 'delivered' ? 'bg-emerald-500/10 text-emerald-500' :
+                             (o.status as string) === 'completed' || o.status === 'delivered' ? 'bg-emerald-500/10 text-emerald-500' :
                              o.status === 'failed' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
                            )}>{o.status}</span>
                          </div>

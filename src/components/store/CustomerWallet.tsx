@@ -269,7 +269,7 @@ export function CustomerWallet({ userId, agentSlug, onBalanceChange, loadHistory
       </div>
 
       <Dialog open={isTopupOpen} onOpenChange={(v) => { if (!v && phase !== 'polling') { setIsTopupOpen(false); setPhase("idle"); } }}>
-        <DialogContent className="sm:max-w-md bg-card border border-border text-foreground rounded-[1.75rem]">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto bg-card border border-border text-foreground rounded-[1.75rem]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="w-5 h-5 text-emerald-500" />

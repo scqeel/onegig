@@ -269,7 +269,7 @@ export function BuyDataFlow({
     if (num.length >= 3) {
       const pfxNet = getNetworkFromPrefix(num);
       if (pfxNet && networks.length) {
-        const found = networks.find(n => n.code.toUpperCase() === pfxNet || (pfxNet === "AT" && n.code.toUpperCase() === "AIRTELTIGO") || (pfxNet === "AIRTELTIGO" && n.code.toUpperCase() === "AT"));
+        const found = networks.find(n => n.code.toUpperCase() === pfxNet || ((pfxNet as string) === "AT" && n.code.toUpperCase() === "AIRTELTIGO") || (pfxNet === "AIRTELTIGO" && n.code.toUpperCase() === "AT"));
         if (found && (!network || network.id !== found.id)) {
           setNetwork(found);
           setBundle(null);
@@ -281,7 +281,7 @@ export function BuyDataFlow({
       const pfxNet = getNetworkFromPrefix(num);
       const expectedNet = network.code.toUpperCase();
       if (pfxNet) {
-        if (pfxNet !== expectedNet && !(pfxNet === "AIRTELTIGO" && expectedNet === "AT") && !(pfxNet === "AT" && expectedNet === "AIRTELTIGO")) {
+        if (pfxNet !== expectedNet && !(pfxNet === "AIRTELTIGO" && expectedNet === "AT") && !((pfxNet as string) === "AT" && expectedNet === "AIRTELTIGO")) {
           setRecipientNetworkError(`Warning: ${pfxNet} number detected for ${network.name} bundle.`);
         }
       }
@@ -974,7 +974,7 @@ export function BuyDataFlow({
 
       {/* ── Checkout Dialog ── */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[92vw] max-w-[370px] rounded-[1.75rem] border border-border bg-card p-0 overflow-hidden">
+        <DialogContent className="w-[92vw] max-w-[370px] max-h-[90dvh] overflow-y-auto rounded-[1.75rem] border border-border bg-card p-0">
           {/* Header */}
           <div className="flex flex-col items-center justify-center pt-7 pb-3 px-5 text-center">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">

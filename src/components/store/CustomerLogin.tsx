@@ -81,7 +81,7 @@ export function CustomerLogin({ isOpen, onClose, storeName }: Props) {
 
   return (
     <Dialog open={isOpen} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="sm:max-w-md bg-card border border-border rounded-[1.75rem] p-6 overflow-hidden">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto bg-card border border-border rounded-[1.75rem] p-6">
         <DialogHeader className="mb-6 pt-4 text-center items-center">
           <div className="h-16 w-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500 mb-4">
             {phase === "phone" ? <Wallet className="h-8 w-8" /> : <Lock className="h-8 w-8" />}

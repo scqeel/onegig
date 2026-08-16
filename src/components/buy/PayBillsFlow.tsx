@@ -27,7 +27,7 @@ interface Props {
 
 export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   const { user } = useAuth();
-  const { settings } = useSettings();
+  const { data: settings } = useSettings();
   const { toast } = useToast();
 
   const [phase, setPhase] = useState<Phase>("select");
@@ -62,35 +62,32 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   const activeGateway = settings?.active_gateway || "paystack";
 
   useEffect(() => {
-    if (user) {
-      fetchWalletBalance();
-      setPaymentMethod("wallet");
-    } else {
-      setPaymentMethod("momo");
+    if (checkoutOpen && user?.id) {
+      supabase.rpc("get_wallet_balance", { _user_id: user.id }).then(({ data }) => {
+        setWalletBalance(Number(data || 0));
+      });
     }
-  }, [user]);
+  }, [checkoutOpen, user?.id]);
 
   useEffect(() => {
-    const num = momoNumber.replace(/\D/g, "");
-    if (num.length >= 10 && checkoutOpen && paymentMethod === "momo" && !payWithSameNumber) {
-      setAccountName(null);
+    if (checkoutOpen && paymentMethod === "momo" && !payWithSameNumber && momoNumber.replace(/\D/g, "").length >= 9) {
       setIsVerifying(true);
       const timer = setTimeout(async () => {
         try {
-          const { data } = await supabase.functions.invoke("paystack-resolve", {
-            body: { momo_number: num, momo_network: momoNetwork }
+          const { data, error } = await supabase.functions.invoke("verify-momo-name", {
+            body: { phone: momoNumber, network: momoNetwork }
           });
-          if (data?.ok && data?.account_name) {
-            setAccountName(data.account_name);
+          if (data && data.name) {
+            setAccountName(data.name);
           } else {
-            setAccountName(data?.error ? "Account not found" : "Unknown Account");
+            setAccountName("Unknown Account");
           }
-        } catch (e) {
-          setAccountName("Unknown Account");
+        } catch {
+          setAccountName("Account not found");
         } finally {
           setIsVerifying(false);
         }
-      }, 600);
+      }, 500);
       return () => clearTimeout(timer);
     } else {
       setAccountName(null);
@@ -100,8 +97,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
   const fetchSavedMeters = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from("saved_meters")
+      const { data, error } = await (supabase.from as any)("saved_meters")
         .select("*")
         .eq("provider", billType)
         .order("alias", { ascending: true });
@@ -121,7 +117,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
     if (!user || !accountNumber || !meterAlias) return;
     setIsSavingMeter(true);
     try {
-      const { error } = await supabase.from("saved_meters").insert({
+      const { error } = await (supabase.from as any)("saved_meters").insert({
         user_id: user.id,
         meter_number: accountNumber,
         alias: meterAlias,
@@ -649,7 +645,7 @@ export function PayBillsFlow({ agentSlug, onSuccess }: Props) {
 
       {/* Confirmation Dialog */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="bg-card border border-border max-w-sm rounded-[1.75rem] p-6">
+        <DialogContent className="bg-card border border-border max-w-sm max-h-[90dvh] overflow-y-auto rounded-[1.75rem] p-6">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-center text-foreground">Confirm Bill Payment</DialogTitle>
             <DialogDescription className="text-center text-muted-foreground text-sm">

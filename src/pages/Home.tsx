@@ -385,7 +385,7 @@ export default function HomePage() {
         )}
 
         <div className="relative z-20 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 pt-4 pb-12">
-          <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-12 lg:gap-14 items-center">
+          <div className="flex flex-col items-center gap-12 lg:grid lg:grid-cols-12 lg:gap-14">
 
             {/* LEFT COLUMN */}
             <div className="w-full text-center lg:col-span-6 lg:text-left flex flex-col items-center lg:items-start space-y-6">

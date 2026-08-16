@@ -789,7 +789,7 @@ export default function AgentStorePage() {
                 ].map((net) => {
                   const isCheck = net.id === "check";
                   const active = isCheck
-                    ? selectedNetwork === null && activeTab === "trans"
+                    ? selectedNetwork === null && (activeTab as string) === "trans"
                     : selectedNetwork?.code.toLowerCase() === net.id || (selectedNetwork?.code.toLowerCase() === "at" && net.id === "atigo");
 
                   return (
@@ -1149,7 +1149,7 @@ export default function AgentStorePage() {
           href={agent.support_whatsapp}
           target="_blank"
           rel="noreferrer"
-          className="fixed bottom-24 right-5 z-40 bg-emerald-500 hover:bg-emerald-600 text-white p-3.5 rounded-full shadow-float transition-all duration-300 group flex items-center justify-center animate-bounce duration-1000"
+          className="fixed bottom-24 right-5 z-40 bg-emerald-500 hover:bg-emerald-600 text-white p-3.5 rounded-full shadow-float transition-all duration-300 group flex items-center justify-center animate-bounce"
           style={{ animationDuration: '3s' }}
         >
           <MessageCircle className="h-5.5 w-5.5 group-hover:scale-110 transition-transform" />
@@ -1174,7 +1174,7 @@ export default function AgentStorePage() {
 
       {/* ── CHECKOUT CONFIRM DIALOG ── */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[94vw] max-w-sm rounded-2xl border-border p-0 overflow-hidden bg-card">
+        <DialogContent className="w-[94vw] max-w-sm max-h-[90dvh] overflow-y-auto rounded-2xl border-border p-0 bg-card">
 
           {/* Top header strip */}
           <div className="dark bg-background text-foreground px-6 py-5 border-b border-border relative overflow-hidden">

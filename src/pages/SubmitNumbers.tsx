@@ -504,7 +504,7 @@ export default function SubmitNumbersPage() {
 
       {/* Success dialog */}
       <Dialog open={!!result} onOpenChange={(open) => { if (!open) { setResult(null); setRawInput(""); } }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-emerald-500" />

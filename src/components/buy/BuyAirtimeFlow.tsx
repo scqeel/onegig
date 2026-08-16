@@ -29,7 +29,7 @@ interface Props {
 
 export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuccess }: Props) {
   const { user } = useAuth();
-  const { settings } = useSettings();
+  const { data: settings } = useSettings();
   const { toast } = useToast();
 
   const [phase, setPhase] = useState<Phase>("select");
@@ -457,7 +457,7 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
 
       {/* Confirmation Dialog */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="bg-card border border-border max-w-sm rounded-[1.75rem] p-6">
+        <DialogContent className="bg-card border border-border max-w-sm max-h-[90dvh] overflow-y-auto rounded-[1.75rem] p-6">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-center text-foreground">Confirm Top-Up</DialogTitle>
             <DialogDescription className="text-center text-muted-foreground text-sm">

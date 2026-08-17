@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, CheckCircle, Search, ShieldCheck, Users, Zap, Smartphone, Tv } from "lucide-react";
+import { ArrowLeft, BriefcaseBusiness, CheckCircle, Search, ShieldCheck, Users, Zap, Smartphone, Tv, GraduationCap } from "lucide-react";
 import { BuyDataFlow } from "@/components/buy/BuyDataFlow";
 import { BuyAirtimeFlow } from "@/components/buy/BuyAirtimeFlow";
 import { PayBillsFlow } from "@/components/buy/PayBillsFlow";
+import { ResultCheckerFlow } from "@/components/buy/ResultCheckerFlow";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -16,10 +17,10 @@ const TRUST_ITEMS = [
 ];
 
 export default function PublicBuyPage() {
-  const [activeTab, setActiveTab] = useState<"data" | "airtime" | "bill">(() => {
+  const [activeTab, setActiveTab] = useState<"data" | "airtime" | "bill" | "checker">(() => {
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab")?.toLowerCase();
-    if (tab === "airtime" || tab === "bill" || tab === "data") return tab as any;
+    if (tab === "airtime" || tab === "bill" || tab === "data" || tab === "checker") return tab as any;
     return "data";
   });
 
@@ -34,6 +35,11 @@ export default function PublicBuyPage() {
         return {
           title: "Pay Utility Bills",
           desc: "Pay DSTV, GOTV, StarTimes & ECG Prepaid instantly with secure validation."
+        };
+      case "checker":
+        return {
+          title: "WAEC Result Checkers",
+          desc: "Buy WASSCE, BECE, CSSPS & NOVDEC checker vouchers with instant PIN delivery."
         };
       default:
         return {
@@ -94,7 +100,8 @@ export default function PublicBuyPage() {
                 {[
                   { id: "data", label: "Buy Data", icon: Zap },
                   { id: "airtime", label: "Buy Airtime", icon: Smartphone },
-                  { id: "bill", label: "Pay Bills", icon: Tv }
+                  { id: "bill", label: "Pay Bills", icon: Tv },
+                  { id: "checker", label: "Result Checkers", icon: GraduationCap }
                 ].map((t) => {
                   const Icon = t.icon;
                   return (
@@ -102,14 +109,14 @@ export default function PublicBuyPage() {
                       key={t.id}
                       onClick={() => setActiveTab(t.id as any)}
                       className={cn(
-                        "flex-1 py-3 px-4 rounded-xl flex items-center justify-center gap-2 font-semibold text-xs md:text-sm transition-colors duration-200",
+                        "flex-1 py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-xs md:text-sm transition-colors duration-200 cursor-pointer",
                         activeTab === t.id
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-background/60"
                       )}
                     >
-                      <Icon className="h-4 w-4" />
-                      <span>{t.label}</span>
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{t.label}</span>
                     </button>
                   );
                 })}
@@ -120,6 +127,7 @@ export default function PublicBuyPage() {
                 {activeTab === "data" && <BuyDataFlow />}
                 {activeTab === "airtime" && <BuyAirtimeFlow />}
                 {activeTab === "bill" && <PayBillsFlow />}
+                {activeTab === "checker" && <ResultCheckerFlow />}
               </div>
             </div>
 

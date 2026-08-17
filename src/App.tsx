@@ -31,6 +31,7 @@ import AdminRefundsPage from "./pages/AdminRefunds.tsx";
 import { PWAInstallBanner } from "./components/PWAInstallBanner.tsx";
 import { DraggableThemeToggle } from "./components/ui/DraggableThemeToggle.tsx";
 import { DomainRouter } from "./components/DomainRouter.tsx";
+import { AgentPromoModal } from "./components/AgentPromoModal.tsx";
 
 const DashboardIndex = () => {
   const { roles } = useAuth();
@@ -95,6 +96,7 @@ const App = () => {
                 </Routes>
                 <PWAInstallBanner />
                 <DraggableThemeToggle />
+                <AgentPromoModal />
               </AuthProvider>
             </BrowserRouter>
           </DomainRouter>

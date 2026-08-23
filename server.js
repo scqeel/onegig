@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
     } else {
       res.writeHead(200, {
         'Content-Type': mimeTypes[ext] || 'application/octet-stream',
-        'Access-Control-Allow-Origin': '*',
+        'X-Content-Type-Options': 'nosniff',
       });
       res.end(content);
     }

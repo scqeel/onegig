@@ -25,22 +25,19 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "camera=(), microphone=(), geolocation=()"
+          "value": "camera=(), microphone=(), geolocation=(), payment=*"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://huvuogyvgeoqiqltbgcw.supabase.co wss://huvuogyvgeoqiqltbgcw.supabase.co https://api.paystack.co https://checkout.paystack.com https://*.theteller.net https:; frame-src 'self' https://checkout.paystack.com https://*.theteller.net; object-src 'none'; base-uri 'self'; frame-ancestors 'none';"
         }
       ]
     }
   ],
-  "routes": [
+  "rewrites": [
     {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/(security\\.txt|sitemap\\.xml|robots\\.txt)",
-      "status": 404
-    },
-    {
-      "src": "/.*",
-      "dest": "/index.html"
+      "source": "/((?!assets/|favicon\\.ico|logo\\.svg|manifest\\.json|robots\\.txt|sitemap\\.xml).*)$",
+      "destination": "/index.html"
     }
   ]
 }

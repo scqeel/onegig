@@ -17,7 +17,7 @@ import {
   DrawerTrigger,
   DrawerDescription
 } from "@/components/ui/drawer";
-import { BuySection, StoreSection, MarketingKitSection, LeaderboardSection, TransactionsSection, WithdrawalsSection, SubAgentsSection, SettingsSection, ALL_TABS, AgentTab } from "./AgentDashboard";
+import { BuySection, StoreSection, PricingSection, MarketingKitSection, LeaderboardSection, TransactionsSection, WithdrawalsSection, SubAgentsSection, SettingsSection, ALL_TABS, AgentTab } from "./AgentDashboard";
 
 export default function SubAgentDashboard() {
   const [tab, setTab] = useState<AgentTab>("buy");
@@ -244,6 +244,7 @@ export default function SubAgentDashboard() {
           <main>
             {tab === "buy"          && <BuySection agentProfile={agentProfile} />}
             {tab === "store"        && <StoreSection agentProfile={agentProfile} userId={user?.id} />}
+            {tab === "pricing"      && <PricingSection agentProfile={agentProfile} userId={user?.id} />}
             {tab === "marketing"    && <MarketingKitSection agentProfile={agentProfile} />}
             {tab === "leaderboard"  && <LeaderboardSection agentProfile={agentProfile} />}
             {tab === "transactions" && <TransactionsSection agentId={agentProfile.id} />}

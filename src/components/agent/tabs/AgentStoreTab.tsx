@@ -333,11 +333,13 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
 
       {/* Store link */}
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6">
-          <h2 className="text-base font-bold text-white">Store Link</h2>
-          <p className="mt-0.5 text-xs text-white/50">Share this link — customers buy without signing up.</p>
+        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-bold text-white">Store Link & Customer Sharing</h2>
+            <p className="mt-0.5 text-xs text-white/50">Share this link — customers buy directly without signing up.</p>
+          </div>
         </div>
-        <div className="p-5 md:p-6">
+        <div className="p-5 md:p-6 space-y-4">
           <div className="flex items-center gap-2">
             <div className="flex-1 truncate rounded-xl border border-border bg-secondary/40 px-3 py-2.5 font-mono text-sm text-muted-foreground">
               {storeUrl}

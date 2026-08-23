@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 // Tab Sub-Components
 import { AgentPosTab } from "@/components/agent/tabs/AgentPosTab";
 import { AgentStoreTab } from "@/components/agent/tabs/AgentStoreTab";
+import { AgentPricingTab } from "@/components/agent/tabs/AgentPricingTab";
 import { AgentMarketingTab } from "@/components/agent/tabs/AgentMarketingTab";
 import { AgentLeaderboardTab } from "@/components/agent/tabs/AgentLeaderboardTab";
 import { AgentTransactionsTab } from "@/components/agent/tabs/AgentTransactionsTab";
@@ -35,6 +36,7 @@ import { AgentSettingsTab } from "@/components/agent/tabs/AgentSettingsTab";
 export type AgentTab =
   | "buy"
   | "store"
+  | "pricing"
   | "marketing"
   | "leaderboard"
   | "transactions"
@@ -46,6 +48,7 @@ export type AgentTab =
 export const ALL_TABS: { value: AgentTab; label: string; icon: React.ReactNode }[] = [
   { value: "buy",          label: "Sell Data & Bills (POS)", icon: <Signal className="h-4 w-4" /> },
   { value: "store",        label: "My Store",                icon: <Store className="h-4 w-4" /> },
+  { value: "pricing",      label: "Store Pricing & Profits", icon: <Tag className="h-4 w-4" /> },
   { value: "marketing",    label: "Marketing Kit",           icon: <Megaphone className="h-4 w-4" /> },
   { value: "leaderboard",  label: "Leaderboard",             icon: <Trophy className="h-4 w-4" /> },
   { value: "transactions", label: "Transactions",            icon: <ShoppingCart className="h-4 w-4" /> },
@@ -58,6 +61,7 @@ export const ALL_TABS: { value: AgentTab; label: string; icon: React.ReactNode }
 // Backwards-compatibility re-exports for SubAgentDashboard
 export const BuySection = AgentPosTab;
 export const StoreSection = AgentStoreTab;
+export const PricingSection = AgentPricingTab;
 export const MarketingKitSection = AgentMarketingTab;
 export const LeaderboardSection = AgentLeaderboardTab;
 export const TransactionsSection = AgentTransactionsTab;
@@ -315,6 +319,7 @@ export default function AgentDashboard() {
             
             {tab === "buy"          && <AgentPosTab agentProfile={agentProfile} />}
             {tab === "store"        && <AgentStoreTab agentProfile={agentProfile} userId={user?.id} />}
+            {tab === "pricing"      && <AgentPricingTab agentProfile={agentProfile} userId={user?.id} />}
             {tab === "marketing"    && <AgentMarketingTab agentProfile={agentProfile} />}
             {tab === "leaderboard"  && <AgentLeaderboardTab agentProfile={agentProfile} />}
             {tab === "transactions" && <AgentTransactionsTab agentId={agentProfile.id} />}

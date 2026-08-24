@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft, Bell, ChevronRight, Gift, Globe, Layers, Loader2, LogOut, Megaphone, Menu, Moon,
-  Shield, ShoppingCart, Signal, Store, Sun, Trophy, User, Users, Wallet, X, Zap
+  Shield, ShoppingCart, Signal, Store, Sun, Tag, Trophy, User, Users, Wallet, X, Zap
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";

@@ -932,42 +932,61 @@ export function BuyDataFlow({
                           }
                         }}
                         className={cn(
-                          "relative flex flex-col items-start rounded-2xl border px-4 py-4 text-left transition-all",
-                          active ? netStyle.cardActive : netStyle.cardIdle
+                          "group relative flex flex-col items-start justify-between rounded-2xl border p-4 text-left transition-all duration-200 overflow-hidden",
+                          active 
+                            ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/10 scale-[1.02]" 
+                            : "border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0f1422] hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#151c2e] shadow-sm hover:shadow-md hover:scale-[1.01]"
                         )}
                       >
                         {/* Badges */}
                         {isPopular && !active && (
-                          <span className="absolute -top-2 left-3 rounded-full bg-primary px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-primary-foreground z-10">
+                          <span className="absolute -top-2 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-sm z-10">
                             Popular
                           </span>
                         )}
                         {isBestValue && !active && (
-                          <span className="absolute -top-2 left-3 rounded-full bg-success px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-success-foreground z-10">
+                          <span className="absolute -top-2 left-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm z-10">
                             Best Value
                           </span>
                         )}
 
-                        <div className="flex w-full justify-between items-start mb-5">
-                          <span className="text-[10px] font-bold uppercase opacity-70">{network?.name}</span>
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-black/10">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                        <div className="flex w-full justify-between items-center mb-3">
+                          {network?.code?.toUpperCase() === 'MTN' ? (
+                            <div className="flex items-center justify-center rounded-full bg-[#ffcc00] px-2.5 py-0.5 h-6 shadow-sm border border-yellow-500/20">
+                              <span className="text-[10px] font-black text-black tracking-wider">MTN</span>
+                            </div>
+                          ) : network?.code?.toUpperCase() === 'TELECEL' ? (
+                            <div className="flex items-center gap-1 rounded-full bg-[#cc0000] px-2.5 py-0.5 h-6 shadow-sm">
+                              <span className="text-[10px] font-black text-white tracking-wider">TELECEL</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center rounded-full bg-gradient-to-r from-red-500 to-blue-600 px-2.5 py-0.5 h-6 shadow-sm">
+                              <span className="text-[10px] font-black text-white tracking-wider">AT</span>
+                            </div>
+                          )}
+                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 group-hover:bg-primary group-hover:text-black transition-colors">
+                            <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                           </div>
                         </div>
 
-                        <span className="text-3xl font-bold leading-none tracking-tight">
-                          {b.size_label}
-                        </span>
-                        <span className={cn("mt-1 text-xs font-medium opacity-80")}>
-                          {network?.name} Bundle
-                        </span>
-
-                        <div className="mt-6 flex w-full items-end justify-between">
-                          <span className={cn("text-xl font-bold tracking-tight")}>
-                            {formatGHS(priceFor(b))}
+                        <div className="w-full my-1">
+                          <span className="block text-2xl sm:text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                            {b.size_label}
                           </span>
-                          <span className="text-[10px] font-semibold opacity-75">
-                            1-5 min
+                          <span className="mt-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                            {network?.name} Non-Expiry Data
+                          </span>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex w-full items-end justify-between">
+                          <div>
+                            <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-none mb-0.5">Price</span>
+                            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-emerald-400">
+                              {formatGHS(priceFor(b))}
+                            </span>
+                          </div>
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            ⚡ 1-5 min
                           </span>
                         </div>
                       </button>

@@ -4,7 +4,7 @@ import { Sun, Moon } from "lucide-react";
 
 export function DraggableThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const [position, setPosition] = useState({ x: 24, y: window.innerHeight - 80 });
+  const [position, setPosition] = useState({ x: typeof window !== "undefined" ? window.innerWidth - 60 : 300, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
 
@@ -16,8 +16,7 @@ export function DraggableThemeToggle() {
       }));
     };
     window.addEventListener("resize", handleResize);
-    // Initialize position safely for SSR
-    setPosition({ x: 24, y: window.innerHeight - 80 });
+    setPosition({ x: window.innerWidth - 60, y: 20 });
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 

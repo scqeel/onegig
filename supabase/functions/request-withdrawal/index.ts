@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   const momo_name = String(body?.momo_name ?? "").trim();
   const momo_network = String(body?.momo_network ?? "").trim();
   if (!amount || amount <= 0 || !momo_number || !momo_name || !momo_network) {
-    return json({ error: "All fields required" }, 400);
+    return json({ ok: false, error: "Please fill in all fields (amount, network, number, and account name)" }, 200);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -31,17 +31,24 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: ud } = await userClient.auth.getUser();
-  if (!ud.user) return json({ error: "Unauthorized" }, 401);
+  if (!ud.user) return json({ ok: false, error: "Session expired. Please log in again." }, 200);
 
   const admin = createClient(supabaseUrl, serviceKey);
 
   const { data: balance } = await admin.rpc("get_wallet_balance", { _user_id: ud.user.id });
+  const currentBal = Number(balance ?? 0);
   const { data: minRow } = await admin.from("app_settings").select("value").eq("key", "min_withdrawal").maybeSingle();
   const minWithdrawal = Number(minRow?.value ?? 50);
 
-  if (Number(balance) < minWithdrawal) return json({ error: `Minimum withdrawal is ${minWithdrawal} GHS` }, 400);
-  if (amount > Number(balance)) return json({ error: "Amount exceeds available balance" }, 400);
-  if (amount < minWithdrawal) return json({ error: `Minimum is ${minWithdrawal} GHS` }, 400);
+  if (currentBal < minWithdrawal) {
+    return json({ ok: false, error: `Minimum balance required for withdrawal is GH₵ ${minWithdrawal.toFixed(2)}. Your current balance is GH₵ ${currentBal.toFixed(2)}.` }, 200);
+  }
+  if (amount > currentBal) {
+    return json({ ok: false, error: `Withdrawal amount (GH₵ ${amount.toFixed(2)}) exceeds your available balance (GH₵ ${currentBal.toFixed(2)}).` }, 200);
+  }
+  if (amount < minWithdrawal) {
+    return json({ ok: false, error: `Minimum withdrawal amount is GH₵ ${minWithdrawal.toFixed(2)}.` }, 200);
+  }
 
   const { data: w, error: wErr } = await admin
     .from("withdrawals")

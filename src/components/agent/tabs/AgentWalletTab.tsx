@@ -36,15 +36,57 @@ export function AgentWalletTab({ userId }: { userId: string }) {
 
   const requestWithdrawal = async () => {
     const amt = Number(amount);
-    if (!amt || amt < 50) { toast({ title: "Minimum withdrawal is GHS 50", variant: "destructive" }); return; }
-    if (!momoNumber || !momoName || !momoNetwork) { toast({ title: "Fill in all MoMo details", variant: "destructive" }); return; }
+    const available = Number(walletData?.balance ?? 0);
+    
+    if (!amt || isNaN(amt) || amt <= 0) { 
+      toast({ title: "Enter a valid amount", variant: "destructive" }); 
+      return; 
+    }
+    if (amt < 50) { 
+      toast({ title: "Minimum withdrawal is GH₵ 50.00", description: "You need at least GH₵ 50.00 to request a payout.", variant: "destructive" }); 
+      return; 
+    }
+    if (amt > available) { 
+      toast({ 
+        title: "Insufficient Balance", 
+        description: `You requested GH₵ ${amt.toFixed(2)}, but your available balance is ${formatGHS(available)}.`, 
+        variant: "destructive" 
+      }); 
+      return; 
+    }
+    if (!momoNumber || !momoName || !momoNetwork) { 
+      toast({ title: "Fill in all MoMo details", description: "Please provide your MoMo network, number, and registered name.", variant: "destructive" }); 
+      return; 
+    }
+
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("request-withdrawal", { body: { amount: amt, momo_number: momoNumber, momo_name: momoName, momo_network: momoNetwork } });
-    setBusy(false);
-    if (error || !data?.ok) { toast({ title: "Withdrawal failed", description: data?.error || error?.message, variant: "destructive" }); return; }
-    toast({ title: "Withdrawal requested!", description: "Processed within 24 hours." });
-    setAmount(""); setMomoNumber(""); setMomoName(""); setMomoNetwork("");
-    qc.invalidateQueries({ queryKey: ["agent-wallet"] });
+    try {
+      const { data, error } = await supabase.functions.invoke("request-withdrawal", { 
+        body: { amount: amt, momo_number: momoNumber, momo_name: momoName, momo_network: momoNetwork } 
+      });
+
+      if (error || !data?.ok) {
+        let errorMsg = data?.error;
+        if (!errorMsg && error) {
+          try {
+            const errorBody = await (error as any)?.context?.json?.();
+            errorMsg = errorBody?.error || error.message;
+          } catch {
+            errorMsg = error.message;
+          }
+        }
+        toast({ title: "Withdrawal failed", description: errorMsg || "Could not process withdrawal request.", variant: "destructive" }); 
+        return; 
+      }
+
+      toast({ title: "Withdrawal requested! 🎉", description: `GH₵ ${amt.toFixed(2)} will be sent to ${momoNetwork} ${momoNumber} within 24 hours.` });
+      setAmount(""); setMomoNumber(""); setMomoName(""); setMomoNetwork("");
+      qc.invalidateQueries({ queryKey: ["agent-wallet"] });
+    } catch (err: any) {
+      toast({ title: "Withdrawal failed", description: err.message, variant: "destructive" });
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -79,7 +121,18 @@ export function AgentWalletTab({ userId }: { userId: string }) {
         <div className="p-5 md:p-6">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Amount (GHS)</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground">Amount (GHS)</label>
+                {walletData?.balance != null && walletData.balance > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setAmount(String(walletData.balance))}
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    Max ({formatGHS(walletData.balance)})
+                  </button>
+                )}
+              </div>
               <Input type="number" min="50" className="h-11 rounded-xl" placeholder="e.g. 100" value={amount} onChange={(e) => setAmount(e.target.value)} />
             </div>
             <div className="space-y-1.5">

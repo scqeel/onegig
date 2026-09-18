@@ -15,18 +15,22 @@ const json = (body: unknown, status = 200) =>
 type Purpose = "order" | "agent_activation" | "wallet_deposit";
 
 interface ProcessBody {
-  purpose: Purpose;
+  action?: "submit_otp";
+  otp?: string;
+  reference?: string;
+  purpose?: Purpose;
   bundle_id?: string;
   recipient_phone?: string;
   agent_slug?: string | null;
-  momo_number: string;
-  momo_network: string; // MTN, TELECEL, AT
+  momo_number?: string;
+  momo_network?: string; // MTN, TELECEL, AT
   amount?: number;
   coupon_code?: string | null;
   subscribe?: boolean;
   frequency?: "weekly" | "monthly";
   points_redeemed?: number;
 }
+
 
 function toTellerProvider(code: string) {
   const normalized = String(code || "").trim().toUpperCase();
@@ -47,7 +51,10 @@ function formatTo233(phone: string): string {
   return "233" + digits;
 }
 
-Deno.serve(async (req) => {
+// @ts-ignore Deno environment
+declare const Deno: any;
+
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -64,7 +71,47 @@ Deno.serve(async (req) => {
       }, 200);
     }
 
-    if (!body?.purpose) return json({ error: "purpose is required" }, 400);
+    if (body?.action === "submit_otp") {
+      if (!body.otp || !body.reference) return json({ error: "otp and reference are required" }, 400);
+      
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const admin = createClient(supabaseUrl, serviceKey);
+
+      // Check if reference is Paystack reference (starts with DH-)
+      if (body.reference.startsWith("DH-")) {
+        const { getPaystackSecretKey } = await import("../_shared/settings.ts");
+        const paystackSecret = await getPaystackSecretKey();
+        if (paystackSecret) {
+          const otpRes = await fetch("https://api.paystack.co/charge/submit_otp", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${paystackSecret}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              otp: body.otp,
+              reference: body.reference,
+            }),
+          });
+
+          const otpData = await otpRes.json().catch(() => null);
+          if (!otpRes.ok || !otpData?.status) {
+            return json({ error: otpData?.message ?? "Failed to submit OTP" }, 200);
+          }
+
+          return json({
+            ok: true,
+            reference: body.reference,
+            status: otpData?.data?.status ?? "success",
+            message: otpData?.data?.display_text || otpData?.message,
+          });
+        }
+      }
+
+      return json({ error: "OTP submission completed or not required." }, 200);
+    }
+
     if (!body?.momo_number || !body?.momo_network) return json({ error: "momo_number and momo_network are required" }, 400);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

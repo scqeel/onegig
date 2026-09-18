@@ -84,17 +84,32 @@ export default function VerifyPhonePage() {
 
     setBusy(true);
     try {
-      const otpType = phoneParam ? "sms" : "phone_change";
-      const { error } = await authClient.verifyOtp({ 
+      const primaryType = phoneParam ? "sms" : "phone_change";
+      const secondaryType = primaryType === "sms" ? "phone_change" : "sms";
+
+      let { error } = await authClient.verifyOtp({ 
         phone: unconfirmedPhone, 
         token: finalOtp.trim(), 
-        type: otpType
+        type: primaryType
       });
+
+      if (error) {
+        // Fallback retry with alternate type (phone_change vs sms)
+        const secondaryResult = await authClient.verifyOtp({ 
+          phone: unconfirmedPhone, 
+          token: finalOtp.trim(), 
+          type: secondaryType
+        });
+        if (!secondaryResult.error) {
+          error = null;
+        }
+      }
 
       if (error) {
         toast({ title: "Verification failed", description: error.message, variant: "destructive" });
         return;
       }
+
 
       toast({ title: "Phone verified", description: "Your account is now fully secured!" });
       

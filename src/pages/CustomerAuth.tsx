@@ -98,13 +98,25 @@ export default function CustomerAuthPage() {
       if (formattedPhone.startsWith("0")) formattedPhone = "+233" + formattedPhone.substring(1);
       else if (!formattedPhone.startsWith("+")) formattedPhone = "+233" + formattedPhone;
 
-      const { error } = await supabase.auth.verifyOtp({
+      let { error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: finalOtp,
         type: 'sms'
       });
 
+      if (error) {
+        const fallback = await supabase.auth.verifyOtp({
+          phone: formattedPhone,
+          token: finalOtp,
+          type: 'phone_change'
+        });
+        if (!fallback.error) {
+          error = null;
+        }
+      }
+
       if (error) throw error;
+
       
       toast({ title: "Verified successfully!", description: "You are now securely logged in." });
       nav(`/store/${slug}`, { replace: true });

@@ -180,6 +180,7 @@ export async function deliverData(
 
   let lastError = "";
   const attemptedProviders: string[] = [];
+  const providerErrors: Record<string, string> = {};
 
   for (let i = 0; i < validCandidates.length; i++) {
     const { key: providerKey, apiKey: PROVIDER_API_KEY, baseUrl: PROVIDER_BASE_URL } = validCandidates[i];
@@ -259,28 +260,44 @@ export async function deliverData(
           };
         }
       } else {
-        // Data purchase compatible with both SwiftData /buy and /payment/data
-        endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
-        const plan = toPlanId(args.size_label, args.size_mb || 0).toLowerCase();
-        const net = toProviderNetwork(args.network_code || "MTN");
-        let prefix = "yellow";
-        if (net === "TELECEL") prefix = "red";
-        if (net === "AT") prefix = "blue";
-
         const sizeGb = toSizeGb(args.size_label, args.size_mb || 0);
 
-        payload = {
-          action: "buy",
-          package_id: `${prefix}_${plan}`,
-          package_size: `${sizeGb}GB`,
-          size_gb: sizeGb,
-          capacity: sizeGb,
-          network: net,
-          phone: normalizePhone(args.recipient),
-          request_id: requestId,
-          reference: requestId,
-          allow_duplicate: true,
-        };
+        if (
+          PROVIDER_BASE_URL.includes("/api/v1") ||
+          PROVIDER_BASE_URL.includes("ihrvvniomtoofrjkmalb") ||
+          PROVIDER_BASE_URL.endsWith("/buy-data")
+        ) {
+          // SwiftData Reseller API (/buy-data)
+          endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}${PROVIDER_BASE_URL.endsWith("/buy-data") ? "" : "/buy-data"}`;
+          const net = toSwiftDataNetwork(args.network_code, args.size_label);
+          payload = {
+            phone: normalizePhone(args.recipient),
+            network: net,
+            size_gb: sizeGb,
+            reference: requestId,
+          };
+        } else {
+          // SwiftData Developer API fallback (/payment/data)
+          endpoint = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/payment/data`;
+          const plan = toPlanId(args.size_label, args.size_mb || 0).toLowerCase();
+          const net = toProviderNetwork(args.network_code || "MTN");
+          let prefix = "yellow";
+          if (net === "TELECEL") prefix = "red";
+          if (net === "AT") prefix = "blue";
+
+          payload = {
+            action: "buy",
+            package_id: `${prefix}_${plan}`,
+            package_size: `${sizeGb}GB`,
+            size_gb: sizeGb,
+            capacity: sizeGb,
+            network: net,
+            phone: normalizePhone(args.recipient),
+            request_id: requestId,
+            reference: requestId,
+            allow_duplicate: true,
+          };
+        }
       }
     } else {
       // Default / MTopUp fallback
@@ -333,16 +350,19 @@ export async function deliverData(
         }
 
         lastError = cleanMessage;
+        providerErrors[providerKey] = cleanMessage;
         console.warn(`[deliverData] Provider ${providerKey} failed: ${cleanMessage}. Checking next provider in failover sequence...`);
         continue; // Try next candidate in the failover chain
       }
 
       // Successful response from provider
-      const rawStatus = String(parsed?.data?.status || parsed?.status || "processing").toLowerCase();
+      const rawStatus = String(parsed?.order?.status || parsed?.data?.status || parsed?.status || "processing").toLowerCase();
       const isDelivered = ["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus);
-      const providerRef = parsed?.data?.orderNumber
+      const providerRef = parsed?.order?.reference
+        ? String(parsed.order.reference)
+        : (parsed?.data?.orderNumber
         ? String(parsed.data.orderNumber)
-        : (parsed?.data?.reference || parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId);
+        : (parsed?.data?.reference || parsed?.order_id || parsed?.transaction_id || parsed?.reference || requestId));
 
       const failoverNote = i > 0 ? ` (Auto-failover from ${attemptedProviders[0]}: ${lastError})` : "";
       const successMessage = parsed?.message ? `${parsed.message}${failoverNote}` : (failoverNote ? `Fulfilled via ${providerKey}${failoverNote}` : null);
@@ -356,15 +376,22 @@ export async function deliverData(
       };
     } catch (fetchErr: any) {
       lastError = fetchErr?.name === "AbortError" ? "Request timed out" : (fetchErr?.message || String(fetchErr));
+      providerErrors[providerKey] = lastError;
       console.warn(`[deliverData] Provider ${providerKey} threw network error: ${lastError}. Checking next provider...`);
       continue;
     }
   }
 
   // If we reach here, all candidate providers were attempted and failed
+  const isBalanceError = Object.values(providerErrors).some((err) => /insufficient\s+balance/i.test(err));
+  const primaryError = providerErrors[attemptedProviders[0]];
+  const finalMessage = isBalanceError
+    ? `Provider balance exhausted (${primaryError || "Insufficient provider funds"}). Please top up provider wallet.`
+    : `All delivery providers failed (${attemptedProviders.join(" -> ")}). Last error: ${lastError}`;
+
   return {
     ok: false,
     provider_ref: requestId,
-    message: `All delivery providers failed (${attemptedProviders.join(" -> ")}). Last error: ${lastError}`,
+    message: finalMessage,
   };
 }

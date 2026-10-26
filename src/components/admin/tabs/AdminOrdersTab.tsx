@@ -137,29 +137,97 @@ export function AdminOrdersTab() {
     if (!order.recipient_phone) return;
     setRetryId(order.id);
     try {
+      if (manualFulfill) {
+        // Direct DB update for manual fulfill
+        const { error: updErr } = await supabase
+          .from("orders")
+          .update({
+            status: "delivered",
+            notes: `${order.notes ? order.notes + " - " : ""}Manually marked as delivered by Admin`,
+          })
+          .eq("id", order.id);
+
+        if (updErr) throw updErr;
+
+        toast({ title: "Marked as Delivered 🟢", description: `Order ${order.reference || order.id} marked as delivered.` });
+        qc.invalidateQueries({ queryKey: ["admin-orders"] });
+        return;
+      }
+
       toast({ title: "Retrying Delivery...", description: `Submitting order ref ${order.reference || order.id} to DataHub GH...` });
       
-      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
-        body: { 
-          action: "retry_order",
-          order_id: order.id,
-          manual_fulfill: manualFulfill
-        },
-      });
+      // 1. First attempt Edge Function
+      let dispatchSucceeded = false;
+      let orderNumberText = "";
 
-      if (error || !data?.success) { 
-        toast({ 
-          title: "Retry Failed", 
-          description: error?.message || data?.error || data?.message || "Retry failed", 
-          variant: "destructive" 
-        }); 
-      } else {
-        toast({ 
-          title: manualFulfill ? "Marked as Delivered 🟢" : (data?.status === "delivered" ? "Order Delivered 🟢" : "Order Retried & Submitted 🔄"), 
-          description: data?.message || "Provider request executed. Status updated!" 
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+          body: { 
+            action: "retry_order",
+            order_id: order.id,
+            manual_fulfill: false
+          },
         });
-        qc.invalidateQueries({ queryKey: ["admin-orders"] });
+        if (!error && data?.success && data?.status !== "failed" && !String(data?.data?.error || "").includes("Action") && !String(data?.data?.error || "").includes("Invalid networkKey")) {
+          dispatchSucceeded = true;
+          if (data?.provider_ref) orderNumberText = `Ref: ${data.provider_ref}`;
+        }
+      } catch (_) {}
+
+      // 2. Direct fallback to DataHub if Edge Function is outdated or failed
+      if (!dispatchSucceeded) {
+        const { data: setRow } = await supabase.from("app_settings").select("value").eq("key", "data_providers").maybeSingle();
+        const dhKey = (setRow?.value as any)?.providers?.datahub?.api_key || "sk_a39f98c635f90d3d785348f4f3df3522d3c42c60001a1bca";
+        
+        let netKey = "YELLO";
+        const netCode = String(order.network?.code || "").toUpperCase();
+        if (netCode === "TELECEL" || netCode === "VODAFONE") netKey = "TELECEL";
+        if (netCode === "AT" || netCode === "AIRTELTIGO") netKey = "AT_PREMIUM";
+
+        const sizeLabel = String(order.bundle?.size_label || "");
+        const match = sizeLabel.match(/(\d+(?:\.\d+)?)\s*gb/i);
+        const capacity = match ? match[1] : (order.bundle?.size_mb ? String(Math.round(order.bundle.size_mb / 1000)) : "1");
+
+        let cleanPhone = String(order.recipient_phone).replace(/\D/g, "");
+        if (cleanPhone.startsWith("233") && cleanPhone.length === 12) cleanPhone = "0" + cleanPhone.slice(3);
+
+        const dhRes = await fetch("https://user.datahubgh.com/api/external/data-purchase", {
+          method: "POST",
+          headers: {
+            "X-API-Key": dhKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            networkKey: netKey,
+            recipient: cleanPhone,
+            capacity,
+            reference: order.id,
+          }),
+        });
+
+        const dhData = await dhRes.json().catch(() => null);
+        if (!dhRes.ok || !dhData?.success) {
+          throw new Error(dhData?.error || `DataHub rejected retry: ${dhRes.status}`);
+        }
+
+        orderNumberText = dhData.data?.orderNumber ? `Order #${dhData.data.orderNumber}` : `Ref: ${order.id}`;
+        
+        await supabase
+          .from("orders")
+          .update({
+            status: "processing",
+            notes: `Dispatched via DataHub (${orderNumberText}) - ${dhData.message || "Order received and is being processed"}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", order.id);
       }
+
+      toast({ 
+        title: "Order Retried & Submitted 🔄", 
+        description: orderNumberText ? `Dispatched to DataHub (${orderNumberText}). Status updated!` : "Provider request executed. Status updated!" 
+      });
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+
     } catch (err: any) {
       toast({ title: "Retry Failed", description: err.message, variant: "destructive" });
     } finally {

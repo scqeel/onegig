@@ -2,6 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendSMS } from "../_shared/sms.ts";
 import { sendWebPushNotification } from "../_shared/push.ts";
 import { deliverData, normalizePhone } from "../_shared/deliver.ts";
+// Edge Function Auto-Deploy Trigger
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

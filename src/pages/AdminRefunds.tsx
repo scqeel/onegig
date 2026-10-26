@@ -152,18 +152,9 @@ export default function AdminRefunds() {
         throw new Error(data?.error || error?.message || "Dispatch retry failed");
       }
 
-      await supabase
-        .from("orders")
-        .update({
-          status: "processing",
-          notes: `${order.notes || ""} | Retried dispatch via Admin`,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id);
-
       toast({
-        title: "Order Re-Dispatched ⚡",
-        description: `Order #${order.id.slice(0, 8)} resent to provider.`,
+        title: data?.status === "delivered" ? "Order Delivered 🟢" : "Order Re-Dispatched ⚡",
+        description: data?.message || `Order #${order.id.slice(0, 8)} resent to provider.`,
       });
 
       qc.invalidateQueries({ queryKey: ["admin-refund-orders"] });

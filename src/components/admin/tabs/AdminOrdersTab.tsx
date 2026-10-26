@@ -147,11 +147,15 @@ export function AdminOrdersTab() {
         },
       });
 
-      if (error) { 
-        toast({ title: "Retry Failed", description: error.message, variant: "destructive" }); 
+      if (error || !data?.success) { 
+        toast({ 
+          title: "Retry Failed", 
+          description: error?.message || data?.error || data?.message || "Retry failed", 
+          variant: "destructive" 
+        }); 
       } else {
         toast({ 
-          title: manualFulfill ? "Marked as Delivered 🟢" : "Order Retried & Submitted 🔄", 
+          title: manualFulfill ? "Marked as Delivered 🟢" : (data?.status === "delivered" ? "Order Delivered 🟢" : "Order Retried & Submitted 🔄"), 
           description: data?.message || "Provider request executed. Status updated!" 
         });
         qc.invalidateQueries({ queryKey: ["admin-orders"] });

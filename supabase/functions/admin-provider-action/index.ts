@@ -1,6 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { sendSMS } from "../_shared/sms.ts";
 import { sendWebPushNotification } from "../_shared/push.ts";
+import { deliverData, normalizePhone } from "../_shared/deliver.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -647,7 +648,7 @@ Deno.serve(async (req) => {
       });
 
     } else if (action === "retry_order") {
-      const { order_id } = body;
+      const { order_id, manual_fulfill } = body;
       if (!order_id) return json({ error: "order_id is required for retry" }, 400);
 
       const { data: targetOrder, error: oErr } = await admin
@@ -660,63 +661,156 @@ Deno.serve(async (req) => {
         return json({ error: "Order not found" }, 404);
       }
 
-      // Reset status to processing
-      await admin.from("orders").update({ status: "processing", notes: "Manual Retry Triggered by Admin" }).eq("id", order_id);
-
       const netCode = targetOrder.network?.code || "MTN";
       const sizeLabel = targetOrder.bundle?.size_label || "";
-      const recipient = targetOrder.recipient_phone;
+      const recipient = normalizePhone(targetOrder.recipient_phone);
 
-      // Dispatch via DataHub
-      const netKey = (netCode.toUpperCase() === "MTN") ? "yello" : (netCode.toUpperCase() === "TELECEL" ? "red" : "blue");
-      const gbMatch = String(sizeLabel).match(/(\d+(?:\.\d+)?)\s*gb/i);
-      const capacity = gbMatch ? gbMatch[1] : "1";
+      // 1. Handle Manual Fulfill ("Mark Delivered")
+      if (manual_fulfill) {
+        await admin
+          .from("orders")
+          .update({
+            status: "delivered",
+            notes: `${targetOrder.notes ? targetOrder.notes + " - " : ""}Manually marked as delivered by Admin`,
+          })
+          .eq("id", targetOrder.id);
 
-      const retryUrl = `${PROVIDER_BASE_URL.replace(/\/$/, "")}/data-purchase`;
-      const retryRes = await fetch(retryUrl, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          networkKey: netKey,
-          recipient,
-          capacity,
-          reference: targetOrder.id,
-        }),
+        if (recipient) {
+          sendSMS({
+            to: recipient,
+            message: `Your OneGig order for ${recipient} (${sizeLabel}) has been completed & delivered! Thank you for choosing OneGig.`,
+          }).catch((e) => console.error("SMS retry notify error:", e));
+        }
+
+        // Credit agent profit if not already credited
+        if (targetOrder.agent_id && Number(targetOrder.agent_profit || 0) > 0) {
+          const { data: existingTx } = await admin
+            .from("wallet_transactions")
+            .select("id")
+            .eq("related_order_id", targetOrder.id)
+            .eq("type", "earning")
+            .maybeSingle();
+
+          if (!existingTx) {
+            const { data: agentRow } = await admin
+              .from("agent_profiles")
+              .select("user_id")
+              .eq("id", targetOrder.agent_id)
+              .maybeSingle();
+
+            if (agentRow?.user_id) {
+              await admin.from("wallet_transactions").insert({
+                user_id: agentRow.user_id,
+                type: "earning",
+                amount: Number(targetOrder.agent_profit),
+                status: "completed",
+                related_order_id: targetOrder.id,
+                description: `Profit from order ${targetOrder.reference}`,
+              });
+            }
+          }
+        }
+
+        return json({
+          success: true,
+          status: "delivered",
+          message: "Order successfully marked as delivered.",
+        });
+      }
+
+      // 2. Automated Provider Retry with Failover
+      await admin.from("orders").update({ status: "processing", notes: "Manual Retry Triggered by Admin" }).eq("id", order_id);
+
+      let orderType: "data" | "airtime" | "bill" = "data";
+      let billType: string | undefined = undefined;
+      const notesText = String(targetOrder.notes || "");
+      if (notesText.includes("Utility Bill")) {
+        orderType = "bill";
+        billType = notesText.split(" - ")[0].replace("Utility Bill: ", "").trim();
+      } else if (notesText.includes("Airtime") || targetOrder.bundle_id === null) {
+        orderType = "airtime";
+      }
+
+      const delivery = await deliverData(admin, {
+        recipient,
+        network_code: netCode,
+        size_label: targetOrder.bundle?.size_label,
+        size_mb: targetOrder.bundle?.size_mb,
+        amount: Number(targetOrder.sell_price || 0),
+        bill_type: billType,
+        type: orderType,
+        request_id: targetOrder.id,
       });
 
-      const retryData = await retryRes.json().catch(() => ({ success: false, message: "Provider request sent" }));
-      const rawStatus = String(retryData?.data?.status || retryData?.status || "processing").toLowerCase();
-      const isDelivered = ["completed", "delivered", "success", "fulfilled", "paid"].includes(rawStatus);
+      if (!delivery.ok) {
+        await admin
+          .from("orders")
+          .update({
+            status: "failed",
+            notes: `Retry Failed: ${delivery.message || "Provider error"}`,
+          })
+          .eq("id", targetOrder.id);
 
+        return json({
+          success: false,
+          error: delivery.message || "Provider delivery failed during retry.",
+        }, 200);
+      }
+
+      const isDelivered = delivery.status === "delivered" || delivery.status === "fulfilled";
       const finalStatus = isDelivered ? "delivered" : "processing";
-      const rawNum = retryData?.data?.orderNumber || retryData?.orderNumber;
-      const providerRef = rawNum
-        ? String(rawNum)
-        : (retryData?.data?.reference || retryData?.order_id || targetOrder.id);
-
-      const isNumericRef = /^\d+$/.test(providerRef);
-      const noteRefText = isNumericRef ? `Order #${providerRef}` : `Ref: ${providerRef}`;
+      const providerRef = delivery.provider_ref || targetOrder.id;
 
       await admin
         .from("orders")
         .update({
           status: finalStatus,
-          notes: `Retried via DataHub (${noteRefText}) - ${retryData?.message || "Submitted"}`,
+          notes: delivery.message || `Provider Ref: ${providerRef}`,
         })
         .eq("id", targetOrder.id);
 
       if (isDelivered) {
-        sendSMS({
-          to: recipient,
-          message: `Your OneGig order for ${recipient} (${sizeLabel}) has been successfully processed & delivered! Thank you for your patience.`,
-        }).catch((e) => console.error("SMS retry notify error:", e));
+        if (recipient) {
+          sendSMS({
+            to: recipient,
+            message: `Your OneGig order for ${recipient} (${sizeLabel}) has been successfully processed & delivered! Thank you for your patience.`,
+          }).catch((e) => console.error("SMS retry notify error:", e));
+        }
+
+        if (targetOrder.agent_id && Number(targetOrder.agent_profit || 0) > 0) {
+          const { data: existingTx } = await admin
+            .from("wallet_transactions")
+            .select("id")
+            .eq("related_order_id", targetOrder.id)
+            .eq("type", "earning")
+            .maybeSingle();
+
+          if (!existingTx) {
+            const { data: agentRow } = await admin
+              .from("agent_profiles")
+              .select("user_id")
+              .eq("id", targetOrder.agent_id)
+              .maybeSingle();
+
+            if (agentRow?.user_id) {
+              await admin.from("wallet_transactions").insert({
+                user_id: agentRow.user_id,
+                type: "earning",
+                amount: Number(targetOrder.agent_profit),
+                status: "completed",
+                related_order_id: targetOrder.id,
+                description: `Profit from order ${targetOrder.reference}`,
+              });
+            }
+          }
+        }
       }
 
       return json({
         success: true,
-        message: isDelivered ? "Order successfully retried and delivered!" : "Order retried and submitted to provider.",
+        message: isDelivered ? "Order successfully retried and delivered!" : `Order retried and submitted (${delivery.message || "Processing"}).`,
         status: finalStatus,
-        data: retryData,
+        provider_ref: providerRef,
       });
 
     } else {

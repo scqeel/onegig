@@ -14,9 +14,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: supabase/setup-cli@v1
+      - uses: actions/setup-node@v4
         with:
-          version: latest
+          node-version: 20
 
       - name: Deploy edge functions
         run: |
@@ -53,7 +53,7 @@ jobs:
           failed=()
           for fn in "${functions[@]}"; do
             echo "::group::Deploy $fn"
-            if ! supabase functions deploy "$fn" --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --no-verify-jwt; then
+            if ! npx --yes supabase@latest functions deploy "$fn" --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}" --no-verify-jwt; then
               failed+=("$fn")
             fi
             echo "::endgroup::"
@@ -67,7 +67,7 @@ jobs:
 
       - name: Set provider secrets
         run: |
-          supabase secrets set \
+          npx --yes supabase@latest secrets set \
             DEVELOPER_API_KEY=${{ secrets.DEVELOPER_API_KEY }} \
             DEVELOPER_API_BASE_URL=https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api \
             --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}

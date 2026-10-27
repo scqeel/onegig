@@ -16,6 +16,8 @@ import { AdminSettingsTab } from "@/components/admin/tabs/AdminSettingsTab";
 import { AdminMarketingTab } from "@/components/admin/tabs/AdminMarketingTab";
 import { AdminCouponsTab } from "@/components/admin/tabs/AdminCouponsTab";
 
+import { ProviderBalancePill } from "@/components/admin/ProviderBalancePill";
+
 type Tab = "overview" | "users" | "orders" | "payments" | "withdrawals" | "pricing" | "integrations" | "settings" | "marketing" | "coupons" | "subscriptions";
 
 export default function AdminPage() {
@@ -47,13 +49,16 @@ export default function AdminPage() {
         onClick: () => setTab(item.value as Tab),
       }))}
       topActions={
-        <a
-          href="/dashboard"
-          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-        >
-          <RefreshCw className="h-3 w-3" />
-          Back to Dashboard
-        </a>
+        <div className="flex flex-wrap items-center gap-3">
+          <ProviderBalancePill />
+          <a
+            href="/dashboard"
+            className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <RefreshCw className="h-3 w-3" />
+            Back to Dashboard
+          </a>
+        </div>
       }
     >
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">

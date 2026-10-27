@@ -321,7 +321,175 @@ Deno.serve(async (req) => {
       return json({ success: false, error: "Provider API Key is not configured in integrations settings" }, 200);
     }
 
-    if (action === "get_balance") {
+    if (action === "check_low_balance_alert" || action === "send_test_alert") {
+      // Fetch both DataHub and SwiftData balances
+      const dhConfig = config?.providers?.datahub ?? {};
+      const dhUrl = dhConfig.base_url || "https://user.datahubgh.com/api/external";
+      const dhKey = Deno.env.get("DATAHUB_API_KEY") || dhConfig.api_key || "";
+
+      const sdConfig = config?.providers?.swiftdata ?? {};
+      const sdUrl = sdConfig.base_url || "https://ihrvvniomtoofrjkmalb.supabase.co/functions/v1/api/v1";
+      const sdKey = Deno.env.get("SWIFTDATA_API_KEY") || sdConfig.api_key || "";
+
+      let dhBalance: number | null = null;
+      let sdBalance: number | null = null;
+
+      try {
+        const dhRes = await fetch(`${dhUrl.replace(/\/$/, "")}/balance`, {
+          headers: { "X-API-Key": dhKey, "Content-Type": "application/json" }
+        });
+        const dhData = await dhRes.json().catch(() => null);
+        if (dhData?.success) {
+          dhBalance = Number(dhData.data?.balance ?? dhData.balance ?? 0);
+        }
+      } catch (e) {
+        console.warn("Error fetching DataHub balance:", e);
+      }
+
+      try {
+        const sdRes = await fetch(`${sdUrl.replace(/\/$/, "")}/v1/balance`, {
+          headers: { "X-API-Key": sdKey, "Authorization": `Bearer ${sdKey}`, "Content-Type": "application/json" }
+        });
+        const sdData = await sdRes.json().catch(() => null);
+        if (sdData?.success) {
+          sdBalance = Number(sdData.balance ?? 0);
+        }
+      } catch (e) {
+        console.warn("Error fetching SwiftData balance:", e);
+      }
+
+      // Read alert settings
+      const { data: alertSettingRow } = await admin.from("app_settings").select("value").eq("key", "low_balance_alert").maybeSingle();
+      const alertConfig = (alertSettingRow?.value as any) ?? {
+        enabled: true,
+        threshold: 100,
+        phone: "0598170947",
+        channels: ["sms"],
+      };
+
+      const threshold = Number(body.threshold ?? alertConfig.threshold ?? 100);
+      const targetPhone = body.phone || alertConfig.phone || "0598170947";
+      const isTest = action === "send_test_alert";
+
+      const dhLow = dhBalance !== null && dhBalance < threshold;
+      const sdLow = sdBalance !== null && sdBalance < threshold;
+      const shouldAlert = isTest || dhLow || sdLow;
+
+      let smsResult: any = null;
+      if (shouldAlert && targetPhone) {
+        const dhText = dhBalance !== null ? `₵${dhBalance.toFixed(2)}` : "Unavailable";
+        const sdText = sdBalance !== null ? `₵${sdBalance.toFixed(2)}` : "Unavailable";
+        const alertMsg = isTest
+          ? `[OneGig TEST ALERT] Balance Monitor: DataHub: ${dhText} | SwiftData: ${sdText}. Threshold: ₵${threshold.toFixed(2)}. Alert system operational!`
+          : `⚠️ OneGig Low Balance Alert! DataHub: ${dhText} | SwiftData: ${sdText}. One or more balances are below ₵${threshold.toFixed(2)}. Top up immediately to prevent failed customer orders.`;
+
+        try {
+          smsResult = await sendSMS({ to: targetPhone, message: alertMsg });
+        } catch (smsErr: any) {
+          console.error("Failed to send balance alert SMS:", smsErr);
+          smsResult = { error: smsErr.message };
+        }
+      }
+
+      return json({
+        success: true,
+        alertSent: shouldAlert && !!smsResult,
+        isTest,
+        threshold,
+        balances: {
+          datahub: dhBalance,
+          swiftdata: sdBalance,
+        },
+        dhLow,
+        sdLow,
+        smsResult,
+      });
+
+    } else if (action === "sync_all_pending") {
+      // Find all orders in processing or pending within last 48 hours
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: pendingOrders, error: poErr } = await admin
+        .from("orders")
+        .select("id, reference, status, recipient_phone, notes, bundle:bundles(size_label), network:networks(name)")
+        .in("status", ["processing", "pending"])
+        .gte("created_at", twoDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (poErr) return json({ error: poErr.message }, 500);
+
+      let deliveredCount = 0;
+      let failedCount = 0;
+      let unchangedCount = 0;
+      const results: any[] = [];
+
+      for (const ord of (pendingOrders || [])) {
+        try {
+          // Check order status using standard candidate references
+          const refToTest = ord.reference || ord.id;
+          let statusResult = "processing";
+
+          const stRes = await fetch(`${PROVIDER_BASE_URL.replace(/\/$/, "")}/order-status`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ reference: refToTest }),
+          });
+          const stData = await stRes.json().catch(() => null);
+
+          if (stData?.success || stData?.data?.status) {
+            const rawSt = String(stData.data?.status || stData.status || "").toLowerCase();
+            if (["completed", "delivered", "success", "fulfilled", "paid"].includes(rawSt)) {
+              statusResult = "delivered";
+            } else if (["failed", "canceled", "cancelled", "rejected"].includes(rawSt)) {
+              statusResult = "failed";
+            }
+          }
+
+          if (statusResult === "delivered") {
+            await admin.from("orders").update({
+              status: "delivered",
+              notes: stData?.data?.statusDescription || "Batch reconciliation: order confirmed delivered.",
+              updated_at: new Date().toISOString(),
+            }).eq("id", ord.id);
+
+            deliveredCount++;
+
+            // Trigger SMS if phone present
+            if (ord.recipient_phone) {
+              const bLabel = ord.bundle?.size_label || "Data Bundle";
+              sendSMS({
+                to: ord.recipient_phone,
+                message: `Your OneGig order for ${bLabel} (${ord.recipient_phone}) has been confirmed delivered! Ref: ${refToTest}. Thank you!`,
+              }).catch(() => {});
+            }
+          } else if (statusResult === "failed") {
+            await admin.from("orders").update({
+              status: "failed",
+              notes: stData?.data?.statusDescription || "Batch reconciliation: order reported failed.",
+              updated_at: new Date().toISOString(),
+            }).eq("id", ord.id);
+            failedCount++;
+          } else {
+            unchangedCount++;
+          }
+
+          results.push({ id: ord.id, reference: refToTest, status: statusResult });
+        } catch (e: any) {
+          unchangedCount++;
+          results.push({ id: ord.id, error: e.message });
+        }
+      }
+
+      return json({
+        success: true,
+        total_checked: pendingOrders?.length || 0,
+        delivered: deliveredCount,
+        failed: failedCount,
+        unchanged: unchangedCount,
+        orders: results,
+      });
+
+    } else if (action === "get_balance") {
       let mainBalance = 0;
       let apiBalance = 0;
       let currency = "GHS";

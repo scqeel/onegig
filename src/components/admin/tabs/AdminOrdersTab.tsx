@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatGHS, timeAgo } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 type Profile = {
   id: string;
@@ -45,6 +46,8 @@ export function AdminOrdersTab() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch]             = useState("");
   const [dateFilter, setDateFilter]     = useState("30d");
+  const [isSyncingAll, setIsSyncingAll] = useState(false);
+  const [syncProgress, setSyncProgress] = useState<{ current: number; total: number } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["admin-orders", dateFilter],
@@ -130,6 +133,82 @@ export function AdminOrdersTab() {
       toast({ title: "Sync Failed", description: err.message, variant: "destructive" });
     } finally {
       setSyncingId(null);
+    }
+  };
+
+  const syncAllPendingOrders = async () => {
+    setIsSyncingAll(true);
+    setSyncProgress(null);
+    try {
+      // 1. Fetch all pending or processing orders from last 48h
+      const twoDaysAgo = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: pendingList, error: pErr } = await supabase
+        .from("orders")
+        .select("id, reference, status, recipient_phone, notes, bundle:bundles(size_label), network:networks(name)")
+        .in("status", ["processing", "pending"])
+        .gte("created_at", twoDaysAgo)
+        .order("created_at", { ascending: false });
+
+      if (pErr) throw pErr;
+
+      const list = pendingList || [];
+      if (list.length === 0) {
+        toast({
+          title: "All Caught Up! ✅",
+          description: "There are no pending or processing orders from the last 48 hours to reconcile.",
+        });
+        return;
+      }
+
+      toast({
+        title: `Starting Batch Sync... 🔄`,
+        description: `Reconciling ${list.length} pending orders with live fulfillment gateways...`,
+      });
+
+      let delivered = 0;
+      let failed = 0;
+      let inProgress = 0;
+
+      for (let i = 0; i < list.length; i++) {
+        const order = list[i];
+        setSyncProgress({ current: i + 1, total: list.length });
+
+        try {
+          const { data: res } = await supabase.functions.invoke("admin-provider-action", {
+            body: {
+              action: "check_order_status",
+              order_id: order.id,
+              reference: order.reference || order.id,
+            },
+          });
+
+          if (res?.success) {
+            const st = res.status;
+            if (st === "delivered") delivered++;
+            else if (st === "failed") failed++;
+            else inProgress++;
+          } else {
+            inProgress++;
+          }
+        } catch (_) {
+          inProgress++;
+        }
+      }
+
+      qc.invalidateQueries({ queryKey: ["admin-orders"] });
+      toast({
+        title: "Batch Sync Completed! 🎉",
+        description: `Checked ${list.length} orders: ${delivered} delivered, ${failed} failed, ${inProgress} still in progress. Commissions & notifications distributed.`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Batch Sync Error",
+        description: err.message || "Failed to reconcile pending orders.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncingAll(false);
+      setSyncProgress(null);
     }
   };
 
@@ -310,6 +389,20 @@ export function AdminOrdersTab() {
           />
         </div>
         <div className="flex flex-wrap shrink-0 items-center gap-3">
+          <Button
+            size="sm"
+            onClick={syncAllPendingOrders}
+            disabled={isSyncingAll}
+            className="h-10 rounded-xl gap-2 px-4 text-xs font-bold bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-primary-foreground transition-all shadow-soft"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isSyncingAll && "animate-spin")} />
+            {isSyncingAll ? (
+              syncProgress ? `Syncing (${syncProgress.current}/${syncProgress.total})...` : "Syncing Pending..."
+            ) : (
+              "Sync All Pending (Batch) 🔄"
+            )}
+          </Button>
+
           <select
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}

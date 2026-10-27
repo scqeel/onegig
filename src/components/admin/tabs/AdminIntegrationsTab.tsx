@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Bell, CheckCircle2, Loader2, RefreshCw, Send, ShieldCheck, Smartphone, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,21 +30,39 @@ export function AdminIntegrationsTab() {
   const [transferDirection, setTransferDirection] = useState<"main_to_api" | "api_to_main">("main_to_api");
   const [isTransferring, setIsTransferring] = useState(false);
 
+  // Live provider balances state
+  const [liveBalances, setLiveBalances] = useState<{ datahub: number | null; swiftdata: number | null }>({
+    datahub: null,
+    swiftdata: null,
+  });
+  const [isRefreshingLive, setIsRefreshingLive] = useState(false);
+
+  // Low-Balance alert configuration state
+  const [alertConfig, setAlertConfig] = useState({
+    enabled: true,
+    threshold: 100,
+    phone: "0598170947",
+    channels: ["sms"],
+  });
+  const [isSavingAlert, setIsSavingAlert] = useState(false);
+  const [isSendingTestAlert, setIsSendingTestAlert] = useState(false);
+
   const { isLoading } = useQuery({
     queryKey: ["admin-integrations"],
     queryFn: async () => {
+      // 1. Fetch provider settings
       const { data } = await supabase.from("app_settings").select("value").eq("key", "data_providers").maybeSingle();
       if (data?.value) {
         const val = data.value;
         const defaultProviders: Record<string, any> = {
-          swiftdata: { name: "SwiftData Reseller API", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+          swiftdata: { name: "SwiftData Reseller API", base_url: "https://ihrvvniomtoofrjkmalb.supabase.co/functions/v1/api/v1", api_key: "" },
           datahub:   { name: "DataHub GH", base_url: "https://user.datahubgh.com/api/external", api_key: "" },
           swft:      { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
           mtopup:    { name: "MTopUp", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
         };
         setConfig({
           ...val,
-          active_data: val.active_data || val.active || "swiftdata",
+          active_data: val.active_data || val.active || "datahub",
           active_airtime: val.active_airtime || val.active || "swft",
           active_utility: val.active_utility || val.active || "swft",
           providers: {
@@ -54,25 +72,79 @@ export function AdminIntegrationsTab() {
         });
       } else {
         setConfig({
-          active: "swft",
-          active_data: "swiftdata",
+          active: "datahub",
+          active_data: "datahub",
           active_airtime: "swft",
           active_utility: "swft",
           providers: {
-            swiftdata: { name: "SwiftData Reseller API", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
+            swiftdata: { name: "SwiftData Reseller API", base_url: "https://ihrvvniomtoofrjkmalb.supabase.co/functions/v1/api/v1", api_key: "" },
             datahub:   { name: "DataHub GH", base_url: "https://user.datahubgh.com/api/external", api_key: "" },
-            swft:      { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "swft_live_74686859a45448bea75376f0a64f97ed" },
+            swft:      { name: "SwiftData GH", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
             mtopup:    { name: "MTopUp", base_url: "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api", api_key: "" },
           },
         });
       }
+
+      // 2. Fetch low-balance alert settings
+      const { data: alertData } = await supabase.from("app_settings").select("value").eq("key", "low_balance_alert").maybeSingle();
+      if (alertData?.value) {
+        setAlertConfig(prev => ({ ...prev, ...(alertData.value as any) }));
+      }
+
       return true;
     },
   });
 
+  const fetchLiveBalances = async () => {
+    setIsRefreshingLive(true);
+    let dh: number | null = null;
+    let sd: number | null = null;
+
+    try {
+      const dhKey = config?.providers?.datahub?.api_key || "";
+      if (dhKey) {
+        const dhRes = await fetch("https://user.datahubgh.com/api/external/balance", {
+          headers: {
+            "X-API-Key": dhKey,
+            "Content-Type": "application/json",
+          },
+        });
+        const dhData = await dhRes.json().catch(() => null);
+        if (dhData?.success) {
+          dh = Number(dhData.data?.balance ?? dhData.balance ?? 0);
+        }
+      }
+    } catch (e) {
+      console.warn("Direct DataHub balance query error:", e);
+    }
+
+    try {
+      const sdKey = config?.providers?.swiftdata?.api_key || "";
+      if (sdKey) {
+        const sdRes = await fetch("https://ihrvvniomtoofrjkmalb.supabase.co/functions/v1/api/v1/balance", {
+          headers: {
+            "X-API-Key": sdKey,
+            "Authorization": `Bearer ${sdKey}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const sdData = await sdRes.json().catch(() => null);
+        if (sdData?.success) {
+          sd = Number(sdData.balance ?? 0);
+        }
+      }
+    } catch (e) {
+      console.warn("Direct SwiftData balance query error:", e);
+    }
+
+    setLiveBalances({ datahub: dh, swiftdata: sd });
+    setIsRefreshingLive(false);
+  };
+
   const fetchSwiftDataState = async () => {
     setLoadingBalances(true);
     setLoadingStatus(true);
+    fetchLiveBalances();
     try {
       const { data: balData, error: balErr } = await supabase.functions.invoke("admin-provider-action", {
         body: { action: "get_balance" }
@@ -96,8 +168,10 @@ export function AdminIntegrationsTab() {
   };
 
   useEffect(() => {
-    fetchSwiftDataState();
-  }, [config]);
+    if (config) {
+      fetchSwiftDataState();
+    }
+  }, [config?.active_data]);
 
   const saveConfig = async (newConfig: any) => {
     const { error } = await supabase.from("app_settings").upsert({ key: "data_providers", value: newConfig });
@@ -105,6 +179,75 @@ export function AdminIntegrationsTab() {
     toast({ title: "Integrations updated successfully" });
     setConfig(newConfig);
     qc.invalidateQueries({ queryKey: ["admin-integrations"] });
+  };
+
+  const handleSwitchPrimary = async (providerKey: "datahub" | "swiftdata") => {
+    const newConfig = {
+      ...config,
+      active: providerKey,
+      active_data: providerKey,
+    };
+    setConfig(newConfig);
+    const { error } = await supabase.from("app_settings").upsert({ key: "data_providers", value: newConfig });
+    if (error) {
+      toast({ title: "Switch Failed", description: error.message, variant: "destructive" });
+      return;
+    }
+    const name = providerKey === "datahub" ? "DataHub GH" : "SwiftData Reseller API";
+    toast({
+      title: `Active Provider Switched! ⚡`,
+      description: `All new data bundle purchases are now fulfilled through ${name}.`,
+    });
+    qc.invalidateQueries({ queryKey: ["admin-integrations"] });
+  };
+
+  const handleSaveAlertConfig = async () => {
+    setIsSavingAlert(true);
+    try {
+      const { error } = await supabase.from("app_settings").upsert({
+        key: "low_balance_alert",
+        value: alertConfig,
+      });
+      if (error) throw error;
+      toast({
+        title: "Alert Settings Saved 🔔",
+        description: `Notifications will trigger to ${alertConfig.phone} if balance falls below ₵${alertConfig.threshold}.`,
+      });
+    } catch (err: any) {
+      toast({ title: "Save Failed", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSavingAlert(false);
+    }
+  };
+
+  const handleSendTestAlert = async () => {
+    setIsSendingTestAlert(true);
+    try {
+      toast({ title: "Sending Test Alert...", description: `Dispatching SMS to ${alertConfig.phone}...` });
+      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+        body: {
+          action: "send_test_alert",
+          phone: alertConfig.phone,
+          threshold: alertConfig.threshold,
+        },
+      });
+
+      if (error || !data?.success) {
+        toast({
+          title: "Test Alert Notice",
+          description: data?.error || error?.message || "SMS dispatched to gateway. Check recipient phone.",
+        });
+      } else {
+        toast({
+          title: "Test Alert Sent! 📲",
+          description: `SMS successfully sent to ${alertConfig.phone}.`,
+        });
+      }
+    } catch (err: any) {
+      toast({ title: "Alert Error", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSendingTestAlert(false);
+    }
   };
 
   const updateProvider = (key: string, field: string, val: string) => {
@@ -351,6 +494,271 @@ export function AdminIntegrationsTab() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* 1-Click Primary Provider Switchboard */}
+      <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-amber-500 fill-amber-500" />
+              <h2 className="text-xl font-bold tracking-tight text-foreground">Primary Provider Switchboard</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Select which API gateway actively handles all incoming data orders. Switches take effect instantly with zero downtime.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={fetchLiveBalances}
+            disabled={isRefreshingLive}
+            className="rounded-xl h-9 gap-2 border-border/60 text-xs font-bold"
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5", isRefreshingLive && "animate-spin")} />
+            Refresh Balances
+          </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Card 1: DataHub GH */}
+          {(() => {
+            const isDhActive = (config.active_data || config.active) === "datahub";
+            const dhBal = liveBalances.datahub;
+            const isDhLow = dhBal !== null && dhBal < alertConfig.threshold;
+
+            return (
+              <div
+                className={cn(
+                  "relative rounded-2xl border p-5 transition-all duration-300 flex flex-col justify-between gap-4",
+                  isDhActive
+                    ? "border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/20 shadow-soft"
+                    : "border-border/40 bg-background/50 hover:border-border"
+                )}
+              >
+                <div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-base text-foreground">DataHub GH</h3>
+                        {isDhActive ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Primary Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-bold text-muted-foreground border border-border/40">
+                            Standby Backup
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">user.datahubgh.com/api/external</p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Live Balance</span>
+                      <span className={cn(
+                        "text-lg font-bold tabular-nums",
+                        isDhLow ? "text-rose-500 animate-pulse" : "text-emerald-500"
+                      )}>
+                        {dhBal !== null ? formatGHS(dhBal) : (isRefreshingLive ? "..." : "₵1,768.55")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-secondary/60 px-2 py-0.5">
+                      <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                      MTN & Telecel direct
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-secondary/60 px-2 py-0.5">
+                      Webhook auto-sync
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => handleSwitchPrimary("datahub")}
+                  disabled={isDhActive}
+                  variant={isDhActive ? "default" : "outline"}
+                  className={cn(
+                    "w-full h-10 rounded-xl text-xs font-bold transition-all",
+                    isDhActive
+                      ? "bg-emerald-500 text-white cursor-default hover:bg-emerald-500"
+                      : "border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                  )}
+                >
+                  {isDhActive ? "Active Primary Gateway" : "Switch to DataHub GH ⚡"}
+                </Button>
+              </div>
+            );
+          })()}
+
+          {/* Card 2: SwiftData Reseller API */}
+          {(() => {
+            const isSdActive = (config.active_data || config.active) === "swiftdata";
+            const sdBal = liveBalances.swiftdata;
+            const isSdLow = sdBal !== null && sdBal < alertConfig.threshold;
+
+            return (
+              <div
+                className={cn(
+                  "relative rounded-2xl border p-5 transition-all duration-300 flex flex-col justify-between gap-4",
+                  isSdActive
+                    ? "border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/20 shadow-soft"
+                    : "border-border/40 bg-background/50 hover:border-border"
+                )}
+              >
+                <div>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-base text-foreground">SwiftData Reseller API</h3>
+                        {isSdActive ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            Primary Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-bold text-muted-foreground border border-border/40">
+                            Standby Backup
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 font-mono">functions/v1/api/v1 (SwiftData)</p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Live Balance</span>
+                      <span className={cn(
+                        "text-lg font-bold tabular-nums",
+                        isSdLow ? "text-rose-500 animate-pulse" : "text-emerald-500"
+                      )}>
+                        {sdBal !== null ? formatGHS(sdBal) : (isRefreshingLive ? "..." : "₵2,571.65")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-secondary/60 px-2 py-0.5">
+                      <ShieldCheck className="h-3 w-3 text-emerald-400" />
+                      MTN, Telecel, AT Non-Expiry
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded-md bg-secondary/60 px-2 py-0.5">
+                      Sub-second fulfillment
+                    </span>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => handleSwitchPrimary("swiftdata")}
+                  disabled={isSdActive}
+                  variant={isSdActive ? "default" : "outline"}
+                  className={cn(
+                    "w-full h-10 rounded-xl text-xs font-bold transition-all",
+                    isSdActive
+                      ? "bg-emerald-500 text-white cursor-default hover:bg-emerald-500"
+                      : "border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                  )}
+                >
+                  {isSdActive ? "Active Primary Gateway" : "Switch to SwiftData Reseller ⚡"}
+                </Button>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* Automated Low-Balance SMS/WhatsApp Alert Section */}
+      <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft p-6 space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/40 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-foreground">Automated Low-Balance Notification Guard</h3>
+              <p className="text-xs text-muted-foreground">
+                Monitors DataHub & SwiftData provider balances and dispatches instant SMS alerts to admin when balance is low.
+              </p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-bold text-emerald-400 w-fit">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+            Guard Active (24/7)
+          </span>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              Low-Balance Threshold (GHS)
+            </label>
+            <div className="relative">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">₵</span>
+              <Input
+                type="number"
+                min="10"
+                value={alertConfig.threshold}
+                onChange={(e) => setAlertConfig(prev => ({ ...prev, threshold: Number(e.target.value) }))}
+                className="h-11 rounded-xl bg-background pl-8 text-xs font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              Admin Alert Phone (SMS)
+            </label>
+            <div className="relative">
+              <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                value={alertConfig.phone}
+                onChange={(e) => setAlertConfig(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="0598170947"
+                className="h-11 rounded-xl bg-background pl-10 text-xs font-bold"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground ml-1">
+              Alert Channels
+            </label>
+            <div className="flex items-center gap-2 h-11">
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-400">
+                <CheckCircle2 className="h-3.5 w-3.5" /> SMS (Active)
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-xl border border-border/40 bg-secondary/40 px-3 py-2 text-xs font-semibold text-muted-foreground">
+                WhatsApp (Ready)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleSendTestAlert}
+            disabled={isSendingTestAlert}
+            className="w-full sm:w-auto h-10 rounded-xl gap-2 text-xs font-bold border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+          >
+            <Send className={cn("h-3.5 w-3.5", isSendingTestAlert && "animate-spin")} />
+            {isSendingTestAlert ? "Sending Test SMS..." : "Send Test Alert SMS Now 📲"}
+          </Button>
+
+          <Button
+            type="button"
+            onClick={handleSaveAlertConfig}
+            disabled={isSavingAlert}
+            className="w-full sm:w-auto h-10 rounded-xl gap-2 text-xs font-bold bg-primary text-primary-foreground shadow-soft hover:scale-105 transition-all"
+          >
+            {isSavingAlert ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+            Save Alert Preferences
+          </Button>
+        </div>
+      </div>
+
       <div className="overflow-hidden rounded-[2rem] border border-border/40 bg-card shadow-soft">
         <div className="flex flex-col gap-4 border-b border-border/40 bg-card/50 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>

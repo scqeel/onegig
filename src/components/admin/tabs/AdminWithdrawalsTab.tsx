@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Loader2, Wallet } from "lucide-react";
+import { Check, CheckCircle2, Copy, DollarSign, Loader2, Send, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,14 @@ export function AdminWithdrawalsTab() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [verifiedNames, setVerifiedNames] = useState<Record<string, string>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const copyToClipboard = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    toast({ title: "Copied to Clipboard", description: text });
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const verifyMomoAccount = async (withdrawalId: string, momoNumber: string, momoNetwork: string) => {
     setVerifyingId(withdrawalId);
@@ -173,8 +181,34 @@ export function AdminWithdrawalsTab() {
                 <div className="flex flex-col items-start md:items-end gap-1.5">
                   <p className="text-2xl font-bold tracking-tighter text-foreground tabular-nums">{formatGHS(w.amount)}</p>
                   <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
-                    <span className="rounded-md bg-secondary/80 border border-border/40 px-2 py-0.5">{w.momo_network}</span>
-                    <span className="font-mono">{w.momo_number}</span>
+                    {(() => {
+                      const net = String(w.momo_network || "").toUpperCase();
+                      let badgeColor = "bg-secondary/80 border-border/40 text-foreground";
+                      if (net.includes("MTN") || net.includes("YELLO")) badgeColor = "bg-amber-500/15 border-amber-500/30 text-amber-500";
+                      else if (net.includes("TELECEL") || net.includes("VODAFONE")) badgeColor = "bg-rose-500/15 border-rose-500/30 text-rose-500";
+                      else if (net.includes("AT") || net.includes("AIRTEL")) badgeColor = "bg-sky-500/15 border-sky-500/30 text-sky-500";
+
+                      return (
+                        <span className={cn("rounded-md border px-2 py-0.5 font-bold", badgeColor)}>
+                          {w.momo_network}
+                        </span>
+                      );
+                    })()}
+
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(w.id, w.momo_number)}
+                      className="inline-flex items-center gap-1 font-mono hover:text-foreground hover:bg-secondary/80 px-1.5 py-0.5 rounded transition-all"
+                      title="Click to copy MoMo number"
+                    >
+                      {w.momo_number}
+                      {copiedId === w.id ? (
+                        <Check className="h-3 w-3 text-emerald-500" />
+                      ) : (
+                        <Copy className="h-3 w-3 text-muted-foreground/60" />
+                      )}
+                    </button>
+
                     <span className="hidden opacity-30 md:inline">|</span>
                     <span className="max-w-[120px] truncate">{w.momo_name}</span>
                     <span className="hidden opacity-30 md:inline">|</span>
@@ -210,11 +244,17 @@ export function AdminWithdrawalsTab() {
                     {w.status}
                   </div>
                   <Button
-                    className="h-10 rounded-xl bg-primary px-6 font-bold shadow-soft transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs"
+                    className="h-10 rounded-xl bg-primary px-6 font-bold shadow-soft transition-all hover:scale-105 active:scale-95 disabled:opacity-50 text-xs gap-1.5"
                     disabled={busyId === w.id || w.status === "paid"}
                     onClick={() => confirmWithdrawal(w.id)}
                   >
-                    {busyId === w.id ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark Paid"}
+                    {busyId === w.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : w.status === "paid" ? (
+                      <><CheckCircle2 className="h-3.5 w-3.5" /> Paid</>
+                    ) : (
+                      <><Send className="h-3.5 w-3.5" /> Mark Paid</>
+                    )}
                   </Button>
                 </div>
               </div>

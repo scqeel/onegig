@@ -16,7 +16,7 @@ import {
   Wifi,
   Send,
 } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { PublicLayout } from "@/components/PublicLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -147,59 +147,16 @@ export default function NumberVerificationPage() {
   };
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground flex flex-col justify-between overflow-x-hidden">
-      <div className="fixed inset-0 pointer-events-none z-0 grid-pattern-dark opacity-40" />
-
-      {/* Floating Pill Header Navbar */}
-      <header className="fixed left-0 right-0 top-4 z-50 px-4 md:px-8 pointer-events-none">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-border bg-background/90 backdrop-blur-md px-4 md:px-6 pointer-events-auto transition-all">
-          <Logo size="md" />
-
-          <nav className="flex items-center gap-1.5 sm:gap-2">
-            <Link
-              to="/submit-numbers"
-              className="inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <Send className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Submit</span><span className="xs:hidden">Submit</span>
-            </Link>
-            <Link
-              to="/track"
-              className="inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <Search className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Track Order</span><span className="xs:hidden">Track</span>
-            </Link>
-            <Button asChild className="h-8 sm:h-9 rounded-full px-3 sm:px-5 text-xs">
-              <Link to="/buy">
-                Buy <ArrowRight className="ml-1 h-3.5 w-3.5 hidden sm:inline" />
-              </Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="relative z-10 pt-28 pb-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto w-full">
-        {/* Page Title & Trust Badge */}
-        <div className="text-center space-y-4 mb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-1.5 text-xs font-semibold text-emerald-500">
-            <ShieldCheck className="h-4 w-4" />
-            Live DataHub Beneficiary Status & Number Verification
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-            Verify Phone Number <br className="hidden sm:inline" />
-            <span className="text-primary">& Beneficiary Eligibility</span>
-          </h1>
-
-          <p className="max-w-xl mx-auto text-sm sm:text-base text-muted-foreground leading-relaxed">
-            Instantly check whether any phone number is registered on the MTN Beneficiary list, check subscriber MoMo names, and place data orders with guaranteed delivery.
-          </p>
-
-          <MtnStatusWidget className="max-w-md mx-auto mt-4" />
-        </div>
+    <PublicLayout
+      active="verify"
+      title="Verify Phone Number & Beneficiary Eligibility"
+      subtitle="Instantly check whether any phone number is registered on the MTN Beneficiary list, check subscriber MoMo names, and place data orders with guaranteed delivery."
+    >
+      <div className="max-w-4xl space-y-4">
+        <MtnStatusWidget />
 
         {/* Verification Form Card */}
-        <div className="rounded-[1.75rem] border border-border bg-card p-6 sm:p-8 space-y-6 relative">
+        <div className="rounded-2xl border border-border bg-card shadow-soft p-6 sm:p-8 space-y-6 relative">
           <form onSubmit={handleVerify} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground">
@@ -237,7 +194,7 @@ export default function NumberVerificationPage() {
                       onClick={() => setSelectedNetworkCode(net.code)}
                       className={`relative flex flex-col items-center justify-center p-3.5 rounded-xl border transition-colors text-xs font-semibold ${
                         active
-                          ? "border-primary/40 bg-primary/10 text-primary"
+                          ? "border-primary/40 bg-primary/10 text-foreground"
                           : "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground"
                       }`}
                     >
@@ -362,8 +319,8 @@ export default function NumberVerificationPage() {
                     >
                       <span className="text-lg font-bold text-foreground">{b.size_label}</span>
                       <div className="mt-2 flex items-center justify-between text-xs">
-                        <span className="font-semibold text-primary">{formatGHS(Number(b.user_price ?? b.base_price))}</span>
-                        <span className="text-[10px] font-semibold text-primary group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
+                        <span className="font-semibold text-foreground">{formatGHS(Number(b.user_price ?? b.base_price))}</span>
+                        <span className="text-[10px] font-semibold text-foreground group-hover:translate-x-0.5 transition-transform flex items-center gap-0.5">
                           Buy <ArrowRight className="h-3 w-3" />
                         </span>
                       </div>
@@ -381,19 +338,7 @@ export default function NumberVerificationPage() {
             </div>
           )}
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-border bg-background py-8 text-center text-xs text-muted-foreground">
-        <div className="mx-auto max-w-5xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} OneGig Reseller Platform. Secured by DataHub GH.</p>
-          <div className="flex items-center gap-4 font-semibold">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <Link to="/buy" className="hover:text-foreground transition-colors">Buy Data</Link>
-            <Link to="/track" className="hover:text-foreground transition-colors">Track Order</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
+    </PublicLayout>
   );
 }

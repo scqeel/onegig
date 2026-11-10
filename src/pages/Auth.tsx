@@ -324,9 +324,8 @@ export default function AuthPage() {
 
   return (
     <div className="flex min-h-dvh">
-      {/* ── Dark brand panel (always ink, independent of app theme) ── */}
-      <div className="dark relative hidden overflow-hidden bg-background lg:flex lg:w-[460px] lg:flex-col xl:w-[520px]">
-        <div className="pointer-events-none absolute inset-0 grid-pattern-dark opacity-40" />
+      {/* ── Brand panel ── */}
+      <div className="relative hidden border-r border-border bg-card lg:flex lg:w-[420px] lg:flex-col xl:w-[480px]">
 
         <div className="relative flex flex-1 flex-col justify-between px-10 py-12 xl:px-14">
           {/* Logo */}
@@ -347,7 +346,7 @@ export default function AuthPage() {
             ) : (
               <div className="text-2xl font-bold font-display tracking-tight">
                 <span className="text-foreground">One</span>
-                <span className="text-primary">Gig</span>
+                <span className="text-foreground">Gig</span>
               </div>
             )}
             <p className="mt-3 text-sm text-muted-foreground max-w-xs leading-relaxed">
@@ -364,7 +363,7 @@ export default function AuthPage() {
               { icon: Users, title: "Your own store link", desc: "Share your branded link. Customers order directly from you." },
               { icon: ShieldCheck, title: "Secure payouts", desc: "Track earnings and withdraw to MoMo at any time." },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-3.5 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/30">
+              <div key={title} className="flex items-start gap-3.5 rounded-2xl border border-border bg-background p-4">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                   <Icon className="h-4 w-4 text-primary" />
                 </div>
@@ -408,7 +407,7 @@ export default function AuthPage() {
               ) : (
                 <>
                   <span className="text-foreground">One</span>
-                  <span className="text-primary">Gig</span>
+                  <span className="text-foreground">Gig</span>
                 </>
               )}
             </div>
@@ -417,13 +416,13 @@ export default function AuthPage() {
               ← Back to homepage
             </Link>
           </div>
-          <div className="rounded-[1.75rem] border border-border bg-card p-6 md:p-8 overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-6 md:p-8 overflow-hidden">
             {/* ── Sign In ── */}
             {!isSignUp && (
               <div className="animate-fade-up">
                 <div className="mb-7">
                   <span
-                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
+                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-foreground"
                     style={brandStyle}
                   >
                     <Users className="h-3 w-3" /> Welcome Back
@@ -438,7 +437,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setSiMethod("email"); setOtpSent(false); }}
-                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", siMethod === "email" ? "bg-background text-primary shadow-soft" : "text-muted-foreground hover:text-foreground")}
+                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", siMethod === "email" ? "bg-background text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}
                     style={siMethod === "email" ? brandTabStyle : undefined}
                   >
                     Email
@@ -446,7 +445,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setSiMethod("phone")}
-                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", siMethod === "phone" ? "bg-background text-primary shadow-soft" : "text-muted-foreground hover:text-foreground")}
+                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", siMethod === "phone" ? "bg-background text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}
                     style={siMethod === "phone" ? brandTabStyle : undefined}
                   >
                     Phone Number
@@ -468,7 +467,7 @@ export default function AuthPage() {
                       <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-foreground">Password</label>
-                      <Link to="#" className="text-xs font-semibold text-primary hover:underline">Forgot password?</Link>
+                      <Link to="#" className="text-xs font-semibold text-foreground hover:underline">Forgot password?</Link>
                     </div>
                     <div className="relative">
                       <Input
@@ -521,11 +520,11 @@ export default function AuthPage() {
                             </InputOTP>
                           </div>
                           <div className="flex items-center justify-between mt-3 px-1">
-                            <button type="button" onClick={() => setOtpSent(false)} className="text-xs text-primary hover:underline font-semibold">Change number</button>
+                            <button type="button" onClick={() => setOtpSent(false)} className="text-xs text-foreground hover:underline font-semibold">Change number</button>
                             {siTimer > 0 ? (
                               <span className="text-xs text-muted-foreground font-medium">Resend in <span className="text-foreground">{siTimer}s</span></span>
                             ) : (
-                              <button type="button" onClick={resendSiOtp} className="text-xs text-primary font-semibold hover:underline">Try again</button>
+                              <button type="button" onClick={resendSiOtp} className="text-xs text-foreground font-semibold hover:underline">Try again</button>
                             )}
                           </div>
                         </div>
@@ -552,7 +551,7 @@ export default function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setSearchParams({ tab: "signup", intent: "agent" }, { replace: true })}
-                      className="font-semibold text-primary hover:text-primary/80"
+                      className="font-semibold text-foreground hover:underline"
                     >
                       Create one →
                     </button>
@@ -570,7 +569,7 @@ export default function AuthPage() {
               <div className="animate-fade-up">
                 <div className="mb-7">
                   <span
-                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary"
+                    className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-foreground"
                     style={brandStyle}
                   >
                     <BriefcaseBusiness className="h-3 w-3" /> Get Started
@@ -585,7 +584,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setAccountType("customer"); setSearchParams({ tab: "signup" }, { replace: true }); }}
-                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", accountType === "customer" ? "bg-background text-primary shadow-soft" : "text-muted-foreground hover:text-foreground")}
+                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", accountType === "customer" ? "bg-background text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}
                     style={accountType === "customer" ? brandTabStyle : undefined}
                   >
                     Customer
@@ -593,7 +592,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setAccountType("agent"); setSearchParams({ tab: "signup", intent: "agent" }, { replace: true }); }}
-                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", accountType === "agent" ? "bg-background text-primary shadow-soft" : "text-muted-foreground hover:text-foreground")}
+                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", accountType === "agent" ? "bg-background text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}
                     style={accountType === "agent" ? brandTabStyle : undefined}
                   >
                     Reseller / Agent
@@ -604,7 +603,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setSuMethod("email"); }}
-                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", suMethod === "email" ? "bg-background text-primary shadow-soft" : "text-muted-foreground hover:text-foreground")}
+                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", suMethod === "email" ? "bg-background text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}
                     style={suMethod === "email" ? brandTabStyle : undefined}
                   >
                     Email Method
@@ -612,7 +611,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => { setSuMethod("phone"); }}
-                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", suMethod === "phone" ? "bg-background text-primary shadow-soft" : "text-muted-foreground hover:text-foreground")}
+                    className={cn("flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300", suMethod === "phone" ? "bg-background text-foreground shadow-soft" : "text-muted-foreground hover:text-foreground")}
                     style={suMethod === "phone" ? brandTabStyle : undefined}
                   >
                     Phone Method
@@ -704,7 +703,7 @@ export default function AuthPage() {
                       className="rounded-xl border border-primary/15 bg-primary/5 px-4 py-3 animate-in fade-in slide-in-from-top-2"
                       style={brandStyle}
                     >
-                      <p className="text-xs font-semibold text-primary mb-1.5" style={brandColor ? { color: brandColor } : undefined}>
+                      <p className="text-xs font-semibold text-foreground mb-1.5" style={brandColor ? { color: brandColor } : undefined}>
                         {parentAgent ? `What you get under ${storeName}` : "What you get as an agent"}
                       </p>
                       <div className="space-y-1">
@@ -740,7 +739,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => setSearchParams({ tab: "signup", intent: "agent" }, { replace: true })}
-                    className="font-semibold text-primary hover:text-primary/80"
+                    className="font-semibold text-foreground hover:underline"
                   >
                     Create one →
                   </button>
@@ -748,7 +747,7 @@ export default function AuthPage() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
-                  <button type="button" onClick={() => switchTo("signin")} className="font-semibold text-primary hover:text-primary/80">
+                  <button type="button" onClick={() => switchTo("signin")} className="font-semibold text-foreground hover:underline">
                     Sign in →
                   </button>
                 </p>

@@ -84,7 +84,7 @@ export default function DashboardProfilePage() {
       <div className="space-y-4">
 
         {/* Profile card */}
-        <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <div className="relative overflow-hidden border-b border-border bg-secondary/40 px-6 py-8 md:px-8">
             <div className="relative flex items-center gap-5">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-primary text-xl font-bold text-primary-foreground">

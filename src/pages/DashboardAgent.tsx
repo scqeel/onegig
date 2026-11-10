@@ -57,8 +57,8 @@ export default function DashboardAgentPage() {
 
   return (
     <div className="min-h-dvh bg-background">
-      {/* ── Hero (forced ink, independent of app theme) ── */}
-      <div className="dark relative overflow-hidden bg-background border-b border-border">
+      {/* ── Hero ── */}
+      <div className="relative overflow-hidden border-b border-border bg-card">
         <div className="relative mx-auto max-w-5xl px-5 pb-16 pt-12 md:px-8">
           <Link to="/" className="mb-6 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
             ← Back to homepage
@@ -109,9 +109,9 @@ export default function DashboardAgentPage() {
 
           {/* Benefits */}
           <section className="lg:col-span-5 space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary" style={brandColor ? { color: brandColor } : {}}>What you get</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-foreground" style={brandColor ? { color: brandColor } : {}}>What you get</p>
             {BENEFITS.map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/30">
+              <div key={title} className="flex items-start gap-4 rounded-2xl border border-border bg-card shadow-soft p-4 transition-colors hover:border-primary/30">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10" style={brandColor ? { backgroundColor: `${brandColor}1A` } : {}}>
                   <Icon className="h-5 w-5 text-primary" style={brandColor ? { color: brandColor } : {}} />
                 </div>
@@ -134,7 +134,7 @@ export default function DashboardAgentPage() {
           </section>
 
           {/* Activation */}
-          <section className="overflow-hidden rounded-[1.75rem] border border-border bg-card lg:col-span-7">
+          <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft lg:col-span-7">
             <div className="border-b border-border bg-secondary/40 px-6 py-5 md:px-8">
               <div className="flex items-center gap-2">
                 <Wallet className="h-5 w-5 text-primary" style={brandColor ? { color: brandColor } : {}} />
@@ -149,14 +149,14 @@ export default function DashboardAgentPage() {
         </div>
 
         {/* Bottom CTA strip */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card px-6 py-4">
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-border bg-card shadow-soft px-6 py-4">
           <div>
             <p className="text-sm font-semibold text-foreground">Already an agent?</p>
             <p className="text-xs text-muted-foreground">Sign in to access your store dashboard.</p>
           </div>
           <Link
             to="/auth?tab=signin"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:underline transition-colors"
             style={brandColor ? { color: brandColor } : {}}
           >
             Sign in to dashboard <ArrowRight className="h-4 w-4" />

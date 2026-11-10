@@ -76,8 +76,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         <DraggableWhatsApp link={supportHref} />
       )}
 
-      <InstallPromptModal />
-      <InAppNotificationListener />
+      {inDashboard && (
+        <>
+          <InstallPromptModal />
+          <InAppNotificationListener />
+        </>
+      )}
     </div>
   );
 }

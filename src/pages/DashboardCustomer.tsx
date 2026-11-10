@@ -88,11 +88,11 @@ Status: ${o.status.toUpperCase()}`;
       <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
         <div className="mb-6 grid gap-4 md:grid-cols-3">
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-6">
             <h3 className="text-sm font-semibold text-muted-foreground">Total Orders</h3>
             <p className="mt-2 text-3xl font-bold">{orders?.length ?? 0}</p>
           </div>
-          <div className="rounded-2xl border border-border bg-card p-6 md:col-span-2 flex flex-col justify-center">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-6 md:col-span-2 flex flex-col justify-center">
             <h3 className="text-sm font-semibold text-muted-foreground mb-3">Quick Actions</h3>
             <div className="flex gap-3">
               <Button asChild variant="outline" className="rounded-xl">
@@ -106,7 +106,7 @@ Status: ${o.status.toUpperCase()}`;
         </div>
 
         {recentNumbers.length > 0 && (
-          <div className="mb-6 rounded-[1.75rem] border border-border bg-card p-6">
+          <div className="mb-6 rounded-2xl border border-border bg-card shadow-soft p-6">
             <h3 className="text-sm font-semibold text-muted-foreground mb-4">Quick Top-Up Numbers</h3>
             <div className="flex flex-wrap gap-3">
               {recentNumbers.map(phone => (
@@ -118,10 +118,10 @@ Status: ${o.status.toUpperCase()}`;
           </div>
         )}
 
-        <div className="mb-6 relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-6 sm:p-8">
+        <div className="mb-6 relative overflow-hidden rounded-2xl border border-border bg-card shadow-soft p-6 sm:p-8">
           <div className="relative flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-md">
-              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-foreground">
                 <BriefcaseBusiness className="h-3.5 w-3.5" /> Agent Program
               </div>
               <h3 className="text-xl font-bold text-foreground">Start your own data business</h3>
@@ -135,7 +135,7 @@ Status: ${o.status.toUpperCase()}`;
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <div className="border-b border-border p-6">
             <h2 className="text-lg font-bold text-foreground">Order History</h2>
             <p className="text-sm text-muted-foreground">Your recent data purchases.</p>
@@ -148,7 +148,7 @@ Status: ${o.status.toUpperCase()}`;
               </div>
             ) : !orders || orders.length === 0 ? (
               <div className="flex flex-col items-center justify-center p-12 text-center">
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-foreground">
                   <ShoppingCart className="h-8 w-8" />
                 </div>
                 <h3 className="text-lg font-bold text-foreground">No orders yet</h3>
@@ -164,7 +164,7 @@ Status: ${o.status.toUpperCase()}`;
                 {orders.map((o: any) => (
                   <div key={o.id} className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between hover:bg-accent transition-colors">
                     <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-foreground">
                         <Smartphone className="h-6 w-6" />
                       </div>
                       <div>
@@ -172,7 +172,7 @@ Status: ${o.status.toUpperCase()}`;
                           <p className="font-semibold text-foreground">{o.network?.name} {o.bundle?.size_label}</p>
                           <OrderStatusBadge status={o.status} size="sm" />
                           {o.payment_reference?.startsWith("WP-") && (
-                            <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase tracking-wider">
+                            <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-foreground uppercase tracking-wider">
                               Wallet
                             </span>
                           )}

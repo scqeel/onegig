@@ -157,7 +157,7 @@ export default function CustomerAuthPage() {
             )}
           </div>
 
-          <div className="rounded-[1.75rem] border border-border bg-card p-8 relative overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-8 relative overflow-hidden">
 
             {/* Top brand line */}
             <div className="absolute top-0 inset-x-0 h-1" style={{ backgroundColor: brandColor }} />
@@ -191,7 +191,7 @@ export default function CustomerAuthPage() {
                 <button
                   type="button"
                   onClick={() => setAuthType("login")}
-                  className={`flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300 ${authType === "login" ? "bg-background shadow-soft text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300 ${authType === "login" ? "bg-background shadow-soft text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                   style={authType === "login" ? { color: brandColor } : {}}
                 >
                   Login
@@ -199,7 +199,7 @@ export default function CustomerAuthPage() {
                 <button
                   type="button"
                   onClick={() => setAuthType("signup")}
-                  className={`flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300 ${authType === "signup" ? "bg-background shadow-soft text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  className={`flex-1 rounded-lg py-2.5 text-xs font-semibold transition-all duration-300 ${authType === "signup" ? "bg-background shadow-soft text-foreground" : "text-muted-foreground hover:text-foreground"}`}
                   style={authType === "signup" ? { color: brandColor } : {}}
                 >
                   Create Account

@@ -16,7 +16,7 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
-import { Logo } from "@/components/Logo";
+import { PublicLayout } from "@/components/PublicLayout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -254,54 +254,22 @@ export default function SubmitNumbersPage() {
   };
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground flex flex-col justify-between overflow-x-hidden">
-      <div className="fixed inset-0 pointer-events-none z-0 grid-pattern-dark opacity-40" />
-
-      {/* Floating Pill Header Navbar */}
-      <header className="fixed left-0 right-0 top-4 z-50 px-4 md:px-8 pointer-events-none">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between rounded-full border border-border bg-background/90 backdrop-blur-md px-4 md:px-6 pointer-events-auto transition-all">
-          <Logo size="md" />
-
-          <nav className="flex items-center gap-1.5 sm:gap-2">
-            <Link
-              to="/verify-number"
-              className="inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <ShieldCheck className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Verify</span><span className="xs:hidden">Verify</span>
-            </Link>
-            <Link
-              to="/track"
-              className="inline-flex h-8 sm:h-9 items-center gap-1 sm:gap-1.5 rounded-full px-2.5 sm:px-4 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
-            >
-              <Search className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Track Order</span><span className="xs:hidden">Track</span>
-            </Link>
-            <Button asChild className="h-8 sm:h-9 rounded-full px-3 sm:px-5 text-xs">
-              <Link to="/buy">
-                Buy <ArrowRight className="ml-1 h-3.5 w-3.5 hidden sm:inline" />
-              </Link>
-            </Button>
-          </nav>
-        </div>
-      </header>
-
-      {/* Main Container */}
-      <main className="relative z-10 pt-28 pb-16 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto w-full space-y-8">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Submit Numbers</h1>
-          <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl">
-            Upload or paste phone numbers to submit them for approval to be added to our beneficiary list. Maximum {TOTAL_CAP} per submission, sent to the network in batches of {BATCH_SIZE}.
-          </p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            To check whether numbers are already verified, use{" "}
-            <Link to="/verify-number" className="text-primary font-semibold hover:underline">
-              Verify Number
-            </Link>
-            .
-          </p>
-        </div>
+    <PublicLayout
+      active="submit"
+      title="Submit Numbers"
+      subtitle={`Upload or paste phone numbers to submit them for approval to be added to our beneficiary list. Maximum ${TOTAL_CAP} per submission, sent to the network in batches of ${BATCH_SIZE}.`}
+    >
+      <div className="max-w-3xl space-y-5">
+        <p className="text-xs text-muted-foreground">
+          To check whether numbers are already verified, use{" "}
+          <Link to="/verify-number" className="text-foreground font-semibold hover:underline">
+            Verify Number
+          </Link>
+          .
+        </p>
 
         {/* Form Container */}
-        <div className="rounded-[1.75rem] border border-border bg-card p-6 sm:p-8 space-y-5 shadow-xl">
+        <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 space-y-5 shadow-soft">
           
           {/* File Upload Zone */}
           <div
@@ -321,11 +289,11 @@ export default function SubmitNumbersPage() {
               className="hidden"
             />
             <div className="flex flex-col items-center justify-center gap-2">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-foreground">
                 <UploadCloud className="h-5 w-5" />
               </div>
               <p className="text-xs font-semibold text-foreground">
-                <span className="text-primary font-bold">Click to upload file</span> or drag & drop CSV / TXT list
+                <span className="text-foreground font-bold">Click to upload file</span> or drag & drop CSV / TXT list
               </p>
               <p className="text-[11px] text-muted-foreground">
                 Supports .CSV, .TXT, .XLSX files containing phone numbers
@@ -428,7 +396,7 @@ export default function SubmitNumbersPage() {
 
         {/* Submission History Section */}
         {history.length > 0 && (
-          <div className="rounded-[1.75rem] border border-border bg-card p-6 sm:p-8 space-y-4">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-6 sm:p-8 space-y-4">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div className="flex items-center gap-2">
                 <History className="h-5 w-5 text-primary" />
@@ -465,44 +433,8 @@ export default function SubmitNumbersPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-border bg-background py-8 text-center text-xs text-muted-foreground">
-        <div className="mx-auto max-w-5xl px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© {new Date().getFullYear()} OneGig Reseller Platform. Secured by DataHub GH.</p>
-          <div className="flex items-center gap-4 font-semibold">
-            <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
-            <Link to="/buy" className="hover:text-foreground transition-colors">Buy Data</Link>
-            <Link to="/track" className="hover:text-foreground transition-colors">Track Order</Link>
-          </div>
-        </div>
-      </footer>
-
-      {/* Confirm dialog */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Submit for approval?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-1.5">
-                <p>
-                  You are about to submit <strong className="text-foreground">{total}</strong> number{total === 1 ? "" : "s"} for approval to be added to our beneficiary list.
-                </p>
-                <p>This will be sent in <strong className="text-foreground">{batchCount}</strong> batch{batchCount === 1 ? "" : "es"} of up to {BATCH_SIZE}.</p>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSubmit}>
-              <Send className="mr-2 h-4 w-4" /> Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Success dialog */}
       <Dialog open={!!result} onOpenChange={(open) => { if (!open) { setResult(null); setRawInput(""); } }}>
         <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
           <DialogHeader>
@@ -530,7 +462,7 @@ export default function SubmitNumbersPage() {
             </div>
             <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
               <p className="text-xs text-muted-foreground">Already on list</p>
-              <p className="text-xl font-bold text-primary tabular-nums">{result?.existing ?? 0}</p>
+              <p className="text-xl font-bold text-foreground tabular-nums">{result?.existing ?? 0}</p>
             </div>
           </div>
 
@@ -560,6 +492,6 @@ export default function SubmitNumbersPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </PublicLayout>
   );
 }

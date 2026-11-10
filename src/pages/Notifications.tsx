@@ -106,7 +106,7 @@ export default function NotificationsPage() {
       case "success": return "bg-emerald-500/10 text-emerald-500";
       case "warning": return "bg-amber-500/10 text-amber-500";
       case "error":   return "bg-rose-500/10 text-rose-500";
-      case "admin":   return "bg-primary/10 text-primary";
+      case "admin":   return "bg-primary/10 text-foreground";
       default:        return "bg-blue-500/10 text-blue-500";
     }
   };
@@ -126,9 +126,9 @@ export default function NotificationsPage() {
           </Link>
         </div>
 
-        <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
           <div className="border-b border-border p-6 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-foreground">
               <Bell className="h-5 w-5" />
             </div>
             <div>
@@ -204,7 +204,7 @@ export default function NotificationsPage() {
       </div>
 
       <Dialog open={!!selectedNotification} onOpenChange={(open) => !open && setSelectedNotification(null)}>
-        <DialogContent className="sm:max-w-md rounded-[1.75rem]">
+        <DialogContent className="sm:max-w-md rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
               {selectedNotification && (

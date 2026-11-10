@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Gift, Share2, Users, Wallet, Trophy } from "lucide-react";
+import { ArrowLeft, Copy, Gift, LayoutDashboard, Share2, Trophy, User, Users, Wallet } from "lucide-react";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 
 export default function Referrals() {
@@ -58,7 +59,18 @@ export default function Referrals() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl p-6 md:p-8 animate-in fade-in slide-in-from-bottom-4">
+    <DashboardLayout
+      title="Referrals"
+      subtitle="Invite friends and earn when they buy."
+      tools="notifications"
+      sidebarItems={[
+        { label: "Dashboard", to: "/dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+        { label: "Refer & Earn", to: "/dashboard/referrals", active: true, icon: <Gift className="h-4 w-4" /> },
+        { label: "My Profile", to: "/dashboard/profile", icon: <User className="h-4 w-4" /> },
+        { label: "Back to site", to: "/", icon: <ArrowLeft className="h-4 w-4" /> },
+      ]}
+    >
+      <div className="max-w-4xl">
       {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
@@ -69,16 +81,16 @@ export default function Referrals() {
             Invite friends to OneGig and earn GHS 1.00 when they make their first purchase!
           </p>
         </div>
-        <div className="hidden rounded-full bg-primary/10 p-4 text-primary sm:block">
+        <div className="hidden rounded-full bg-primary/10 p-4 text-foreground sm:block">
           <Gift className="h-8 w-8" />
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Referral Link Card */}
-        <div className="col-span-2 rounded-2xl border border-border bg-card p-6 md:p-8">
+        <div className="col-span-2 rounded-2xl border border-border bg-card shadow-soft p-6 md:p-8">
           <div className="mb-6 flex items-center gap-3">
-            <div className="rounded-xl bg-primary/10 p-2.5 text-primary">
+            <div className="rounded-xl bg-primary/10 p-2.5 text-foreground">
               <Share2 className="h-6 w-6" />
             </div>
             <div>
@@ -104,7 +116,7 @@ export default function Referrals() {
           {/* Referral Code display */}
           <div className="mt-8 flex items-center justify-between rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4">
             <div>
-              <p className="text-xs font-semibold text-primary uppercase tracking-wider">Your Code</p>
+              <p className="text-xs font-semibold text-foreground uppercase tracking-wider">Your Code</p>
               <p className="text-xl font-bold text-foreground">{profile?.referral_code || "..."}</p>
             </div>
             <Trophy className="h-8 w-8 text-primary/40" />
@@ -113,7 +125,7 @@ export default function Referrals() {
 
         {/* Stats Column */}
         <div className="flex flex-col gap-6">
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-blue-500/10 p-2.5 text-blue-500">
                 <Users className="h-5 w-5" />
@@ -125,7 +137,7 @@ export default function Referrals() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-6">
             <div className="flex items-center gap-3">
               <div className="rounded-xl bg-emerald-500/10 p-2.5 text-emerald-500">
                 <Wallet className="h-5 w-5" />
@@ -143,7 +155,7 @@ export default function Referrals() {
       </div>
 
       {/* How it works */}
-      <div className="mt-10 rounded-2xl border border-border bg-card p-6 sm:p-8">
+      <div className="mt-10 rounded-2xl border border-border bg-card shadow-soft p-6 sm:p-8">
         <h3 className="mb-6 text-xl font-bold text-foreground">How it works</h3>
         <div className="grid gap-6 sm:grid-cols-3">
           <div className="space-y-3">
@@ -163,6 +175,7 @@ export default function Referrals() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }

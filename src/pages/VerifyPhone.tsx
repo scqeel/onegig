@@ -217,7 +217,7 @@ export default function VerifyPhonePage() {
              </Link>
           </div>
 
-          <div className="rounded-[1.75rem] border border-border bg-card p-8 relative overflow-hidden">
+          <div className="rounded-2xl border border-border bg-card shadow-soft p-8 relative overflow-hidden">
 
             {/* Top brand line */}
             <div className="absolute top-0 inset-x-0 h-1" style={{ backgroundColor: brandColor || "hsl(var(--primary))" }} />
@@ -281,7 +281,7 @@ export default function VerifyPhonePage() {
                 <button
                   onClick={resendCode}
                   disabled={busy}
-                  className="text-sm font-semibold hover:underline transition-all text-primary"
+                  className="text-sm font-semibold hover:underline transition-all text-foreground"
                   style={brandColor ? { color: brandColor } : undefined}
                 >
                   Didn't receive the code? Resend

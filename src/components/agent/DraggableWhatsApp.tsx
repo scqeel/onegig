@@ -5,7 +5,11 @@ interface Props {
 }
 
 export function DraggableWhatsApp({ link }: Props) {
-  const [position, setPosition] = useState({ x: window.innerWidth - 80, y: window.innerHeight - 100 });
+  // Phones start higher so the button doesn't cover the floating bottom navigation.
+  const [position, setPosition] = useState({
+    x: window.innerWidth - 80,
+    y: window.innerHeight - (window.innerWidth < 1024 ? 170 : 100),
+  });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { readableForeground } from "@/lib/storeBranding";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -42,7 +43,7 @@ export default function InvitePage() {
 
   if (isLoading) {
     return (
-      <div className="dark flex min-h-dvh items-center justify-center bg-background">
+      <div className="flex min-h-dvh items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -50,8 +51,7 @@ export default function InvitePage() {
 
   if (!agent) {
     return (
-      <div className="dark flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-12 overflow-hidden relative">
-        <div className="pointer-events-none absolute inset-0 grid-pattern-dark opacity-40" />
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-12 overflow-hidden relative">
 
         <div className="relative z-10 w-full max-w-[420px] text-center animate-fade-up">
           <div className="mb-8 flex flex-col items-center">
@@ -81,15 +81,16 @@ export default function InvitePage() {
 
   const storeName = agent.store_name;
   const brandColor = agent.store_brand_color || "hsl(var(--primary))";
+  const brandTextHsl = agent.store_brand_color ? readableForeground(agent.store_brand_color) : null;
+  const brandTextColor = brandTextHsl ? `hsl(${brandTextHsl})` : "hsl(var(--primary-foreground))";
 
   return (
-    <div className="dark flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-12 overflow-hidden relative">
-      <div className="pointer-events-none absolute inset-0 grid-pattern-dark opacity-40" />
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-12 overflow-hidden relative">
 
       <div className="relative z-10 w-full max-w-[420px] animate-fade-up">
         {/* Top Logo / Brand */}
         <div className="mb-10 text-center flex flex-col items-center">
-          <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-card mb-6 overflow-hidden">
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-card shadow-soft mb-6 overflow-hidden">
             {agent.store_logo_url ? (
               <img src={agent.store_logo_url} alt={storeName} className="h-full w-full object-cover" />
             ) : (
@@ -119,7 +120,7 @@ export default function InvitePage() {
           ].map(({ icon: Icon, title, desc }) => (
             <div
               key={title}
-              className="flex items-start gap-4 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/30"
+              className="flex items-start gap-4 rounded-2xl border border-border bg-card shadow-soft p-4 transition-colors hover:border-primary/30"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <Icon className="h-5 w-5 text-primary" />
@@ -136,8 +137,8 @@ export default function InvitePage() {
         <Button
           onClick={handleAccept}
           disabled={isRedirecting}
-          className="group h-14 w-full rounded-xl text-[15px] text-white transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0"
-          style={{ backgroundColor: brandColor }}
+          className="group h-14 w-full rounded-xl text-[15px] transition-all duration-300 active:scale-[0.99]"
+          style={{ backgroundColor: brandColor, color: brandTextColor }}
         >
           {isRedirecting ? (
             <Loader2 className="h-5 w-5 animate-spin" />

@@ -27,12 +27,18 @@ type SidebarItem = {
   to?: string;
   active?: boolean;
   onClick?: () => void;
+  /** Shorter label for the phone bottom bar. */
+  shortLabel?: string;
+  /** Lower numbers claim the four phone bottom bar slots first. */
+  mobilePriority?: number;
 };
 
 export function DashboardLayout({
   title,
   subtitle,
   badge,
+  brand,
+  tools = "full",
   sidebarHeader,
   sidebarItems = [],
   topActions,
@@ -42,12 +48,20 @@ export function DashboardLayout({
   title: string;
   subtitle?: string;
   badge?: string;
+  /** Shown above the title on phones, where the sidebar header is hidden. */
+  brand?: ReactNode;
+  /** Which account tools the top bar shows: guests get none. */
+  tools?: "full" | "notifications" | "none";
   sidebarHeader?: ReactNode;
   sidebarItems?: SidebarItem[];
   topActions?: ReactNode;
   children: ReactNode;
   mainClassName?: string;
 }) {
+  const mobileItems = [...sidebarItems]
+    .sort((a, b) => (a.mobilePriority ?? 99) - (b.mobilePriority ?? 99))
+    .slice(0, 4);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { data: unreadCount } = useUnreadNotifications();
   const location = useLocation();
@@ -87,7 +101,9 @@ export function DashboardLayout({
         {/* ── Top bar ── */}
         <div className="mb-4 md:mb-5 flex flex-col gap-3 md:gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex items-center justify-between">
-            <div>
+            {/* Right padding keeps the title clear of the floating theme toggle. */}
+            <div className="pr-14 xl:pr-0">
+              {brand && <div className="mb-2 lg:hidden">{brand}</div>}
               <h1 className="text-2xl font-bold text-foreground md:text-3xl">{title}</h1>
               {subtitle && <p className="mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground">{subtitle}</p>}
             </div>
@@ -95,33 +111,40 @@ export function DashboardLayout({
             {/* Top mobile menu button removed in favor of bottom nav */}
           </div>
 
-          <div className="flex w-full items-center gap-2 xl:w-auto">
-            <label className="relative hidden w-full xl:block xl:w-[340px]">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                placeholder="Search…"
-                className="h-10 w-full rounded-xl border border-border bg-secondary/50 pl-10 pr-3 text-sm text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/30 transition-all"
-              />
-            </label>
-            <button type="button" aria-label="Messages" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
-              <MessageCircle className="h-4 w-4" />
-            </button>
-            <Link
-              to="/dashboard/notifications"
-              aria-label="Notifications"
-              className={cn(
-                "relative hidden h-10 w-10 items-center justify-center rounded-xl border border-border transition-colors xl:inline-flex",
-                isNotifications ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
-              )}
-            >
-              <Bell className="h-4 w-4" fill={isNotifications ? "currentColor" : "none"} />
-              {!!unreadCount && unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground ring-2 ring-card animate-in zoom-in">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </span>
-              )}
-            </Link>
+          <div className="flex w-full flex-wrap items-center gap-2 xl:w-auto xl:flex-nowrap xl:pr-14">
+            {tools === "full" && (
+              <>
+                <label className="relative hidden w-full xl:block xl:w-[340px]">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search…"
+                    className="h-10 w-full rounded-xl border border-border bg-secondary/50 pl-10 pr-3 text-sm text-foreground outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary/30 transition-all"
+                  />
+                </label>
+                <button type="button" aria-label="Messages" className="hidden h-10 w-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-colors hover:text-foreground xl:inline-flex">
+                  <MessageCircle className="h-4 w-4" />
+                </button>
+              </>
+            )}
+            {tools !== "none" && (
+              <Link
+                to="/dashboard/notifications"
+                aria-label="Notifications"
+                className={cn(
+                  "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border transition-colors",
+                  tools === "full" && "hidden xl:inline-flex",
+                  isNotifications ? "bg-primary/10 text-primary" : "bg-card text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                <Bell className="h-4 w-4" fill={isNotifications ? "currentColor" : "none"} />
+                {!!unreadCount && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground ring-2 ring-card animate-in zoom-in">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
             {badge && (
               <span className="rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs font-semibold text-primary">
                 {badge}
@@ -145,7 +168,7 @@ export function DashboardLayout({
               <nav className="p-2 space-y-0.5 relative z-10">
                 {sidebarItems?.map((item) => {
                   const itemCls = cn(
-                    "flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors w-full text-left",
+                    "flex shrink-0 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors w-full text-left [&_svg]:shrink-0",
                     item.active
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-foreground bg-transparent"
@@ -155,7 +178,7 @@ export function DashboardLayout({
                     return (
                       <Link key={item.label} to={item.to} className={itemCls}>
                         {item.icon}
-                        <span className="whitespace-nowrap">{item.label}</span>
+                        <span className="truncate">{item.label}</span>
                       </Link>
                     );
                   }
@@ -163,7 +186,7 @@ export function DashboardLayout({
                   return (
                     <button key={item.label} type="button" onClick={item.onClick} className={itemCls}>
                       {item.icon}
-                      <span className="whitespace-nowrap">{item.label}</span>
+                      <span className="truncate">{item.label}</span>
                     </button>
                   );
                 })}
@@ -190,21 +213,21 @@ export function DashboardLayout({
       {sidebarItems.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 z-40 lg:hidden pointer-events-none">
           <div className="mx-auto flex h-16 max-w-md items-center justify-between rounded-full border border-border bg-card px-4 pointer-events-auto">
-            {sidebarItems.slice(0, 4).map((item) => {
+            {mobileItems.map((item) => {
               const isActive = item.active;
               const content = (
                 <div className={cn(
                   "relative flex flex-1 flex-col items-center justify-center gap-0.5 transition-all duration-300 w-full h-full",
-                  isActive ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
+                  isActive ? "text-foreground font-semibold" : "text-muted-foreground hover:text-foreground"
                 )}>
                   {isActive && (
-                    <span className="absolute -top-[18px] h-1 w-8 rounded-full bg-primary animate-in fade-in zoom-in" />
+                    <span className="absolute top-0.5 h-1 w-8 rounded-full bg-primary animate-in fade-in zoom-in" />
                   )}
                   <span className="transition-transform duration-300">
                     {item.icon}
                   </span>
                   <span className="text-[10px] font-semibold tracking-tight">
-                    {item.label}
+                    {item.shortLabel ?? item.label}
                   </span>
                 </div>
               );

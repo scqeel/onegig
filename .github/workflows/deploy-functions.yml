@@ -46,7 +46,6 @@ jobs:
             admin-delete-user
             admin-make-admin
             admin-user-manage
-            debug-db
             process-withdrawal
             request-withdrawal
           )

@@ -1,5 +1,5 @@
 const baseUrl = "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
-const key = "swft_live_74686859a45448bea75376f0a64f97ed";
+const key = process.env.SWIFTDATA_API_KEY;
 
 async function testApi(path) {
   const url = `${baseUrl}${path}`;

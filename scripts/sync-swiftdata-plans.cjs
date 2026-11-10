@@ -1,8 +1,13 @@
 const debugUrl = "https://huvuogyvgeoqiqltbgcw.supabase.co/functions/v1/debug-db";
-const debugKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1dnVvZ3l2Z2VvcWlxbHRiZ2N3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU0MjY1MDYsImV4cCI6MjA5MTAwMjUwNn0.uysmVkP3O00NZaT4ucojUmJAHSA9HB6IUCl7wZCUvVQ";
+const debugKey = process.env.ONEGIG_DEBUG_KEY;
 
 const SWIFTDATA_BASE_URL = "https://lsocdjpflecduumopijn.supabase.co/functions/v1/developer-api";
-const SWIFTDATA_API_KEY = "swft_live_a3c720d5a4d845a68092ffdf147fde54";
+const SWIFTDATA_API_KEY = process.env.SWIFTDATA_API_KEY;
+
+if (!debugKey || !SWIFTDATA_API_KEY) {
+  console.error("Set ONEGIG_DEBUG_KEY and SWIFTDATA_API_KEY before running this script.");
+  process.exit(1);
+}
 
 async function runSql(sql) {
   const res = await fetch(debugUrl, {

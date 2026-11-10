@@ -54,7 +54,7 @@ export function AdminOrdersTab() {
     queryFn: async () => {
       let query = supabase
         .from("orders")
-        .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label), network:networks(name, logo_emoji)")
+        .select("id, reference, bundle_id, source, status, sell_price, created_at, customer_user_id, recipient_phone, notes, bundle:bundles(size_label, size_mb), network:networks(name, code, logo_emoji)")
         .order("created_at", { ascending: false });
 
       if (dateFilter === "today") {
@@ -233,77 +233,27 @@ export function AdminOrdersTab() {
         return;
       }
 
-      toast({ title: "Retrying Delivery...", description: `Submitting order ref ${order.reference || order.id} to DataHub GH...` });
+      toast({ title: "Retrying Delivery...", description: `Submitting order ref ${order.reference || order.id} to active fulfillment gateway...` });
       
-      // 1. First attempt Edge Function
-      let dispatchSucceeded = false;
-      let orderNumberText = "";
+      // Retries run only through the Edge Function, so provider API keys never reach the browser.
+      const { data, error } = await supabase.functions.invoke("admin-provider-action", {
+        body: {
+          action: "retry_order",
+          order_id: order.id,
+          manual_fulfill: false,
+        },
+      });
 
-      try {
-        const { data, error } = await supabase.functions.invoke("admin-provider-action", {
-          body: { 
-            action: "retry_order",
-            order_id: order.id,
-            manual_fulfill: false
-          },
-        });
-        if (!error && data?.success && data?.status !== "failed" && !String(data?.data?.error || "").includes("Action") && !String(data?.data?.error || "").includes("Invalid networkKey")) {
-          dispatchSucceeded = true;
-          if (data?.provider_ref) orderNumberText = `Ref: ${data.provider_ref}`;
-        }
-      } catch (_) {}
-
-      // 2. Direct fallback to DataHub if Edge Function is outdated or failed
-      if (!dispatchSucceeded) {
-        const { data: setRow } = await supabase.from("app_settings").select("value").eq("key", "data_providers").maybeSingle();
-        const dhKey = (setRow?.value as any)?.providers?.datahub?.api_key || "sk_a39f98c635f90d3d785348f4f3df3522d3c42c60001a1bca";
-        
-        let netKey = "YELLO";
-        const netCode = String(order.network?.code || "").toUpperCase();
-        if (netCode === "TELECEL" || netCode === "VODAFONE") netKey = "TELECEL";
-        if (netCode === "AT" || netCode === "AIRTELTIGO") netKey = "AT_PREMIUM";
-
-        const sizeLabel = String(order.bundle?.size_label || "");
-        const match = sizeLabel.match(/(\d+(?:\.\d+)?)\s*gb/i);
-        const capacity = match ? match[1] : (order.bundle?.size_mb ? String(Math.round(order.bundle.size_mb / 1000)) : "1");
-
-        let cleanPhone = String(order.recipient_phone).replace(/\D/g, "");
-        if (cleanPhone.startsWith("233") && cleanPhone.length === 12) cleanPhone = "0" + cleanPhone.slice(3);
-
-        const dhRes = await fetch("https://user.datahubgh.com/api/external/data-purchase", {
-          method: "POST",
-          headers: {
-            "X-API-Key": dhKey,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            networkKey: netKey,
-            recipient: cleanPhone,
-            capacity,
-            reference: order.id,
-          }),
-        });
-
-        const dhData = await dhRes.json().catch(() => null);
-        if (!dhRes.ok || !dhData?.success) {
-          throw new Error(dhData?.error || `DataHub rejected retry: ${dhRes.status}`);
-        }
-
-        orderNumberText = dhData.data?.orderNumber ? `Order #${dhData.data.orderNumber}` : `Ref: ${order.id}`;
-        
-        await supabase
-          .from("orders")
-          .update({
-            status: "processing",
-            notes: `Dispatched via DataHub (${orderNumberText}) - ${dhData.message || "Order received and is being processed"}`,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", order.id);
+      const providerError = String(data?.data?.error || "");
+      if (error || !data?.success || data?.status === "failed" || providerError.includes("Action") || providerError.includes("Invalid networkKey")) {
+        throw new Error(providerError || data?.error || error?.message || "The fulfillment gateway did not accept this retry.");
       }
+
+      const orderNumberText = data?.provider_ref ? `Ref: ${data.provider_ref}` : "";
 
       toast({ 
         title: "Order Retried & Submitted 🔄", 
-        description: orderNumberText ? `Dispatched to DataHub (${orderNumberText}). Status updated!` : "Provider request executed. Status updated!" 
+        description: orderNumberText ? `Dispatched (${orderNumberText}). Status updated!` : "Provider request executed. Status updated!" 
       });
       qc.invalidateQueries({ queryKey: ["admin-orders"] });
 

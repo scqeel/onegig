@@ -223,42 +223,9 @@ export function AgentSettingsTab({ agentProfile }: { agentProfile: any }) {
 
           <div className="space-y-1.5 md:col-span-2 pt-4 border-t border-border/40">
             <h4 className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-1.5">
-              <Paintbrush className="h-4 w-4 text-violet-500" /> Premium Theme & Aesthetics Builder
+              <Paintbrush className="h-4 w-4 text-violet-500" /> Store Font & Dark Mode
             </h4>
-            <p className="text-[11px] text-muted-foreground">Select layouts, custom typographies, and dark modes to command premium reseller rates.</p>
-          </div>
-
-          <div className="space-y-3 md:col-span-2">
-            <label className="text-xs font-semibold text-foreground">Store Theme Aesthetic</label>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {[
-                { id: "minimalist", label: "Minimalist Classic", desc: "Clean borders, slate accents, light & dark support", previewClass: "bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800" },
-                { id: "glassmorphism", label: "Glassmorphism", desc: "Frosted translucent glass, backdrop blur overlays", previewClass: "bg-white/20 border-white/30 backdrop-blur-md shadow-lg" },
-                { id: "cyberpunk", label: "Cyberpunk Neon", desc: "Dark mode grid with neon cyan border shadows", previewClass: "bg-black border-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.3)] text-cyan-400 font-mono" },
-                { id: "luxury", label: "Luxury Stone", desc: "Premium stone-dark backgrounds with luxury gold borders", previewClass: "bg-stone-900 border-amber-500/35 text-stone-100" },
-              ].map(t => {
-                const active = form.store_template_theme === t.id;
-                return (
-                  <button
-                    type="button"
-                    key={t.id}
-                    onClick={() => f("store_template_theme", t.id)}
-                    className={cn(
-                      "flex flex-col text-left p-3 rounded-2xl border transition-all h-full justify-between",
-                      active ? "border-primary ring-2 ring-primary bg-primary/5" : "border-border hover:bg-secondary/40"
-                    )}
-                  >
-                    <div className="w-full">
-                      <div className={cn("w-full h-12 rounded-lg mb-2 border flex items-center justify-center text-[10px] font-bold overflow-hidden", t.previewClass)}>
-                        {t.id === "glassmorphism" ? "Glassmorphic" : t.id === "cyberpunk" ? "CYBER_DATA" : t.id === "luxury" ? "⚜️ Luxury" : "Minimalist"}
-                      </div>
-                      <span className="text-xs font-bold block text-foreground">{t.label}</span>
-                      <span className="text-[10px] text-muted-foreground mt-1 block leading-tight">{t.desc}</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            <p className="text-[11px] text-muted-foreground">Choose the font and dark mode for your store. Your brand colour is applied automatically.</p>
           </div>
 
           <div className="space-y-3 md:col-span-2">

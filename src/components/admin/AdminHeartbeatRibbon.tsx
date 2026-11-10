@@ -1,13 +1,8 @@
-import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  Activity, AlertTriangle, ArrowRight, Bell, CheckCircle2, 
-  Clock, DollarSign, RefreshCw, ShieldCheck, ShoppingCart, 
-  Wallet, Zap 
-} from "lucide-react";
+import { ArrowRight, Bell, RefreshCw, ShieldCheck, ShoppingCart, Wallet, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatGHS } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { RibbonBadge, StatusRibbon } from "@/components/shared/StatusRibbon";
 
 interface HeartbeatRibbonProps {
   onSelectTab: (tab: string) => void;
@@ -47,40 +42,22 @@ export function AdminHeartbeatRibbon({ onSelectTab }: HeartbeatRibbonProps) {
   });
 
   return (
-    <div className="relative mb-6 overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-r from-card via-card/90 to-primary/5 p-4 shadow-soft backdrop-blur-xl">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        
-        {/* Left: System Status & Live Pulse */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary">
-            <Zap className="h-5 w-5 fill-primary text-primary" />
-            <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-            </span>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                OneGig Command Core
-              </span>
-              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-400">
-                All Systems Operational
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-              <span>Primary Gateway: <strong className="text-foreground capitalize">{telemetry?.activeProvider === "datahub" ? "DataHub GH" : "SwiftData Reseller"}</strong></span>
-              <span className="opacity-30">•</span>
-              <span className="flex items-center gap-1 text-emerald-400">
-                <ShieldCheck className="h-3 w-3" /> Auto-Failover Enabled
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Right: Operational Telemetry & 1-Click Jump Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5">
+    <StatusRibbon
+      className="mb-6"
+      icon={<Zap className="h-5 w-5 fill-primary text-primary" />}
+      title="OneGig Command Core"
+      badge={<RibbonBadge>All Systems Operational</RibbonBadge>}
+      subtitle={
+        <>
+          <span>Primary Gateway: <strong className="text-foreground capitalize">{telemetry?.activeProvider === "datahub" ? "DataHub GH" : "SwiftData Reseller"}</strong></span>
+          <span className="opacity-30">•</span>
+          <span className="flex items-center gap-1 text-emerald-400">
+            <ShieldCheck className="h-3 w-3" /> Auto-Failover Enabled
+          </span>
+        </>
+      }
+      actions={
+        <>
           {/* Pending Orders Pill */}
           <button
             type="button"
@@ -143,9 +120,8 @@ export function AdminHeartbeatRibbon({ onSelectTab }: HeartbeatRibbonProps) {
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
-        </div>
-
-      </div>
-    </div>
+        </>
+      }
+    />
   );
 }

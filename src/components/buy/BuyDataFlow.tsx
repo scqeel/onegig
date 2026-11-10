@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { OrderSummary } from "@/components/buy/OrderSummary";
+import { BundleCard } from "@/components/buy/BundleCard";
 import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
 import { isAccountIncomplete } from "@/lib/accountCheck";
 
@@ -108,7 +109,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
                   done
                     ? "bg-primary text-primary-foreground"
                     : active
-                    ? "border-2 border-primary bg-primary/10 text-primary"
+                    ? "border-2 border-primary bg-primary/10 text-foreground"
                     : "border-2 border-border bg-background text-muted-foreground"
                 )}
               >
@@ -117,7 +118,7 @@ function StepBar({ step }: { step: 1 | 2 | 3 }) {
               <span
                 className={cn(
                   "text-[10px] font-medium whitespace-nowrap",
-                  active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"
+                  active ? "text-foreground" : done ? "text-foreground" : "text-muted-foreground"
                 )}
               >
                 {label}
@@ -550,7 +551,7 @@ export function BuyDataFlow({
         <Confetti />
         
         {/* Receipt Card */}
-        <div className="bg-card rounded-[1.75rem] border border-border overflow-hidden relative">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden relative">
           <div className="p-8 pb-6 text-center">
             <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 mb-5">
               <CheckCircle2 className="h-10 w-10 text-emerald-500" />
@@ -665,7 +666,7 @@ export function BuyDataFlow({
             <Button
               variant="ghost"
               onClick={buy}
-              className="h-auto p-0 text-xs text-primary font-semibold hover:underline"
+              className="h-auto p-0 text-xs text-foreground font-semibold hover:underline"
             >
               Try again
             </Button>
@@ -706,7 +707,7 @@ export function BuyDataFlow({
 
           {phase === "processing" && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-primary bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
+              <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
@@ -718,7 +719,7 @@ export function BuyDataFlow({
 
           {phase === "polling" && (
             <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-primary bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
+              <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
@@ -920,9 +921,14 @@ export function BuyDataFlow({
                     const isPopular = i === 1;
                     const isBestValue = i === bundles.length - 1 && bundles.length > 2;
                     return (
-                      <button
-                        type="button"
+                      <BundleCard
                         key={b.id}
+                        networkCode={network?.code}
+                        networkName={network?.name}
+                        sizeLabel={b.size_label}
+                        price={formatGHS(priceFor(b))}
+                        active={active}
+                        badge={isPopular ? "popular" : isBestValue ? "best" : undefined}
                         onClick={() => {
                           setBundle(b);
                           if (user && isAccountIncomplete(user, profile)) {
@@ -931,65 +937,7 @@ export function BuyDataFlow({
                             setCheckoutOpen(true);
                           }
                         }}
-                        className={cn(
-                          "group relative flex flex-col items-start justify-between rounded-2xl border p-4 text-left transition-all duration-200 overflow-hidden",
-                          active 
-                            ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/10 scale-[1.02]" 
-                            : "border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0f1422] hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#151c2e] shadow-sm hover:shadow-md hover:scale-[1.01]"
-                        )}
-                      >
-                        {/* Badges */}
-                        {isPopular && !active && (
-                          <span className="absolute -top-2 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-sm z-10">
-                            Popular
-                          </span>
-                        )}
-                        {isBestValue && !active && (
-                          <span className="absolute -top-2 left-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm z-10">
-                            Best Value
-                          </span>
-                        )}
-
-                        <div className="flex w-full justify-between items-center mb-3">
-                          {network?.code?.toUpperCase() === 'MTN' ? (
-                            <div className="flex items-center justify-center rounded-full bg-[#ffcc00] px-2.5 py-0.5 h-6 shadow-sm border border-yellow-500/20">
-                              <span className="text-[10px] font-black text-black tracking-wider">MTN</span>
-                            </div>
-                          ) : network?.code?.toUpperCase() === 'TELECEL' ? (
-                            <div className="flex items-center gap-1 rounded-full bg-[#cc0000] px-2.5 py-0.5 h-6 shadow-sm">
-                              <span className="text-[10px] font-black text-white tracking-wider">TELECEL</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center rounded-full bg-gradient-to-r from-red-500 to-blue-600 px-2.5 py-0.5 h-6 shadow-sm">
-                              <span className="text-[10px] font-black text-white tracking-wider">AT</span>
-                            </div>
-                          )}
-                          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 group-hover:bg-primary group-hover:text-black transition-colors">
-                            <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                          </div>
-                        </div>
-
-                        <div className="w-full my-1">
-                          <span className="block text-2xl sm:text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-primary transition-colors">
-                            {b.size_label}
-                          </span>
-                          <span className="mt-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                            {network?.name} Non-Expiry Data
-                          </span>
-                        </div>
-
-                        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex w-full items-end justify-between">
-                          <div>
-                            <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-none mb-0.5">Price</span>
-                            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-emerald-400">
-                              {formatGHS(priceFor(b))}
-                            </span>
-                          </div>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            ⚡ 1-5 min
-                          </span>
-                        </div>
-                      </button>
+                      />
                     );
                   })}
               </div>
@@ -1000,7 +948,7 @@ export function BuyDataFlow({
 
       {/* ── Checkout Dialog ── */}
       <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[92vw] max-w-[370px] max-h-[90dvh] overflow-y-auto rounded-[1.75rem] border border-border bg-card p-0">
+        <DialogContent className="w-[92vw] max-w-[370px] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card p-0">
           {/* Header */}
           <div className="flex flex-col items-center justify-center pt-7 pb-3 px-5 text-center">
             <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
@@ -1014,7 +962,7 @@ export function BuyDataFlow({
               Confirm Payment
             </DialogTitle>
             <DialogDescription className="text-xs font-semibold text-muted-foreground mt-1">
-              You are purchasing data for a <span className="text-primary font-semibold">{network?.name}</span> number.
+              You are purchasing data for a <span className="text-foreground font-semibold">{network?.name}</span> number.
             </DialogDescription>
           </div>
 
@@ -1169,12 +1117,12 @@ export function BuyDataFlow({
                         {payWithWallet && <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />}
                       </div>
                       <div className="flex flex-col gap-0.5">
-                        <span className={cn("text-xs font-semibold", payWithWallet ? "text-primary" : "text-foreground")}>
+                        <span className={cn("text-xs font-semibold", payWithWallet ? "text-foreground" : "text-foreground")}>
                           Pay with Wallet
                         </span>
                         {agentSlug && finalPrice > Number(bundle.base_price) ? (
                           <div className="text-[9px] font-semibold text-muted-foreground flex flex-col gap-1 mt-1">
-                            <span>Balance: <span className="text-primary font-bold">{formatGHS(walletBalance)}</span></span>
+                            <span>Balance: <span className="text-foreground font-bold">{formatGHS(walletBalance)}</span></span>
                             <span className="text-emerald-500 bg-emerald-500/5 px-1.5 py-0.5 rounded-md border border-emerald-500/20 inline-block w-fit font-semibold">
                               Earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
                             </span>
@@ -1233,7 +1181,7 @@ export function BuyDataFlow({
                   <button
                     type="button"
                     onClick={payWithRedirect}
-                    className="text-[10px] font-semibold text-primary hover:underline transition-colors"
+                    className="text-[10px] font-semibold text-foreground hover:underline transition-colors"
                   >
                     Pay via Web Page instead
                   </button>

@@ -1,95 +1,61 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Clock, Loader2, Lock, MessageCircle, Settings, ShoppingBag, Store, Trophy, Wallet, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNetworks, useBundles, BundleRow, NetworkRow } from "@/hooks/useNetworksAndBundles";
 import { useSettings } from "@/hooks/useSettings";
+import { useStoreBranding } from "@/hooks/useStoreBranding";
 import { TrackOrder } from "@/components/buy/TrackOrder";
-import { WalletManager } from "@/components/agent/WalletManager";
+import { BundleCard } from "@/components/buy/BundleCard";
 import { DraggableWhatsApp } from "@/components/agent/DraggableWhatsApp";
 import { DraggableWidget } from "@/components/agent/DraggableWidget";
-import { OwnerDashboard } from "@/components/agent/OwnerDashboard";
 import { AgentLogin } from "@/components/agent/AgentLogin";
 import { CustomerWallet } from "@/components/store/CustomerWallet";
-import { formatGHS, isSamePhoneNumber } from "@/lib/format";
-import { cn } from "@/lib/utils";
-import { LoadingScreen } from "@/components/ui/LoadingScreen";
-import {
-  Store,
-  Phone,
-  MessageCircle,
-  Loader2,
-  Calendar,
-  Receipt,
-  Layers,
-  Zap,
-  Shield,
-  Wifi,
-  ChevronRight,
-  Headphones,
-  Check,
-  ShoppingBag,
-  Gift,
-  Database,
-  Wallet,
-  Trophy,
-  Mail,
-  MapPin,
-  Clock,
-  ArrowRight,
-  Lock,
-  Paintbrush,
-  Sparkles,
-  RefreshCcw,
-  CheckCircle2,
-  Bell,
-  Share,
-  X,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
 import { StorefrontNotificationsModal } from "@/components/store/StorefrontNotificationsModal";
+import { StoreHeader, StorePromoBanner } from "@/components/store/StoreHeader";
+import { StoreInfoPanel } from "@/components/store/StoreInfoPanel";
+import { StorePaymentStatus } from "@/components/store/StorePaymentStatus";
+import { CheckoutDialog } from "@/components/store/CheckoutDialog";
+import { RewardsDialog } from "@/components/store/RewardsDialog";
+import { StoreAssistant } from "@/components/store/StoreAssistant";
+import { StatusRibbon } from "@/components/shared/StatusRibbon";
+import { PillTab, PillTabs } from "@/components/shared/PillTabs";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
+import { formatGHS } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
-type Tab = "orders" | "trans" | "bulk" | "store";
-type ThemeAccent = "rose" | "indigo" | "amber" | "emerald" | "violet";
+type Tab = "orders" | "trans" | "store";
+type CategoryFilter = "all" | "non-expiry" | "monthly";
 type Phase = "select" | "processing" | "otp" | "polling" | "delivering" | "success" | "error";
 
-function hexToHslValues(hex: string): string {
-  hex = hex.replace(/^#/, "");
-  if (hex.length === 3) {
-    hex = hex.split("").map(c => c + c).join("");
-  }
-  const r = parseInt(hex.substring(0, 2), 16) / 255;
-  const g = parseInt(hex.substring(2, 4), 16) / 255;
-  const b = parseInt(hex.substring(4, 6), 16) / 255;
+const STORE_TABS: PillTab<Tab>[] = [
+  { value: "orders", label: "Buy", icon: <ShoppingBag className="h-4 w-4" /> },
+  { value: "trans", label: "Track", icon: <Clock className="h-4 w-4" /> },
+  { value: "store", label: "Store", icon: <Store className="h-4 w-4" /> },
+];
 
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0, l = (max + min) / 2;
+const CATEGORY_TABS: PillTab<CategoryFilter>[] = [
+  { value: "all", label: "All" },
+  { value: "non-expiry", label: "Non-Expiry" },
+  { value: "monthly", label: "Regular/Monthly" },
+];
 
-  if (max !== min) {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-      case g: h = (b - r) / d + 2; break;
-      case b: h = (r - g) / d + 4; break;
-    }
-    h /= 6;
-  }
+const STORE_NETWORKS = [
+  { id: "mtn", name: "MTN", active: "border-[#e6b800] bg-[#ffcc00] text-black", codes: ["mtn"] },
+  { id: "atigo", name: "AT", active: "border-[#380b6b] bg-[#4a148c] text-white", codes: ["atigo", "at", "airteltigo"] },
+  { id: "telecel", name: "Telecel", active: "border-[#b30000] bg-[#cc0000] text-white", codes: ["telecel"] },
+];
 
-  return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
-}
+const STORE_COLUMNS =
+  "id, user_id, store_name, store_slug, store_logo_url, store_tagline, store_brand_color, store_font_family, store_dark_mode, store_promo_banner, store_promo_banner_style, support_whatsapp, activation_paid";
+// Not in the generated database types, so these may not exist on every database yet.
+const STORE_OPTIONAL_COLUMNS = "enable_loyalty_rewards, enable_ai_assistant";
+
+const RIBBON_ACTION =
+  "flex items-center gap-2 rounded-xl border border-border/60 bg-background/80 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm transition-all hover:text-foreground active:scale-95";
 
 export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?: string }) {
   const { slug: routeSlug } = useParams<{ slug: string }>();
@@ -104,17 +70,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
   // Navigation & Theme tabs
   const [activeTab, setActiveTab] = useState<Tab>("orders");
-  const [accent, setAccent] = useState<ThemeAccent>("rose");
-  const [currentTime, setCurrentTime] = useState("");
-  const [viewMode, setViewMode] = useState<"storefront" | "dashboard">("storefront");
   const [loginOpen, setLoginOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   // Order state
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkRow | null>(null);
   const [selectedBundle, setSelectedBundle] = useState<BundleRow | null>(null);
-  const [categoryFilter, setCategoryFilter] = useState<"all" | "non-expiry" | "monthly">("all");
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [phone, setPhone] = useState(profile?.phone || "");
   const [momoNumber, setMomoNumber] = useState("");
   const [momoNetwork, setMomoNetwork] = useState<string>("MTN");
@@ -150,20 +112,22 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [couponError, setCouponError] = useState<string | null>(null);
   const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
 
-  // Dialog / Info popup states
-  const [infoPopup, setInfoPopup] = useState<{ open: boolean; title: string; content: string } | null>(null);
-
   // 1. Fetch Agent Profile
   const { data: agent, isLoading: loadingAgent, isError } = useQuery({
     queryKey: ["public-store", slug],
     enabled: !!slug,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("agent_profiles")
-        .select("id, store_name, store_slug, store_logo_url, store_tagline, store_brand_color, store_promo_banner, store_promo_banner_style, support_whatsapp, activation_paid")
-        .eq("store_slug", slug!)
-        .eq("activation_paid", true)
-        .maybeSingle();
+      const load = (columns: string) =>
+        supabase
+          .from("agent_profiles")
+          .select(columns)
+          .eq("store_slug", slug!)
+          .eq("activation_paid", true)
+          .maybeSingle();
+
+      // A missing optional column must not take the whole store offline.
+      const withOptional = await load(`${STORE_COLUMNS}, ${STORE_OPTIONAL_COLUMNS}`);
+      const { data } = withOptional.error ? await load(STORE_COLUMNS) : withOptional;
       return data as any;
     },
   });
@@ -190,7 +154,13 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const { data: networks = [], isLoading: loadingNetworks } = useNetworks();
   const { data: bundles = [], isLoading: loadingBundles } = useBundles(selectedNetwork?.id ?? null);
 
-  const isOwner = profile?.id === agent?.user_id;
+  const isOwner = !!profile && profile.id === agent?.user_id;
+
+  useStoreBranding({
+    brandColor: agent?.store_brand_color,
+    font: agent?.store_font_family,
+    forceDark: agent?.store_dark_mode,
+  });
 
   // Fetch Agent's CRM customers if they are the owner
   const { data: crmCustomers } = useQuery({
@@ -308,26 +278,6 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
   const [subscribeChecked, setSubscribeChecked] = useState(false);
   const [subscriptionFrequency, setSubscriptionFrequency] = useState<"weekly" | "monthly">("monthly");
 
-  // 4. Dynamic Font loader
-  useEffect(() => {
-    if (agent?.store_font_family) {
-      const font = agent.store_font_family;
-      const linkId = "og-store-font";
-      let link = document.getElementById(linkId) as HTMLLinkElement;
-      if (!link) {
-        link = document.createElement("link");
-        link.id = linkId;
-        link.rel = "stylesheet";
-        document.head.appendChild(link);
-      }
-      link.href = `https://fonts.googleapis.com/css2?family=${font.replace(/\s+/g, "+")}:wght@400;600;800;900&display=swap`;
-      document.body.style.fontFamily = `'${font}', sans-serif`;
-    }
-    return () => {
-      document.body.style.fontFamily = "";
-    };
-  }, [agent?.store_font_family]);
-
   // Widget settings
   const [widgetEnabled, setWidgetEnabled] = useState(() => {
     return localStorage.getItem("og_whatsapp_widget") !== "false";
@@ -339,17 +289,6 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     localStorage.setItem("og_whatsapp_widget", String(newState));
   };
 
-
-  // Live ticking clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(now.toLocaleTimeString("en-US", { hour12: true }));
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Redirect if agent store not found
   useEffect(() => {
@@ -561,78 +500,8 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
 
 
   if (loadingAgent || loadingPrices || !agent) {
-    return <LoadingScreen message="Loading Storefront..." submessage="Fetching agent packages & storefront details" variant="dark" />;
+    return <LoadingScreen message="Loading Storefront..." submessage="Fetching agent packages & storefront details" />;
   }
-
-  // Theme configuration mappings
-  const accentClasses: Record<ThemeAccent, { primary: string; border: string; bg: string; text: string; gradient: string }> = {
-    rose: {
-      primary: "#f43f5e",
-      border: "border-rose-500/20",
-      bg: "bg-rose-500/10",
-      text: "text-rose-500",
-      gradient: "from-rose-500 to-pink-600",
-    },
-    indigo: {
-      primary: "#6366f1",
-      border: "border-indigo-500/20",
-      bg: "bg-indigo-500/10",
-      text: "text-indigo-500",
-      gradient: "from-indigo-500 to-violet-600",
-    },
-    amber: {
-      primary: "#d97706",
-      border: "border-amber-500/20",
-      bg: "bg-amber-500/10",
-      text: "text-amber-500",
-      gradient: "from-amber-500 to-orange-600",
-    },
-    emerald: {
-      primary: "#10b981",
-      border: "border-emerald-500/20",
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-500",
-      gradient: "from-emerald-500 to-teal-600",
-    },
-    violet: {
-      primary: "#8b5cf6",
-      border: "border-violet-500/20",
-      bg: "bg-violet-500/10",
-      text: "text-violet-500",
-      gradient: "from-violet-500 to-fuchsia-600",
-    },
-  };
-
-  const currentAccent = accentClasses[accent];
-
-  const theme = agent?.store_template_theme || "minimalist";
-  const isDarkStore = agent?.store_dark_mode || false;
-  
-  const getStoreBgClass = () => {
-    if (theme === "cyberpunk") {
-      return "min-h-dvh pb-24 bg-black text-cyan-400 font-mono";
-    }
-    if (theme === "luxury") {
-      return "min-h-dvh pb-24 bg-stone-950 text-stone-100";
-    }
-    return `min-h-dvh pb-24 transition-colors duration-300 ${
-      isDarkStore ? "dark bg-slate-950 text-slate-100" : "bg-[#f8fafc] text-slate-900"
-    }`;
-  };
-
-  const getCardClass = () => {
-    switch (theme) {
-      case "glassmorphism":
-        return "bg-white/65 dark:bg-slate-900/55 backdrop-blur-xl border border-white/25 dark:border-white/5 shadow-lg text-slate-800 dark:text-slate-100";
-      case "cyberpunk":
-        return "bg-zinc-950 border-2 border-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.3)] text-cyan-400 font-mono";
-      case "luxury":
-        return "bg-gradient-to-br from-stone-900 to-stone-950 border border-amber-500/25 shadow-xl text-stone-100";
-      case "minimalist":
-      default:
-        return "bg-card border border-border shadow-soft text-foreground";
-    }
-  };
 
   // Helper to get sell price
   const priceFor = (b: BundleRow) =>
@@ -645,14 +514,6 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     ? Math.max(0, baseFinalPrice - Number(appliedCoupon.discount_amount))
     : baseFinalPrice;
   const finalPrice = Math.max(1, priceAfterCoupon - pointsRedeemed);
-
-  const activeColor = agent?.store_brand_color || currentAccent.primary;
-  const brandHsl = activeColor ? hexToHslValues(activeColor) : null;
-  const inlineStyles = brandHsl ? { "--primary": brandHsl } as React.CSSProperties : {};
-
-  if (isOwner && viewMode === "dashboard") {
-    return <OwnerDashboard agent={agent} slug={slug || ""} onPreviewStore={() => setViewMode("storefront")} />;
-  }
 
   // Checkout flow
   const initiatePayment = async () => {
@@ -874,223 +735,6 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
       setPhase("error");
     }
   };
-
-
-
-
-
-  const handleQuickAction = (action: string) => {
-    if (action === "order" || action === "data") {
-      setActiveTab("orders");
-      setTimeout(() => {
-        document.getElementById("place-new-order")?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
-    } else if (action === "trans") {
-      setActiveTab("trans");
-    } else if (action === "store") {
-      setActiveTab("store");
-    } else if (action === "reward") {
-      setInfoPopup({
-        open: true,
-        title: "Customer Rewards Program",
-        content: "Our reseller loyalty rewards program is launching soon! Earn reward points on every data bundle purchase that can be redeemed for free data bundles or cashbacks.",
-      });
-    } else if (action === "deposit") {
-      setInfoPopup({
-        open: true,
-        title: "Wallet Deposits",
-        content: "To deposit funds into your reseller wallet balance, please navigate to your Agent Dashboard Settings or contact the platform administrator at support@mtopup.shop.",
-      });
-    } else if (action === "vendor") {
-      setInfoPopup({
-        open: true,
-        title: "Become a Reseller",
-        content: "Want to start your own profitable data resell business? Get cheap data bundles at wholesale prices and set your own profit margins. Sign up today via our home page!",
-      });
-    } else if (action === "rollover") {
-      setInfoPopup({
-        open: true,
-        title: "Data Rollover Policy",
-        content: "Data bundles do not roll over automatically. To retain unused data balance, please ensure to top-up/renew your bundle before your current bundle expiration date.",
-      });
-    }
-  };
-
-  // Switch dynamically through accent colors
-  const rotateAccent = () => {
-    const orders: ThemeAccent[] = ["rose", "indigo", "amber", "emerald", "violet"];
-    const nextIdx = (orders.indexOf(accent) + 1) % orders.length;
-    setAccent(orders[nextIdx]);
-  };
-
-  if (phase === "success") {
-    return (
-      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/20 shadow-lg">
-          <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-        </div>
-        <h3 className="mt-6 text-3xl font-bold text-slate-800 dark:text-white">Order Successful! 🎉</h3>
-        <p className="mt-2 font-medium text-slate-500 dark:text-slate-400">
-          Data has been delivered to <span className="font-bold text-slate-800 dark:text-slate-200">{phone}</span>
-        </p>
-        <div className="mt-8">
-          <Button onClick={() => setPhase("select")} className="h-12 rounded-2xl bg-slate-950 text-white dark:bg-slate-800 font-bold px-8">
-            Return to Store
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === "error") {
-    return (
-      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center animate-in fade-in zoom-in duration-300">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-red-500/10 border border-red-500/20 shadow-lg">
-          <RefreshCcw className="h-12 w-12 text-red-500 animate-spin [animation-duration:10s]" />
-        </div>
-        <h3 className="mt-6 text-xl font-bold text-slate-800 dark:text-white">Payment Failed</h3>
-        <p className="mt-2 font-medium text-red-500 px-4 max-w-md mx-auto">{errorMsg}</p>
-        <div className="mt-8 flex flex-col gap-3 max-w-[280px] w-full mx-auto">
-          <Button
-            onClick={payWithRedirect}
-            className="h-13 rounded-2xl w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-500/10 flex items-center justify-center gap-2"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-            Pay via Secure Web Page
-          </Button>
-          <Button
-            onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
-            className="h-13 rounded-2xl w-full font-bold border-2 bg-slate-950 text-white dark:bg-slate-800"
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === "otp") {
-    return (
-      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg">
-          <Lock className="h-10 w-10 text-blue-500" />
-        </div>
-        <h3 className="mt-6 text-2xl font-bold text-slate-800 dark:text-white">Verification Required</h3>
-        <p className="mt-2 font-medium text-slate-500 dark:text-slate-400 max-w-[280px]">
-          Please enter the OTP or Voucher Code sent to your mobile number ({momoNumber}).
-        </p>
-        
-        {errorMsg && (
-          <p className="mt-3 text-sm font-bold text-red-500">{errorMsg}</p>
-        )}
-
-        <div className="mt-8 w-full max-w-[280px] space-y-4">
-          <div className="flex justify-center pb-2">
-            <InputOTP 
-              maxLength={6} 
-              value={otp} 
-              onChange={(val) => {
-                setOtp(val);
-                if (val.length === 6 && phase === "otp") {
-                  submitOtp(val);
-                }
-              }}
-            >
-              <InputOTPGroup className="gap-2">
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot 
-                    key={i} 
-                    index={i} 
-                    className="h-12 w-11 rounded-[12px] border border-slate-200 bg-white text-lg font-bold shadow-sm transition-all focus-visible:border-blue-500 focus-visible:ring-4 focus-visible:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900" 
-                  />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-          
-          <div className="flex items-center justify-between px-2 pt-2">
-            <Button
-              variant="ghost"
-              onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
-              className="h-auto p-0 text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white"
-            >
-              Cancel Order
-            </Button>
-            
-            {otpTimer > 0 ? (
-              <span className="text-xs text-slate-500 font-medium">Resend in <span className="text-slate-800 dark:text-slate-200 font-bold">{otpTimer}s</span></span>
-            ) : (
-              <Button
-                variant="ghost"
-                onClick={resendPaymentOtp}
-                className="h-auto p-0 text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline hover:text-blue-700 dark:hover:text-blue-300"
-              >
-                Try again
-              </Button>
-            )}
-          </div>
-
-          {/* Visible submit button to allow manual submission */}
-          <div className="mt-6">
-            <Button 
-              id="btn-agent-otp-submit" 
-              onClick={() => submitOtp()} 
-              disabled={otp.length < 4}
-              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold"
-            >
-              Verify OTP
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (phase === "processing" || phase === "polling" || phase === "delivering") {
-    return (
-      <div style={inlineStyles} className="flex min-h-dvh flex-col items-center justify-center bg-[#f8fafc] dark:bg-slate-950 p-6 text-center">
-        <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-blue-500/10 border border-blue-500/20 shadow-lg animate-pulse">
-          {phase === "delivering" ? <CheckCircle2 className="h-14 w-14 text-emerald-500" /> : <Loader2 className="h-14 w-14 text-blue-500 animate-spin" />}
-        </div>
-        <h3 className="mt-8 text-2xl font-bold text-slate-800 dark:text-white">
-          {phase === "processing" && "Initiating Payment..."}
-          {phase === "polling" && "Awaiting Authorization"}
-          {phase === "delivering" && "Payment Received! Sending Data..."}
-        </h3>
-        
-        {phase === "polling" && (
-          <div className="mt-4 flex flex-col items-center">
-            <div className="flex items-center gap-2.5 text-sm font-bold text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-5 py-2.5 rounded-full border border-blue-200 dark:border-blue-800/50 shadow-sm">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-              </span>
-              {authMessage || `Please check your phone (${momoNumber}) to authorize...`}
-            </div>
-          </div>
-        )}
-
-        {phase === "delivering" && (
-          <p className="mt-4 text-sm font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-5 py-2.5 rounded-full border border-emerald-200 dark:border-emerald-800/50 shadow-sm inline-block">
-            Connecting to {selectedNetwork?.name} network to deliver your bundle.
-          </p>
-        )}
-        
-        <p className="mt-6 text-xs font-medium text-slate-500 dark:text-slate-400">
-          Do not close this window. Your bundle will be delivered automatically.
-        </p>
-
-        {(phase === "polling" || phase === "delivering") && (
-          <div className="mt-6 flex items-center justify-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 animate-bounce" />
-            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 animate-bounce [animation-delay:0.2s]" />
-            <span className="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700 animate-bounce [animation-delay:0.4s]" />
-          </div>
-        )}
-      </div>
-    );
-  }
-
   const handleShareStore = () => {
     if (navigator.share) {
       navigator.share({
@@ -1107,983 +751,316 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
     }
   };
 
+  const handleOtpChange = (value: string) => {
+    setOtp(value);
+    if (value.length === 6 && phase === "otp") submitOtp(value);
+  };
+
+  const backToStore = () => {
+    setPhase("select");
+    setOtp("");
+    setAuthMessage(null);
+  };
+
+  if (phase !== "select") {
+    return (
+      <StorePaymentStatus
+        phase={phase}
+        phone={phone}
+        momoNumber={momoNumber}
+        networkName={selectedNetwork?.name}
+        authMessage={authMessage}
+        errorMsg={errorMsg}
+        otp={otp}
+        otpTimer={otpTimer}
+        onOtpChange={handleOtpChange}
+        onSubmitOtp={() => submitOtp()}
+        onResendOtp={resendPaymentOtp}
+        onCancel={backToStore}
+        onPayWithRedirect={payWithRedirect}
+        onReturnToStore={() => setPhase("select")}
+      />
+    );
+  }
+
+  const visibleBundles = bundles.filter((b) => {
+    const label = b.size_label.toLowerCase();
+    const isNonExpiry = label.includes("non-expiry") || label.includes("no-expiry");
+    if (categoryFilter === "non-expiry") return isNonExpiry;
+    if (categoryFilter === "monthly") return !isNonExpiry;
+    return true;
+  });
+
+  const rewardsEnabled = agent.enable_loyalty_rewards !== false;
+  const storeInfoPanel = (
+    <StoreInfoPanel
+      name={agent.store_name}
+      logoUrl={agent.store_logo_url}
+      storeAddress={customDomainSlug ? window.location.hostname : `/store/${slug}`}
+      hasSupport={!!agent.support_whatsapp}
+      showWidgetToggle={isOwner}
+      widgetEnabled={widgetEnabled}
+      onToggleWidget={toggleWidget}
+    />
+  );
+
   return (
-    <div style={inlineStyles} className={`min-h-dvh ${getStoreBgClass()} relative overflow-hidden`}>
-      <StorefrontNotificationsModal open={notificationsOpen} onOpenChange={setNotificationsOpen} />
-      
-      <style>{`
-        @keyframes marquee {
-          0% { transform: translate3d(0, 0, 0); }
-          100% { transform: translate3d(-100%, 0, 0); }
-        }
-        .og-promo-marquee {
-          display: inline-block;
-          padding-left: 100%;
-          animation: marquee 25s linear infinite;
-        }
-        .og-promo-marquee:hover {
-          animation-play-state: paused;
-        }
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @keyframes float-gentle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-        .animate-shimmer {
-          background-size: 200% 100%;
-          animation: shimmer 3s ease-in-out infinite;
-        }
-        .animate-float-gentle {
-          animation: float-gentle 5s ease-in-out infinite;
-        }
-        .store-hero {
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
-          position: relative;
-        }
-        .store-hero::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          right: -30%;
-          width: 60%;
-          height: 200%;
-          background: radial-gradient(ellipse, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
-          pointer-events: none;
-        }
-        .store-hero::after {
-          content: '';
-          position: absolute;
-          bottom: -40%;
-          left: -20%;
-          width: 50%;
-          height: 180%;
-          background: radial-gradient(ellipse, rgba(244, 63, 94, 0.1) 0%, transparent 70%);
-          pointer-events: none;
-        }
-        .net-pill {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .net-pill:hover {
-          transform: translateY(-2px);
-        }
-        .net-pill.active {
-          transform: scale(1.05);
-          box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-        }
-      `}</style>
-      
-      <div className="relative z-10">
-        {/* ── PROMO BANNER ── */}
-        {agent.store_promo_banner && (
-          <div className={`w-full py-3 overflow-hidden border-b flex items-center font-bold text-xs uppercase tracking-wider relative shadow-sm ${
-            agent.store_promo_banner_style === 'midnight-gold' 
-              ? 'bg-gradient-to-r from-stone-900 via-stone-950 to-stone-900 text-yellow-400 border-yellow-500/25'
-              : agent.store_promo_banner_style === 'fire-ruby'
-              ? 'bg-gradient-to-r from-rose-950 via-red-950 to-rose-950 text-rose-200 border-red-500/25'
-              : agent.store_promo_banner_style === 'success-emerald'
-              ? 'bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 text-emerald-300 border-emerald-500/25'
-              : 'bg-gradient-to-r from-rose-950 via-indigo-950 to-rose-950 text-amber-300 border-indigo-500/25'
-          }`}>
-            <div className="og-promo-marquee whitespace-nowrap">
-              {agent.store_promo_banner} &nbsp; &nbsp; • &nbsp; &nbsp; {agent.store_promo_banner} &nbsp; &nbsp; • &nbsp; &nbsp; {agent.store_promo_banner}
-            </div>
-          </div>
-        )}
+    <div className="relative min-h-dvh bg-background pb-24 text-foreground">
+      {agent.store_promo_banner && (
+        <StorePromoBanner text={agent.store_promo_banner} bannerStyle={agent.store_promo_banner_style} />
+      )}
 
-      <div className="mx-auto max-w-md px-4 pt-0 space-y-5 pb-24">
-        
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/* ── HERO BANNER — Full-width dark gradient with glow ── */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <div className="store-hero -mx-4 px-6 pt-10 pb-8 relative overflow-hidden">
-          {/* Decorative ring */}
-          <div className="absolute top-6 right-6 w-24 h-24 rounded-full border border-white/[0.06] pointer-events-none" />
-          <div className="absolute top-10 right-10 w-14 h-14 rounded-full border border-white/[0.04] pointer-events-none" />
-          
-          {/* Notification Bell */}
-          <div className="absolute top-6 right-6 z-20">
-            <button 
-              onClick={() => setNotificationsOpen(true)}
-              className="relative h-10 w-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-0 right-0 h-3.5 w-3.5 bg-rose-500 rounded-full border-2 border-[#1e293b] flex items-center justify-center text-[8px] font-bold text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          </div>
+      <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 md:space-y-5 md:px-6 md:py-5">
+        <StoreHeader
+          name={agent.store_name}
+          tagline={agent.store_tagline}
+          logoUrl={agent.store_logo_url}
+          onNotifications={() => setNotificationsOpen(true)}
+          onShare={handleShareStore}
+        />
 
-          <div className="relative z-10 space-y-5">
-            {/* Logo + Name row */}
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-primary p-[2px] shadow-xl shadow-primary/20 animate-float-gentle flex-shrink-0">
-                <div className="h-full w-full rounded-[14px] bg-slate-900 flex items-center justify-center">
-                  <Store className="h-6 w-6 text-white" />
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-white tracking-tight truncate">
-                  {agent.store_name}
-                </h1>
-                <p className="text-sm text-slate-400 font-medium truncate">
-                  {agent.store_tagline || "Fast data. Better prices."}
-                </p>
-              </div>
-            </div>
-
-            {/* Stats row */}
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
-                </span>
-                LIVE
-              </span>
-              <span className="text-[10px] font-bold text-slate-500 bg-white/5 px-2.5 py-1 rounded-lg border border-white/5 uppercase tracking-wider">
-                Ghana · Reseller
-              </span>
-              <span className="text-[10px] font-medium text-slate-500 ml-auto">
-                {currentTime || ""}
-              </span>
-            </div>
-
-            {/* Customer Wallet Topup or Login */}
-            <div className="pt-2 border-t border-white/5 flex items-center justify-between">
-              <div className="text-xs text-slate-400 font-medium">{isOwner ? "Agent Wallet Balance" : "Your Store Balance"}</div>
+        <StatusRibbon
+          icon={<Zap className="h-5 w-5" />}
+          title="Live Store"
+          subtitle={<span>Pay with MoMo. Your bundle is delivered automatically.</span>}
+          actions={
+            <>
               {profile ? (
-                <CustomerWallet userId={profile.id} agentSlug={agent.store_slug} onBalanceChange={setWalletBalance} />
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {isOwner ? "Agent Wallet" : "Store Balance"}
+                  </span>
+                  <CustomerWallet userId={profile.id} agentSlug={agent.store_slug} onBalanceChange={setWalletBalance} />
+                </div>
               ) : (
-                <button
-                  onClick={() => nav(`/store-auth/${slug}`)}
-                  className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-all hover:scale-105 active:scale-95 shadow-sm backdrop-blur-md"
-                >
-                  <Wallet className="w-3.5 h-3.5 opacity-80" /> Login & View
+                <button type="button" onClick={() => nav(`/store-auth/${slug}`)} className={RIBBON_ACTION}>
+                  <Wallet className="h-3.5 w-3.5" /> Login & View Balance
                 </button>
               )}
-            </div>
-          </div>
+              {agent.support_whatsapp && (
+                <button type="button" onClick={() => window.open(agent.support_whatsapp, "_blank")} className={RIBBON_ACTION}>
+                  <MessageCircle className="h-3.5 w-3.5" /> Support
+                </button>
+              )}
+              {rewardsEnabled && (
+                <button type="button" onClick={() => setLoyaltyOpen(true)} className={RIBBON_ACTION}>
+                  <Trophy className="h-3.5 w-3.5 text-amber-500" /> Rewards
+                </button>
+              )}
+              {isOwner && !customDomainSlug && (
+                <button type="button" onClick={() => nav("/agent")} className={RIBBON_ACTION}>
+                  <Settings className="h-3.5 w-3.5" /> Manage store
+                </button>
+              )}
+            </>
+          }
+        />
+
+        <div className="sticky top-2 z-20">
+          <PillTabs
+            tabs={STORE_TABS}
+            value={activeTab}
+            onChange={setActiveTab}
+            stretch
+            className="bg-card shadow-soft"
+            tabClassName="py-2"
+          />
         </div>
 
-        {/* ══════════════════════════════════════════════════════════ */}
-        {/* ── QUICK ACTIONS BAR ──                                  */}
-        {/* ══════════════════════════════════════════════════════════ */}
-        <div className="flex items-center gap-2 -mt-2">
-          <button
-            onClick={() => agent?.support_whatsapp && window.open(agent.support_whatsapp, '_blank')}
-            className="flex items-center gap-1.5 flex-1 px-3 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
-              <MessageCircle className="h-4 w-4" />
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200">Support</p>
-              <p className="text-[8px] text-slate-400">Chat now</p>
-            </div>
-          </button>
-          
-          <button
-            onClick={handleShareStore}
-            className="flex items-center gap-1.5 flex-1 px-3 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="h-8 w-8 rounded-xl bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400 group-hover:scale-110 transition-transform">
-              <Share className="h-4 w-4" />
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200">Share</p>
-              <p className="text-[8px] text-slate-400">Store link</p>
-            </div>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("trans")}
-            className="flex items-center gap-1.5 flex-1 px-3 py-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group"
-          >
-            <div className="h-8 w-8 rounded-xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
-              <Clock className="h-4 w-4" />
-            </div>
-            <div className="text-left">
-              <p className="text-[10px] font-bold text-slate-800 dark:text-slate-200">Track</p>
-              <p className="text-[8px] text-slate-400">Status</p>
-            </div>
-          </button>
-        </div>
-
-        {/* ── CONDITIONAL RENDERING OF TABS ── */}
-
-        {activeTab === "orders" && (
-          <div className="space-y-6 animate-in fade-in zoom-in-95 duration-300">
-
-            {/* ══════════════════════════════════════════════════════ */}
-            {/* ── NETWORK SELECTOR — Pill-style horizontal strip ── */}
-            {/* ══════════════════════════════════════════════════════ */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
-                  Choose Network
-                </h2>
-                {selectedNetwork && (
-                  <button 
-                    onClick={() => { setSelectedNetwork(null); setSelectedBundle(null); }}
-                    className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-white uppercase tracking-wider transition-colors"
-                  >
-                    Reset
-                  </button>
-                )}
-              </div>
-
-              <div className="flex gap-2.5">
-                {[
-                  { id: "mtn", name: "MTN", bg: "bg-[#ffcc00]", text: "text-black", border: "border-[#e6b800]", ring: "ring-yellow-400/40" },
-                  { id: "atigo", name: "AT", bg: "bg-[#4a148c]", text: "text-white", border: "border-[#380b6b]", ring: "ring-purple-400/40" },
-                  { id: "telecel", name: "Telecel", bg: "bg-[#cc0000]", text: "text-white", border: "border-[#b30000]", ring: "ring-red-400/40" },
-                ].map((net) => {
-                  const isActive = selectedNetwork?.code.toLowerCase() === net.id || 
-                    (selectedNetwork?.code.toLowerCase() === "at" && net.id === "atigo") ||
-                    (selectedNetwork?.code.toLowerCase() === "airteltigo" && net.id === "atigo");
-                  
-                  return (
-                    <button
-                      key={net.id}
-                      onClick={() => {
-                        const matches = networks.find(
-                          (n) => n.code.toLowerCase() === net.id ||
-                            (n.code.toLowerCase() === "at" && net.id === "atigo") ||
-                            (n.code.toLowerCase() === "airteltigo" && net.id === "atigo")
-                        );
-                        if (matches) {
-                          setSelectedNetwork(matches);
-                          setSelectedBundle(null);
-                        }
-                      }}
-                      className={cn(
-                        "net-pill flex-1 flex items-center justify-center gap-2 py-3.5 rounded-2xl border-2 font-black text-sm transition-all",
-                        isActive 
-                          ? cn(net.bg, net.text, net.border, "ring-2", net.ring, "active shadow-md scale-[1.02]") 
-                          : "bg-white dark:bg-[#0f1422] border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-slate-300 dark:hover:border-slate-700 shadow-sm"
-                      )}
-                    >
-                      {net.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ══════════════════════════════════════════════════════ */}
-            {/* ── BUNDLE GRID — Solid colored cards                ── */}
-            {/* ══════════════════════════════════════════════════════ */}
-            {selectedNetwork && (
-              <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
-                <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  Select Bundle
-                </h3>
-
-                {loadingBundles ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-7 w-7 animate-spin text-slate-300" />
-                  </div>
-                ) : bundles.length === 0 ? (
-                  <div className="text-center text-xs text-slate-400 py-10 bg-white dark:bg-[#0f1422] rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
-                    No active bundles available.
-                  </div>
-                ) : (
-                  <>
-                    {/* Category Filter Sub-tabs */}
-                    <div className="mb-4 flex gap-1 p-1 bg-slate-100 dark:bg-[#0f1422] border border-slate-200 dark:border-slate-800 rounded-2xl max-w-sm">
-                      {[
-                        { id: "all", label: "All" },
-                        { id: "non-expiry", label: "Non-Expiry" },
-                        { id: "monthly", label: "Regular/Monthly" }
-                      ].map((cat) => (
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_320px] xl:gap-5">
+          <main className={cn("min-w-0 space-y-5 animate-in fade-in duration-300", activeTab === "store" && "lg:col-span-2")}>
+            {activeTab === "orders" && (
+              <>
+                <section className="space-y-3">
+                  <h2 className="text-lg font-bold text-foreground">Choose Network</h2>
+                  <div className="flex gap-2.5">
+                    {STORE_NETWORKS.map((net) => {
+                      const isActive = net.codes.includes(selectedNetwork?.code.toLowerCase() ?? "");
+                      return (
                         <button
-                          key={cat.id}
+                          key={net.id}
                           type="button"
-                          onClick={() => setCategoryFilter(cat.id as any)}
+                          aria-pressed={isActive}
+                          onClick={() => {
+                            const match = networks.find((n) => net.codes.includes(n.code.toLowerCase()));
+                            if (match) {
+                              setSelectedNetwork(match);
+                              setSelectedBundle(null);
+                            }
+                          }}
                           className={cn(
-                            "flex-1 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all duration-200",
-                            categoryFilter === cat.id
-                              ? "bg-slate-900 text-white dark:bg-slate-800 dark:text-white shadow-sm border border-white/10"
-                              : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white"
+                            "flex flex-1 items-center justify-center rounded-xl border py-3 text-sm font-bold shadow-soft transition-all active:scale-95",
+                            isActive ? net.active : "border-border bg-card text-foreground hover:border-primary/40",
                           )}
                         >
-                          {cat.label}
+                          {net.name}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
+                  </div>
+                </section>
 
-                    {bundles.filter(b => {
-                      const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
-                      if (categoryFilter === "non-expiry") return isNonExpiry;
-                      if (categoryFilter === "monthly") return !isNonExpiry;
-                      return true;
-                    }).length === 0 ? (
-                      <div className="text-center text-xs text-slate-400 py-10 bg-white dark:bg-slate-900 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 w-full">
-                        No bundles match the selected category.
+                {selectedNetwork && (
+                  <section className="space-y-3 animate-in fade-in duration-300">
+                    <h2 className="text-lg font-bold text-foreground">Select Bundle</h2>
+
+                    {loadingBundles ? (
+                      <div className="flex items-center justify-center py-12">
+                        <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : bundles.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-border bg-card py-10 text-center text-xs text-muted-foreground">
+                        No active bundles available.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 gap-2.5">
-                        {bundles
-                          .filter(b => {
-                            const isNonExpiry = b.size_label.toLowerCase().includes("non-expiry") || b.size_label.toLowerCase().includes("no-expiry");
-                            if (categoryFilter === "non-expiry") return isNonExpiry;
-                            if (categoryFilter === "monthly") return !isNonExpiry;
-                            return true;
-                          })
-                          .map((b, idx) => {
-                            const active = selectedBundle?.id === b.id;
-                            const isPopular = idx === 1 || idx === 4;
-                            const isBestValue = idx === bundles.length - 1 && bundles.length > 2;
-                            const sellPrice = priceFor(b);
+                      <>
+                        <PillTabs
+                          tabs={CATEGORY_TABS}
+                          value={categoryFilter}
+                          onChange={setCategoryFilter}
+                          stretch
+                          className="max-w-sm"
+                          tabClassName="py-1.5"
+                        />
 
-                            return (
-                              <button
-                                type="button"
+                        {visibleBundles.length === 0 ? (
+                          <div className="rounded-2xl border border-dashed border-border bg-card py-10 text-center text-xs text-muted-foreground">
+                            No bundles match the selected category.
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-4">
+                            {visibleBundles.map((b, idx) => (
+                              <BundleCard
                                 key={b.id}
+                                networkCode={selectedNetwork.code}
+                                networkName={selectedNetwork.name}
+                                sizeLabel={b.size_label}
+                                price={formatGHS(priceFor(b))}
+                                active={selectedBundle?.id === b.id}
+                                badge={
+                                  idx === 1 || idx === 4
+                                    ? "popular"
+                                    : idx === bundles.length - 1 && bundles.length > 2
+                                      ? "best"
+                                      : undefined
+                                }
                                 onClick={() => {
                                   setSelectedBundle(b);
                                   setCheckoutOpen(true);
                                 }}
-                                className={cn(
-                                  "group relative flex flex-col items-start justify-between rounded-2xl border p-4 text-left transition-all duration-200 overflow-hidden",
-                                  active 
-                                    ? "border-primary bg-primary/10 ring-2 ring-primary/40 shadow-lg shadow-primary/10 scale-[1.02]" 
-                                    : "border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-[#0f1422] hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-[#151c2e] shadow-sm hover:shadow-md hover:scale-[1.01]"
-                                )}
-                              >
-                                {isPopular && !active && (
-                                  <span className="absolute -top-2 left-3 rounded-full bg-primary px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-black shadow-sm z-10">
-                                    Popular
-                                  </span>
-                                )}
-                                {isBestValue && !active && (
-                                  <span className="absolute -top-2 left-3 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white shadow-sm z-10">
-                                    Best Value
-                                  </span>
-                                )}
-
-                                <div className="flex w-full justify-between items-center mb-3">
-                                  {selectedNetwork.code.toUpperCase() === 'MTN' ? (
-                                    <div className="flex items-center justify-center rounded-full bg-[#ffcc00] px-2.5 py-0.5 h-6 shadow-sm border border-yellow-500/20">
-                                      <span className="text-[10px] font-black text-black tracking-wider">MTN</span>
-                                    </div>
-                                  ) : selectedNetwork.code.toUpperCase() === 'TELECEL' ? (
-                                    <div className="flex items-center gap-1 rounded-full bg-[#cc0000] px-2.5 py-0.5 h-6 shadow-sm">
-                                      <span className="text-[10px] font-black text-white tracking-wider">TELECEL</span>
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center rounded-full bg-gradient-to-r from-red-500 to-blue-600 px-2.5 py-0.5 h-6 shadow-sm">
-                                      <span className="text-[10px] font-black text-white tracking-wider">AT</span>
-                                    </div>
-                                  )}
-                                  
-                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-300 group-hover:bg-primary group-hover:text-black transition-colors">
-                                    <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-                                  </div>
-                                </div>
-
-                                <div className="w-full my-1">
-                                  <span className="block text-2xl sm:text-3xl font-black leading-tight tracking-tight text-slate-900 dark:text-white group-hover:text-primary transition-colors">
-                                    {b.size_label}
-                                  </span>
-                                  <span className="mt-1 block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                                    {selectedNetwork.name} Non-Expiry Data
-                                  </span>
-                                </div>
-                                
-                                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 flex w-full items-end justify-between">
-                                  <div>
-                                    <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-none mb-0.5">Price</span>
-                                    <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-900 dark:text-emerald-400">
-                                      {formatGHS(sellPrice)}
-                                    </span>
-                                  </div>
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                                    ⚡ 1-5 min
-                                  </span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                      </div>
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
-                  </>
+                  </section>
                 )}
+              </>
+            )}
+
+            {activeTab === "trans" && (
+              <div className="space-y-2 rounded-2xl border border-border bg-card p-5 shadow-soft">
+                <h2 className="text-lg font-bold text-foreground">Track Order Status</h2>
+                <p className="text-xs text-muted-foreground">
+                  Enter your phone number below to view recent data purchase records and delivery status.
+                </p>
+                <div className="pt-2">
+                  <TrackOrder />
+                </div>
               </div>
             )}
 
+            {activeTab === "store" && storeInfoPanel}
+          </main>
+
+          {activeTab !== "store" && <aside className="hidden lg:sticky lg:top-16 lg:block">{storeInfoPanel}</aside>}
+        </div>
+
+        {!isOwner && (
+          <div className="flex justify-center pt-8">
+            <button
+              type="button"
+              onClick={() => setLoginOpen(true)}
+              className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Lock className="h-3 w-3" /> Agent Access
+            </button>
           </div>
         )}
-
-        {activeTab === "trans" && (
-          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-            <div className={`p-5 rounded-[28px] shadow-sm space-y-2 ${getCardClass()}`}>
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                Track Order Status
-              </h2>
-              <p className="text-xs text-slate-400 font-medium">
-                Enter your phone number below to view recent data purchase records and delivery status.
-              </p>
-              <div className="pt-2">
-                <TrackOrder />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "bulk" && (
-          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-            <div className={`p-5 rounded-[28px] shadow-sm space-y-4 ${getCardClass()}`}>
-              <div>
-                <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                  Bulk Data Orders
-                </h2>
-                <p className="text-xs text-slate-400 font-medium">
-                  Submit multiple data orders simultaneously. Ideal for companies or teams.
-                </p>
-              </div>
-
-              <div className="space-y-3.5 border-t border-slate-100 dark:border-slate-800 pt-3">
-                <div>
-                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">Bulk Recipients (Phone, Size)</label>
-                  <textarea
-                    rows={4}
-                    placeholder="e.g.&#10;0241234567, 5GB&#10;0501234567, 10GB"
-                    className="w-full mt-1.5 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-xs focus:ring-rose-500"
-                  />
-                  <p className="text-[10px] text-slate-400 font-medium mt-1">One record per line. Separate phone and size with a comma.</p>
-                </div>
-
-                <Button
-                  onClick={() => {
-                    toast({
-                      title: "Bulk Submission Received!",
-                      description: "Our reseller system is reviewing your bulk request. Please complete payment.",
-                    });
-                  }}
-                  className="w-full h-12 rounded-2xl font-bold bg-rose-500 hover:bg-rose-600 text-white transition-all shadow-md shadow-rose-500/10"
-                >
-                  <Layers className="mr-2 h-4 w-4" /> Submit Bulk Order
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "store" && (
-          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-            <div className={`p-6 rounded-[28px] shadow-sm space-y-4 ${getCardClass()}`}>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 flex items-center justify-center">
-                  <Store className="h-6 w-6" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                    {agent.store_name}
-                  </h2>
-                  <p className="text-xs text-rose-500 font-bold uppercase tracking-wider">
-                    RESELLER PARTNER STORE
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-3.5 border-t border-slate-100 dark:border-slate-800 pt-4 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/40">
-                  <span>Store Slug</span>
-                  <span className="font-mono text-slate-800 dark:text-slate-200">/store/{slug}</span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/40">
-                  <span>Activation Status</span>
-                  <span className="text-emerald-500 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Fully Activated
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-slate-50 dark:border-slate-800/40">
-                  <span>Supported Regions</span>
-                  <span className="text-slate-800 dark:text-slate-200">Ghana & Nigeria</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span>Support Channel</span>
-                  <span className="text-slate-800 dark:text-slate-200">WhatsApp & Phone Call</span>
-                </div>
-                {isOwner && (
-                  <div className="flex justify-between items-center py-3 mt-2 border-t border-slate-100 dark:border-slate-800">
-                    <div>
-                      <span className="font-bold text-slate-800 dark:text-white block">Draggable WhatsApp Widget</span>
-                      <span className="text-[10px] text-slate-400">Show floating support button to customers</span>
-                    </div>
-                    <button
-                      onClick={toggleWidget}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${widgetEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
-                    >
-                      <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${widgetEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {(activeTab as string) === "wallet" && (
-          <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
-            <WalletManager />
-          </div>
-        )}
-
       </div>
 
-      {/* Subtle Agent Login Button for public view */}
-      {!isOwner && (
-        <div className="mt-12 mb-8 flex justify-center">
-          <button
-            onClick={() => setLoginOpen(true)}
-            className="text-[10px] font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 uppercase tracking-widest flex items-center gap-1.5 opacity-60 hover:opacity-100 transition-all"
-          >
-            <Lock className="h-3 w-3" /> Agent Access
-          </button>
-        </div>
-      )}
+      <CheckoutDialog
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        bundleLabel={selectedBundle?.size_label}
+        networkName={selectedNetwork?.name}
+        finalPrice={finalPrice}
+        hasBundle={!!selectedBundle}
+        phone={phone}
+        onPhoneChange={setPhone}
+        crmCustomers={isOwner ? crmCustomers : undefined}
+        momoNumber={momoNumber}
+        onMomoNumberChange={setMomoNumber}
+        momoNetwork={momoNetwork}
+        onMomoNetworkChange={setMomoNetwork}
+        isVerifying={isVerifying}
+        accountName={accountName}
+        couponCodeInput={couponCodeInput}
+        onCouponCodeInputChange={setCouponCodeInput}
+        appliedCoupon={appliedCoupon}
+        couponError={couponError}
+        isCheckingCoupon={isCheckingCoupon}
+        onApplyCoupon={applyCouponCode}
+        onRemoveCoupon={() => {
+          setAppliedCoupon(null);
+          setCouponCodeInput("");
+        }}
+        subscribeChecked={subscribeChecked}
+        onSubscribeCheckedChange={setSubscribeChecked}
+        subscriptionFrequency={subscriptionFrequency}
+        onSubscriptionFrequencyChange={setSubscriptionFrequency}
+        canPayWithWallet={!!profile && walletBalance > 0 && walletBalance >= finalPrice}
+        payWithWallet={payWithWallet}
+        onPayWithWalletChange={setPayWithWallet}
+        walletDetail={`You have ${formatGHS(walletBalance)} available.`}
+        onPay={initiatePayment}
+      />
 
-      {/* ── CHECKOUT CONFIRM DIALOG ── */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[94vw] max-w-sm max-h-[90dvh] overflow-y-auto rounded-[32px] border-slate-100 dark:border-slate-800 p-0 bg-white dark:bg-slate-900">
-          
-          {/* Top header strip */}
-          <div className="bg-gradient-to-br from-slate-900 to-slate-950 text-white px-6 py-5 border-b border-slate-800/40 relative overflow-hidden">
-            <div className="absolute right-0 top-0 w-24 h-24 rounded-full bg-rose-500/10 blur-xl pointer-events-none" />
-            <DialogHeader>
-              <DialogTitle className="text-left text-lg font-bold text-white flex items-center gap-1.5">
-                <Sparkles className="h-4 w-4 text-yellow-400 fill-yellow-400/20" /> Confirm Order
-              </DialogTitle>
-              <DialogDescription className="text-left text-xs text-slate-400">
-                Please review purchase details before paying.
-              </DialogDescription>
-            </DialogHeader>
+      <RewardsDialog
+        open={loyaltyOpen}
+        onOpenChange={setLoyaltyOpen}
+        phone={loyaltyPhone}
+        onPhoneChange={setLoyaltyPhone}
+        pointsBalance={loyaltyPointsBalance}
+        isChecking={isCheckingLoyalty}
+        onCheck={checkLoyaltyPoints}
+        onRedeem={redeemLoyaltyPoints}
+      />
 
-            {selectedBundle && selectedNetwork && (
-              <div className="mt-4 flex items-center justify-between rounded-2xl bg-white/5 border border-white/10 px-4 py-3 backdrop-blur-sm">
-                <div>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">{selectedNetwork.name} bundle</p>
-                  <p className="text-2xl font-bold leading-tight text-white">
-                    {selectedBundle.size_label}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] text-slate-400 font-bold uppercase">Total</p>
-                  <p className="text-2xl font-bold text-rose-400">{formatGHS(finalPrice)}</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Checkout inputs */}
-          <div className="space-y-4 px-6 py-5">
-            <div>
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Recipient Phone (Who is receiving the data?)
-                </label>
-                {isOwner && crmCustomers && crmCustomers.length > 0 && (
-                  <select 
-                    className="text-[10px] font-bold text-rose-500 bg-transparent outline-none cursor-pointer border-b border-rose-200 dark:border-rose-900/50 appearance-none pb-0.5"
-                    onChange={(e) => {
-                      if (e.target.value) setPhone(e.target.value);
-                    }}
-                  >
-                    <option value="">Select from Address Book</option>
-                    {crmCustomers.map((c: any) => (
-                      <option key={c.id} value={c.phone}>{c.name} ({c.phone})</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              <Input
-                inputMode="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="024 123 4567"
-                className="h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-base font-semibold focus-visible:ring-rose-500"
-              />
-              <p className="mt-1 text-[9px] text-slate-400 font-medium">
-                Data bundle will be automatically credited to this number.
-              </p>
-            </div>
-
-            {!payWithWallet && (
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
-                  Payment Mobile Money Number (Who is paying?)
-                </label>
-                <div className="flex gap-2">
-                  <select 
-                    className="w-[100px] h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-sm font-semibold focus-visible:ring-rose-500 bg-white dark:bg-slate-900 px-3 border outline-none"
-                    value={momoNetwork}
-                    onChange={(e) => setMomoNetwork(e.target.value)}
-                  >
-                    <option value="MTN">MTN</option>
-                    <option value="TELECEL">Telecel</option>
-                    <option value="AIRTELTIGO">AT</option>
-                  </select>
-                  <Input
-                    inputMode="tel"
-                    value={momoNumber}
-                    onChange={(e) => setMomoNumber(e.target.value)}
-                    placeholder="024 123 4567"
-                    className="flex-1 h-12 rounded-2xl border-slate-100 dark:border-slate-800 text-base font-semibold focus-visible:ring-rose-500"
-                  />
-                </div>
-                <p className="mt-1 text-[10px] text-slate-400 font-medium">
-                  The prompt will be sent to this number.
-                </p>
-                {isVerifying && (
-                  <div className="mt-2 text-xs text-rose-500 flex items-center gap-2">
-                    <span className="h-3 w-3 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
-                    Verifying account...
-                  </div>
-                )}
-                {accountName && !isVerifying && (
-                  <div className="mt-2 text-xs font-semibold px-3 py-2 bg-emerald-500/10 text-emerald-600 rounded-lg flex items-center gap-2 border border-emerald-500/20">
-                    <CheckCircle2 className="h-4 w-4" />
-                    {accountName}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Promo / Discount Section */}
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-              <label className="mb-1.5 block text-xs font-bold text-slate-500 dark:text-slate-400">
-                Promo Code or Gift Voucher
-              </label>
-              {appliedCoupon ? (
-                <div className="flex items-center justify-between px-3 py-2 bg-rose-500/10 text-rose-500 rounded-2xl border border-rose-500/20 text-xs font-bold">
-                  <div className="flex items-center gap-1.5">
-                    <Gift className="h-4 w-4 text-rose-500" />
-                    <span>Applied: <span className="font-mono text-slate-800 dark:text-white uppercase">{appliedCoupon.code}</span> (-GH₵ {Number(appliedCoupon.discount_amount).toFixed(2)})</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      setAppliedCoupon(null);
-                      setCouponCodeInput("");
-                    }}
-                    className="h-6 px-1.5 text-[10px] text-rose-500 hover:text-rose-600 font-bold"
-                  >
-                    Remove
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="e.g. WELCOME5"
-                    value={couponCodeInput}
-                    onChange={(e) => setCouponCodeInput(e.target.value)}
-                    className="flex-1 h-11 rounded-2xl border-slate-100 dark:border-slate-800 text-sm font-semibold uppercase focus-visible:ring-rose-500"
-                  />
-                  <Button
-                    onClick={applyCouponCode}
-                    disabled={isCheckingCoupon || !couponCodeInput.trim()}
-                    className="h-11 rounded-2xl px-4 text-xs font-bold bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-700"
-                  >
-                    {isCheckingCoupon ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
-                  </Button>
-                </div>
-              )}
-              {couponError && (
-                <p className="mt-1 text-[10px] text-red-500 font-bold">{couponError}</p>
-              )}
-            </div>
-
-            {/* 🔄 Momo Subscription (Recurring Delivery) */}
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="auto-bill-checkbox"
-                    checked={subscribeChecked}
-                    onChange={(e) => setSubscribeChecked(e.target.checked)}
-                    className="mt-1 h-4.5 w-4.5 rounded border-slate-300 dark:border-slate-700 text-rose-500 focus:ring-rose-500"
-                  />
-                  <label htmlFor="auto-bill-checkbox" className="text-xs font-bold text-slate-700 dark:text-slate-300 cursor-pointer">
-                    Auto-Pilot recurring topup 🔄
-                    <span className="block text-[9px] text-slate-400 font-medium mt-0.5">
-                      Automatically auto-deliver this bundle and bill my mobile money wallet. Cancel anytime.
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              {subscribeChecked && (
-                <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 animate-in fade-in duration-300">
-                  {(["weekly", "monthly"] as const).map((freq) => (
-                    <button
-                      key={freq}
-                      type="button"
-                      onClick={() => setSubscriptionFrequency(freq)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
-                        subscriptionFrequency === freq
-                          ? "bg-rose-500 text-white shadow-sm"
-                          : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      }`}
-                    >
-                      Every {freq === "weekly" ? "Week" : "Month"}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* 💰 Pay with Wallet Toggle */}
-            {profile && walletBalance > 0 && walletBalance >= (isOwner && selectedBundle ? selectedBundle.base_price : finalPrice) && (
-              <div className="border-t border-slate-100 dark:border-slate-800 pt-3 flex items-center justify-between">
-                <div className="flex items-start gap-2">
-                  <input
-                    type="checkbox"
-                    id="wallet-pay-checkbox"
-                    checked={payWithWallet}
-                    onChange={(e) => setPayWithWallet(e.target.checked)}
-                    className="mt-1 h-4.5 w-4.5 rounded border-emerald-500 text-emerald-500 focus:ring-emerald-500"
-                  />
-                  <label htmlFor="wallet-pay-checkbox" className="text-xs font-bold text-emerald-600 dark:text-emerald-400 cursor-pointer">
-                    Pay with Wallet Balance
-                    {isOwner && selectedBundle ? (
-                      <span className="block text-[9px] text-emerald-500 font-bold mt-0.5">
-                        Agent Wholesale Deduction: {formatGHS(selectedBundle.base_price)} (Available: {formatGHS(walletBalance)})
-                      </span>
-                    ) : (
-                      <span className="block text-[9px] text-slate-500 font-medium mt-0.5">
-                        You have {formatGHS(walletBalance)} available.
-                      </span>
-                    )}
-                  </label>
-                </div>
-              </div>
-            )}
-
-            <Button
-              onClick={initiatePayment}
-              disabled={
-                !selectedBundle ||
-                phone.replace(/\D/g, "").length < 9 ||
-                (!payWithWallet && momoNumber.replace(/\D/g, "").length < 9) ||
-                isVerifying
-              }
-              className="h-12 w-full rounded-2xl text-xs font-bold uppercase bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white shadow-md shadow-rose-500/10 transition-all duration-300"
-            >
-              <Zap className="mr-1.5 h-3.5 w-3.5 fill-current" /> Pay {selectedBundle ? formatGHS(finalPrice) : ""}
-            </Button>
-
-            <div className="flex items-center justify-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-              <Lock className="h-3.5 w-3.5 text-slate-500" />
-              Secured Payments · PCI-DSS Certified
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── GENERAL INFO POPUP (Quick Actions Dialog) ── */}
-      {infoPopup && (
-        <Dialog open={infoPopup.open} onOpenChange={(open) => setInfoPopup(open ? infoPopup : null)}>
-          <DialogContent className="w-[94vw] max-w-sm rounded-[32px] border-slate-100 dark:border-slate-800 p-5 bg-white dark:bg-slate-900 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center border border-rose-500/20">
-                <Sparkles className="h-5 w-5" />
-              </div>
-              <DialogHeader>
-                <DialogTitle className="text-left text-base font-bold text-slate-800 dark:text-white">
-                  {infoPopup.title}
-                </DialogTitle>
-                <DialogDescription className="sr-only">Information details</DialogDescription>
-              </DialogHeader>
-            </div>
-            
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800 pt-3">
-              {infoPopup.content}
-            </p>
-
-            <Button
-              onClick={() => setInfoPopup(null)}
-              className="w-full h-11 rounded-2xl font-bold bg-slate-950 hover:bg-slate-900 text-white text-xs dark:bg-slate-800 dark:hover:bg-slate-700"
-            >
-              Understand
-            </Button>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* Floating Widget */}
-      {widgetEnabled && agent?.support_whatsapp && (
+      {/* The floating buttons sit above dialogs, so hide them while the Pay button is on screen. */}
+      {!checkoutOpen && widgetEnabled && agent.support_whatsapp && (
         <DraggableWidget initialPosition={{ x: window.innerWidth - 80, y: window.innerHeight - 300 }}>
           <DraggableWhatsApp link={agent.support_whatsapp} />
         </DraggableWidget>
       )}
 
-      {/* Agent Login Modal */}
-      {loginOpen && (
-        <AgentLogin storeName={agent?.store_name || "Agent Store"} onClose={() => setLoginOpen(false)} />
-      )}
-
-
-
-      {/* 🎮 Loyalty Rewards Hub Floating Button & Dialog */}
-      {agent?.enable_loyalty_rewards !== false && (
-        <DraggableWidget initialPosition={{ x: 24, y: window.innerHeight - 150 }}>
-          <button
-            onClick={() => setLoyaltyOpen(true)}
-            className="h-14 w-14 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 border border-amber-400/20"
-          >
-            <Trophy className="h-6 w-6 animate-bounce" />
-          </button>
+      {!checkoutOpen && agent.enable_ai_assistant !== false && (
+        <DraggableWidget initialPosition={{ x: Math.max(8, window.innerWidth - 340), y: window.innerHeight - 150 }}>
+          <StoreAssistant
+            open={aiOpen}
+            onOpenChange={setAiOpen}
+            messages={chatMessages}
+            input={chatInput}
+            onInputChange={setChatInput}
+            onSend={handleSendMessage}
+          />
         </DraggableWidget>
       )}
 
-      <Dialog open={loyaltyOpen} onOpenChange={setLoyaltyOpen}>
-        <DialogContent className="w-[94vw] max-w-sm rounded-[32px] border-slate-100 dark:border-slate-800 p-6 bg-white dark:bg-slate-900 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center border border-amber-500/20">
-              <Trophy className="h-6 w-6" />
-            </div>
-            <DialogHeader>
-              <DialogTitle className="text-left text-lg font-bold text-slate-800 dark:text-white">
-                Loyalty Rewards Hub
-              </DialogTitle>
-              <DialogDescription className="text-left text-xs text-slate-400">
-                Earn GigPoints on every purchase and redeem checkout discounts!
-              </DialogDescription>
-            </DialogHeader>
-          </div>
+      {loginOpen && <AgentLogin storeName={agent.store_name || "Agent Store"} onClose={() => setLoginOpen(false)} />}
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4 space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1.5">
-                Enter your phone number to check balance:
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  inputMode="tel"
-                  placeholder="024 123 4567"
-                  value={loyaltyPhone}
-                  onChange={(e) => setLoyaltyPhone(e.target.value)}
-                  className="flex-1 h-11 rounded-xl border-slate-100 dark:border-slate-800 text-sm font-semibold"
-                />
-                <Button
-                  onClick={checkLoyaltyPoints}
-                  disabled={isCheckingLoyalty || !loyaltyPhone.trim()}
-                  className="h-11 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs"
-                >
-                  {isCheckingLoyalty ? <Loader2 className="h-4 w-4 animate-spin" /> : "Check"}
-                </Button>
-              </div>
-            </div>
-
-            {loyaltyPointsBalance !== null && (
-              <div className="bg-amber-500/5 border border-amber-500/10 rounded-2xl p-4 text-center space-y-2 animate-in fade-in duration-300">
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Your Balance</p>
-                <p className="text-3xl font-bold text-amber-500">{loyaltyPointsBalance} <span className="text-xs font-bold text-slate-400">GigPoints</span></p>
-                
-                {loyaltyPointsBalance >= 10 ? (
-                  <div className="pt-2">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                      Redeem 10 points for GH₵ 1.00 off! (Max discount: bundle price minus GH₵ 1.00)
-                    </p>
-                    <Button
-                      onClick={redeemLoyaltyPoints}
-                      className="w-full h-10 rounded-xl bg-slate-950 hover:bg-slate-900 text-white dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold"
-                    >
-                      Redeem Discount Now
-                    </Button>
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-400 font-medium pt-1">
-                    You need at least 10 points to redeem a discount.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 🤖 AI Storefront Assistant Widget */}
-      {agent?.enable_ai_assistant !== false && (
-        <DraggableWidget initialPosition={{ x: window.innerWidth - 340, y: window.innerHeight - 150 }}>
-          <div className="flex flex-col items-end">
-            {aiOpen && (
-              <div className="mb-4 w-80 h-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-300">
-                {/* Header */}
-                <div className="bg-primary text-primary-foreground p-4 flex items-center justify-between shadow-md">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center animate-pulse">
-                      <Sparkles className="h-4 w-4 text-yellow-300 fill-yellow-300" />
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-sm leading-tight">Storefront AI</h3>
-                      <p className="text-[10px] text-indigo-200">Online & Ready</p>
-                    </div>
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={() => setAiOpen(false)}
-                    className="h-7 w-7 p-0 rounded-full hover:bg-white/10 text-white hover:text-white"
-                  >
-                    ✕
-                  </Button>
-                </div>
-                {/* Messages */}
-                <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50 dark:bg-slate-950/50">
-                  {chatMessages.map((m, idx) => (
-                    <div key={idx} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
-                      <div className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-xs font-semibold leading-relaxed shadow-sm ${
-                        m.sender === "user" 
-                          ? "bg-indigo-600 text-white rounded-tr-none" 
-                          : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none"
-                      }`}>
-                        {m.text}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Input */}
-                <div className="p-3 border-t border-slate-100 dark:border-slate-800 flex gap-2 bg-white dark:bg-slate-900">
-                  <Input
-                    placeholder="Ask me anything..."
-                    value={chatInput}
-                    onChange={(e) => setChatInput(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                    className="h-10 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border-none focus-visible:ring-indigo-500"
-                  />
-                  <Button 
-                    onClick={handleSendMessage}
-                    className="h-10 rounded-xl px-4 bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            {/* Toggle Button */}
-            <button
-              onClick={() => setAiOpen(!aiOpen)}
-              className="h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-xl hover:scale-105 active:scale-95 transition-all duration-300"
-            >
-              <MessageCircle className="h-6 w-6 animate-pulse" />
-            </button>
-          </div>
-        </DraggableWidget>
-      )}
-
-      {/* Storefront Notifications Modal */}
       <StorefrontNotificationsModal open={notificationsOpen} onOpenChange={setNotificationsOpen} />
-      </div>
     </div>
   );
 }

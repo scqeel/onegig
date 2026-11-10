@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { useTheme } from "next-themes";
+import { useLocation } from "react-router-dom";
 import { Sun, Moon } from "lucide-react";
 
 export function DraggableThemeToggle() {
   const { theme, setTheme } = useTheme();
+  const { pathname } = useLocation();
   const [position, setPosition] = useState({ x: typeof window !== "undefined" ? window.innerWidth - 60 : 300, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; initX: number; initY: number } | null>(null);
@@ -62,6 +64,9 @@ export function DraggableThemeToggle() {
     
     setTheme(theme === "dark" ? "light" : "dark");
   };
+
+  // A store can force dark mode, so the visitor's toggle must not compete with it.
+  if (pathname.startsWith("/store/")) return null;
 
   return (
     <button

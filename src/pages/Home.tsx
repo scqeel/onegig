@@ -24,6 +24,9 @@ import {
   VolumeX,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
+import { PillTabs } from "@/components/shared/PillTabs";
+import { StatCard, StatCardVariant } from "@/components/shared/StatCard";
+import { StatusRibbon } from "@/components/shared/StatusRibbon";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -77,7 +80,6 @@ const HD = { badge: "[animation-delay:0ms]" };
 
 // Section stagger arrays — index maps to each item
 const SD = {
-  stats:  ["[transition-delay:150ms]","[transition-delay:250ms]","[transition-delay:350ms]","[transition-delay:450ms]"] as const,
   feats:  ["[animation-delay:100ms]","[animation-delay:175ms]","[animation-delay:250ms]","[animation-delay:325ms]","[animation-delay:400ms]","[animation-delay:475ms]"] as const,
   steps:  ["[animation-delay:180ms]","[animation-delay:310ms]","[animation-delay:440ms]"] as const,
   tests:  ["[animation-delay:120ms]","[animation-delay:230ms]","[animation-delay:340ms]"] as const,
@@ -411,7 +413,7 @@ export default function HomePage() {
               </p>
 
               {/* Quick Order Console */}
-              <div className="w-full max-w-lg rounded-[1.75rem] border border-border bg-card p-5 space-y-4">
+              <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-soft p-5 space-y-4">
                 <div className="flex items-center justify-between border-b border-border pb-3">
                   <div className="flex items-center gap-2">
                     <span className="flex h-2 w-2 rounded-full bg-primary" />
@@ -425,27 +427,13 @@ export default function HomePage() {
                 </div>
 
                 {/* Network Segmented Switcher Pills */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {NETWORKS.map((n) => {
-                    const active = activeNetwork === n.id;
-                    return (
-                      <button
-                        type="button"
-                        key={n.id}
-                        onClick={() => setActiveNetwork(n.id)}
-                        className={cn(
-                          "flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-colors cursor-pointer",
-                          active
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                        )}
-                      >
-                        <span className="text-sm shrink-0">{n.emoji}</span>
-                        <span className="truncate text-[11px]">{n.id === "result_checkers" ? "Checkers" : n.name}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <PillTabs
+                  tabs={NETWORKS.map((n) => ({ value: n.id, label: n.id === "result_checkers" ? "Checkers" : n.name }))}
+                  value={activeNetwork}
+                  onChange={setActiveNetwork}
+                  stretch
+                  tabClassName="px-1 py-2 text-[11px]"
+                />
 
                 {/* Selected Package Quick Preview */}
                 <div className="flex items-center justify-between rounded-xl border border-border bg-background px-4 py-3 text-xs">
@@ -502,7 +490,7 @@ export default function HomePage() {
 
             {/* RIGHT COLUMN: BUNDLE DECK */}
             <div className="w-full max-w-md lg:col-span-6 lg:max-w-none relative">
-              <div className="relative overflow-hidden rounded-[1.75rem] border border-border bg-card p-4.5 sm:p-6 space-y-5">
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-soft p-4.5 sm:p-6 space-y-5">
 
                 <div className="flex items-center justify-between border-b border-border pb-4">
                   <div className="flex items-center gap-3">
@@ -588,13 +576,23 @@ export default function HomePage() {
 
       {/* ── Trust strip ── */}
       <div className="border-b border-border bg-background py-6">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-2.5 px-4">
-          {TRUST_ITEMS.map((b, i) => (
-            <div key={i} className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
-              <span className="text-sm">{b.emoji}</span>
-              <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">{b.name}</span>
-            </div>
-          ))}
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <StatusRibbon
+            icon={<Zap className="h-5 w-5 fill-primary text-primary" />}
+            title="Live · Ghana-wide network"
+            subtitle={TRUST_ITEMS.slice(3).map((b, i) => (
+              <span key={b.name} className="flex items-center gap-2">
+                {i > 0 && <span className="opacity-30">•</span>}
+                {b.name}
+              </span>
+            ))}
+            actions={TRUST_ITEMS.slice(0, 3).map((b) => (
+              <div key={b.name} className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-background/80 px-3.5 py-2 text-xs font-semibold text-muted-foreground shadow-sm">
+                <span>{b.emoji}</span>
+                <span className="whitespace-nowrap">{b.name}</span>
+              </div>
+            ))}
+          />
         </div>
       </div>
 
@@ -602,31 +600,20 @@ export default function HomePage() {
       <section className="bg-background py-20 border-b border-border">
         <div ref={statsRef} className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className={cn(
-            "rounded-[1.75rem] border border-border bg-card p-8 sm:p-10 transition-all duration-1000",
+            "transition-all duration-1000",
             statsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}>
-            <p className="mb-10 text-center text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="mb-6 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               Trusted by resellers across Ghana
             </p>
-            <div className="grid grid-cols-2 gap-y-10 gap-x-4 md:grid-cols-4 divide-y divide-border md:divide-y-0 md:divide-x divide-solid">
-              {[
-                { value: "10K+",   label: "Active Resellers", sub: "growing daily" },
-                { value: "< 60s",  label: "Avg. Delivery",    sub: "guaranteed speed" },
-                { value: "4.8★",   label: "Customer Rating",  sub: "verified reviews" },
-                { value: "GH₵M+",  label: "Monthly Volume",   sub: "trusted scale" },
-              ].map(({ value, label, sub }, i) => (
-                <div
-                  key={label}
-                  className={cn(
-                    "text-center transition-all duration-700 px-2",
-                    i >= 2 ? "pt-10 md:pt-0" : "",
-                    SD.stats[i]
-                  )}
-                >
-                  <p className="text-4xl font-bold text-foreground md:text-5xl">{value}</p>
-                  <p className="mt-3 text-sm font-semibold text-foreground/80">{label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
-                </div>
+            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+              {([
+                { value: "10K+",   label: "Active Resellers", sub: "growing daily",    icon: <Users className="h-5 w-5" />,      variant: "primary" },
+                { value: "< 60s",  label: "Avg. Delivery",    sub: "guaranteed speed", icon: <Clock className="h-5 w-5" />,      variant: "emerald" },
+                { value: "4.8★",   label: "Customer Rating",  sub: "verified reviews", icon: <Star className="h-5 w-5" />,       variant: "amber" },
+                { value: "GH₵M+",  label: "Monthly Volume",   sub: "trusted scale",    icon: <TrendingUp className="h-5 w-5" />, variant: "rose" },
+              ] satisfies { value: string; label: string; sub: string; icon: React.ReactNode; variant: StatCardVariant }[]).map(({ value, label, sub, icon, variant }) => (
+                <StatCard key={label} title={label} value={value} helper={sub} icon={icon} variant={variant} />
               ))}
             </div>
           </div>
@@ -654,7 +641,7 @@ export default function HomePage() {
               <div
                 key={title}
                 className={cn(
-                  "group relative overflow-hidden rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30 hover:-translate-y-0.5",
+                  "group relative overflow-hidden rounded-2xl border border-border bg-card shadow-soft p-6 transition-all duration-300 hover:border-primary/30 hover:-translate-y-0.5",
                   SD.feats[i],
                   featuresInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}
@@ -697,7 +684,7 @@ export default function HomePage() {
               <div
                 key={step}
                 className={cn(
-                  "group relative flex gap-5 items-start md:flex-col md:items-start rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/30",
+                  "group relative flex gap-5 items-start md:flex-col md:items-start rounded-2xl border border-border bg-card shadow-soft p-6 transition-all duration-300 hover:border-primary/30",
                   SD.steps[i],
                   stepsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}
@@ -743,7 +730,7 @@ export default function HomePage() {
               <div
                 key={t.name}
                 className={cn(
-                  "group relative flex flex-col rounded-2xl border border-border bg-card p-6 transition-all duration-500 hover:border-primary/30",
+                  "group relative flex flex-col rounded-2xl border border-border bg-card shadow-soft p-6 transition-all duration-500 hover:border-primary/30",
                   SD.tests[i],
                   testimonialsInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 )}
@@ -771,7 +758,7 @@ export default function HomePage() {
 
       {/* ── Agent CTA ── */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pb-24">
-        <div ref={ctaRef} className="relative overflow-hidden rounded-[1.75rem] bg-card p-8 sm:p-12 md:p-16 border border-border">
+        <div ref={ctaRef} className="relative overflow-hidden rounded-2xl bg-card shadow-soft p-8 sm:p-12 md:p-16 border border-border">
           <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-primary/10 blur-3xl" />
 
           <div className="relative flex flex-col gap-12 lg:grid lg:grid-cols-12 lg:gap-16 items-center">

@@ -94,25 +94,19 @@ export default function PaymentCallbackPage() {
   }, [nav, transaction_id, toast, refresh]);
 
   return (
-    <div className="dark relative flex min-h-dvh flex-col items-center justify-center overflow-hidden bg-background px-6 text-center">
-      <div className="relative flex flex-col items-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary">
-          <Loader2 className="h-8 w-8 animate-spin text-primary-foreground" />
+    <div className="flex min-h-dvh items-center justify-center bg-background p-4 text-center">
+      <div className="flex w-full max-w-sm flex-col items-center rounded-2xl border border-border bg-card px-8 py-10 shadow-soft">
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10 text-primary">
+          <Loader2 className="h-8 w-8 animate-spin" />
         </div>
 
-        <h2 className="mt-6 text-xl font-bold text-foreground">Verifying payment</h2>
-        <p className="mt-2 max-w-xs text-sm text-muted-foreground">
+        <h2 className="mt-5 text-xl font-bold text-foreground">Verifying payment</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Please wait while we securely confirm your transaction…
         </p>
-
-        {/* Animated dots */}
-        <div className="mt-7 flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse [animation-delay:0.25s]" />
-          <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse [animation-delay:0.5s]" />
-        </div>
-
-        <p className="mt-8 text-xs text-muted-foreground/60">Do not close this page</p>
+        <p className="mt-6 border-t border-border pt-4 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          Do not close this page
+        </p>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { BecomeAgent } from "@/components/buy/BecomeAgent";
 import { Store, X, Check, ArrowRight, ShieldCheck } from "lucide-react";
@@ -17,6 +17,9 @@ const FEATURES = [
 export function AgentPromoModal() {
   const { isAgent, loading, user } = useAuth();
   const nav = useNavigate();
+  const { pathname } = useLocation();
+  // Covers /store/* and /store-auth/*: never recruit an agent's own customers.
+  const onAgentStore = pathname.startsWith("/store");
   const [open, setOpen] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
 
@@ -30,7 +33,7 @@ export function AgentPromoModal() {
     }
   }, [loading, isAgent]);
 
-  if (loading || isAgent || !open) return null;
+  if (loading || isAgent || !open || onAgentStore) return null;
 
   const handleClose = () => {
     setOpen(false);

@@ -65,9 +65,9 @@ const App = () => {
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <DomainRouter>
-            <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-              <AuthProvider>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <AuthProvider>
+              <DomainRouter>
                 <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/auth" element={<AuthPage />} />
@@ -97,9 +97,9 @@ const App = () => {
                 <PWAInstallBanner />
                 <DraggableThemeToggle />
                 <AgentPromoModal />
-              </AuthProvider>
-            </BrowserRouter>
-          </DomainRouter>
+              </DomainRouter>
+            </AuthProvider>
+          </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

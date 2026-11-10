@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { Route, Routes } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import AgentStorePage from "@/pages/AgentStore";
+import CustomerAuthPage from "@/pages/CustomerAuth";
+import PaymentCallbackPage from "@/pages/PaymentCallback";
 import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 export function DomainRouter({ children }: { children: React.ReactNode }) {
@@ -39,14 +42,19 @@ export function DomainRouter({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (loading) {
-    return <LoadingScreen message="Loading Storefront..." submessage="Connecting to custom domain store" variant="dark" />;
+    return <LoadingScreen message="Loading Storefront..." submessage="Connecting to custom domain store" />;
   }
 
-  // If a custom domain maps to a store slug, render the AgentStorePage directly
-  // and pass the slug. We'll need to modify AgentStorePage to accept a slug prop
-  // or handle it gracefully.
+  // A custom domain only ever shows its store, plus the two pages a store
+  // customer can be sent to: login, and the return from a wallet top-up.
   if (domainSlug) {
-    return <AgentStorePage customDomainSlug={domainSlug} />;
+    return (
+      <Routes>
+        <Route path="/store-auth/:slug" element={<CustomerAuthPage />} />
+        <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+        <Route path="*" element={<AgentStorePage customDomainSlug={domainSlug} />} />
+      </Routes>
+    );
   }
 
   // Otherwise, render the normal application routes

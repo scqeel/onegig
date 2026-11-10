@@ -24,7 +24,7 @@ import { AdminMarketingTab } from "@/components/admin/tabs/AdminMarketingTab";
 import { AdminCouponsTab } from "@/components/admin/tabs/AdminCouponsTab";
 import { AdminAuditLogsTab } from "@/components/admin/tabs/AdminAuditLogsTab";
 import { AdminSettingsTab } from "@/components/admin/tabs/AdminSettingsTab";
-import { cn } from "@/lib/utils";
+import { PillTabs } from "@/components/shared/PillTabs";
 
 type Tab = 
   | "overview" | "analytics" 
@@ -127,38 +127,15 @@ export default function AdminPage() {
         {/* Quick Hub Filter Bar */}
         <div className="overflow-x-auto pb-1">
           <div className="flex items-center gap-2 min-w-max border-b border-border/40 pb-3">
-            {NAV_HUBS.map((hubGroup) => {
-              const isGroupActive = hubGroup.items.some((i) => i.value === tab);
-
-              return (
-                <div key={hubGroup.hub} className="flex items-center gap-1 rounded-xl bg-secondary/30 p-1 border border-border/40">
-                  <span className="px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {hubGroup.hub}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {hubGroup.items.map((subItem) => {
-                      const isActive = tab === subItem.value;
-                      return (
-                        <button
-                          key={subItem.value}
-                          type="button"
-                          onClick={() => setTab(subItem.value)}
-                          className={cn(
-                            "flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all whitespace-nowrap",
-                            isActive
-                              ? "bg-primary text-primary-foreground shadow-sm"
-                              : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-                          )}
-                        >
-                          {subItem.icon}
-                          <span>{subItem.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+            {NAV_HUBS.map((hubGroup) => (
+              <PillTabs
+                key={hubGroup.hub}
+                label={hubGroup.hub}
+                tabs={hubGroup.items}
+                value={tab}
+                onChange={setTab}
+              />
+            ))}
           </div>
         </div>
 

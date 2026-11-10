@@ -1,13 +1,41 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BriefcaseBusiness, CheckCircle, Search, ShieldCheck, Users, Zap, Smartphone, Tv, GraduationCap } from "lucide-react";
+import { BriefcaseBusiness, CheckCircle, GraduationCap, Search, ShieldCheck, Smartphone, Tv, Users, Zap } from "lucide-react";
 import { BuyDataFlow } from "@/components/buy/BuyDataFlow";
 import { BuyAirtimeFlow } from "@/components/buy/BuyAirtimeFlow";
 import { PayBillsFlow } from "@/components/buy/PayBillsFlow";
 import { ResultCheckerFlow } from "@/components/buy/ResultCheckerFlow";
-import { Logo } from "@/components/Logo";
+import { PublicHeader } from "@/components/PublicHeader";
+import { PillTab, PillTabs } from "@/components/shared/PillTabs";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+
+type BuyTab = "data" | "airtime" | "bill" | "checker";
+
+const BUY_TABS: PillTab<BuyTab>[] = [
+  { value: "data", label: "Data", icon: <Zap className="h-4 w-4 shrink-0" /> },
+  { value: "airtime", label: "Airtime", icon: <Smartphone className="h-4 w-4 shrink-0" /> },
+  { value: "bill", label: "Bills", icon: <Tv className="h-4 w-4 shrink-0" /> },
+  { value: "checker", label: "Checkers", icon: <GraduationCap className="h-4 w-4 shrink-0" /> },
+];
+
+const HEADERS: Record<BuyTab, { title: string; desc: string }> = {
+  data: {
+    title: "Buy Mobile Data",
+    desc: "Pick a network, choose a bundle, and pay with MoMo or card. Done in under 60 seconds.",
+  },
+  airtime: {
+    title: "Buy Airtime",
+    desc: "Instant top-ups for MTN, Telecel, and AirtelTigo. No registration required.",
+  },
+  bill: {
+    title: "Pay Utility Bills",
+    desc: "Pay DSTV, GOTV, StarTimes & ECG Prepaid instantly with secure validation.",
+  },
+  checker: {
+    title: "WAEC Result Checkers",
+    desc: "Buy WASSCE, BECE, CSSPS & NOVDEC checker vouchers with instant PIN delivery.",
+  },
+};
 
 const TRUST_ITEMS = [
   { icon: Zap, title: "Instant delivery", desc: "Transactions complete on your line within seconds." },
@@ -16,114 +44,40 @@ const TRUST_ITEMS = [
   { icon: Users, title: "10,000+ happy customers", desc: "Trusted by resellers and everyday buyers across Ghana." },
 ];
 
+const NETWORKS = [
+  { emoji: "🟡", name: "MTN", detail: "Non-expiry bundles" },
+  { emoji: "🔴", name: "Telecel", detail: "Monthly bundles" },
+  { emoji: "🔵", name: "AirtelTigo", detail: "Monthly bundles" },
+];
+
+const CARD = "overflow-hidden rounded-2xl border border-border bg-card shadow-soft";
+const CARD_HEADING = "border-b border-border bg-secondary/40 px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground";
+
 export default function PublicBuyPage() {
-  const [activeTab, setActiveTab] = useState<"data" | "airtime" | "bill" | "checker">(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab")?.toLowerCase();
-    if (tab === "airtime" || tab === "bill" || tab === "data" || tab === "checker") return tab as any;
-    return "data";
+  const [activeTab, setActiveTab] = useState<BuyTab>(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab")?.toLowerCase();
+    return tab === "airtime" || tab === "bill" || tab === "data" || tab === "checker" ? tab : "data";
   });
 
-  const getHeaderInfo = () => {
-    switch (activeTab) {
-      case "airtime":
-        return {
-          title: "Buy Airtime",
-          desc: "Instant top-ups for MTN, Telecel, and AirtelTigo. No registration required."
-        };
-      case "bill":
-        return {
-          title: "Pay Utility Bills",
-          desc: "Pay DSTV, GOTV, StarTimes & ECG Prepaid instantly with secure validation."
-        };
-      case "checker":
-        return {
-          title: "WAEC Result Checkers",
-          desc: "Buy WASSCE, BECE, CSSPS & NOVDEC checker vouchers with instant PIN delivery."
-        };
-      default:
-        return {
-          title: "Buy Mobile Data",
-          desc: "Pick a network, choose a bundle, and pay with MoMo or card. Done in under 60 seconds."
-        };
-    }
-  };
-
-  const header = getHeaderInfo();
+  const header = HEADERS[activeTab];
 
   return (
     <div className="min-h-dvh bg-background">
-      {/* ── Nav ── */}
-      <header className="sticky top-0 z-30 border-b border-border bg-background/95">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-5 md:px-8">
-          <Link to="/">
-            <Logo size="sm" />
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="h-8 gap-1.5 rounded-lg text-xs text-muted-foreground hover:text-foreground">
-              <Link to="/track">
-                <Search className="h-3.5 w-3.5" /> Track Order
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-xs">
-              <Link to="/auth?tab=signin">Agent Sign In</Link>
-            </Button>
-          </div>
+      <PublicHeader current="buy" />
+
+      <div className="mx-auto max-w-6xl space-y-4 px-3 py-4 md:space-y-5 md:px-6 md:py-5">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl">{header.title}</h1>
+          <p className="mt-0.5 text-xs text-muted-foreground md:mt-1 md:text-sm">{header.desc}</p>
         </div>
-      </header>
 
-      {/* ── Page header band ── */}
-      <div className="relative overflow-hidden border-b border-border bg-secondary/30">
-        <div className="relative mx-auto max-w-6xl px-5 py-10 md:px-8">
-          <Link
-            to="/"
-            className="mb-4 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" /> Back to home
-          </Link>
-          <h1 className="text-3xl font-bold text-foreground md:text-4xl transition-all duration-300">{header.title}</h1>
-          <p className="mt-2 max-w-lg text-sm text-muted-foreground transition-all duration-300">
-            {header.desc}
-          </p>
-        </div>
-      </div>
-
-      {/* ── Body ── */}
-      <div className="mx-auto max-w-6xl px-5 py-8 md:px-8 md:py-10">
-        <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
-
-          {/* ── Main flow ── */}
-          <div className="space-y-5">
-            <div className="overflow-hidden rounded-[1.75rem] border border-border bg-card">
-              {/* Tab Switcher Headers */}
-              <div className="border-b border-border bg-secondary/40 p-2 flex gap-1">
-                {[
-                  { id: "data", label: "Buy Data", icon: Zap },
-                  { id: "airtime", label: "Buy Airtime", icon: Smartphone },
-                  { id: "bill", label: "Pay Bills", icon: Tv },
-                  { id: "checker", label: "Result Checkers", icon: GraduationCap }
-                ].map((t) => {
-                  const Icon = t.icon;
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setActiveTab(t.id as any)}
-                      className={cn(
-                        "flex-1 py-3 px-3 rounded-xl flex items-center justify-center gap-1.5 font-semibold text-xs md:text-sm transition-colors duration-200 cursor-pointer",
-                        activeTab === t.id
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-background/60"
-                      )}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="truncate">{t.label}</span>
-                    </button>
-                  );
-                })}
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_300px] xl:gap-5">
+          <div className="min-w-0 space-y-4">
+            <div className={CARD}>
+              <div className="border-b border-border p-2">
+                <PillTabs tabs={BUY_TABS} value={activeTab} onChange={setActiveTab} stretch tabClassName="py-2" />
               </div>
-
-              {/* Tab Content */}
-              <div className="p-6 md:p-8">
+              <div className="p-4 md:p-6">
                 {activeTab === "data" && <BuyDataFlow />}
                 {activeTab === "airtime" && <BuyAirtimeFlow />}
                 {activeTab === "bill" && <PayBillsFlow />}
@@ -131,32 +85,23 @@ export default function PublicBuyPage() {
               </div>
             </div>
 
-            {/* Already paid strip */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-5 py-4 shadow-soft">
               <span className="text-sm text-muted-foreground">Already paid? Find your order here.</span>
-              <Link
-                to="/track"
-                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-              >
+              <Link to="/track" className="inline-flex items-center gap-1.5 text-sm font-semibold text-foreground hover:underline">
                 <Search className="h-3.5 w-3.5" /> Track my order
               </Link>
             </div>
           </div>
 
-          {/* ── Trust sidebar ── */}
           <aside className="hidden lg:block">
             <div className="sticky top-20 space-y-4">
-
-              {/* Why us */}
-              <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                <div className="border-b border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Why OneGig?</p>
-                </div>
+              <div className={CARD}>
+                <p className={CARD_HEADING}>Why OneGig?</p>
                 <div className="space-y-4 p-4">
                   {TRUST_ITEMS.map(({ icon: Icon, title, desc }) => (
                     <div key={title} className="flex gap-3">
-                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                        <Icon className="h-4 w-4 text-primary" />
+                      <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+                        <Icon className="h-4 w-4" />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{title}</p>
@@ -167,21 +112,11 @@ export default function PublicBuyPage() {
                 </div>
               </div>
 
-              {/* Networks */}
-              <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                <div className="border-b border-border bg-secondary/40 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Networks supported</p>
-                </div>
+              <div className={CARD}>
+                <p className={CARD_HEADING}>Networks supported</p>
                 <div className="space-y-2 p-4">
-                  {[
-                    { emoji: "🟡", name: "MTN", detail: "Non-expiry bundles" },
-                    { emoji: "🔴", name: "Telecel", detail: "Monthly bundles" },
-                    { emoji: "🔵", name: "AirtelTigo", detail: "Monthly bundles" },
-                  ].map((n) => (
-                    <div
-                      key={n.name}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2.5 hover:bg-accent transition-colors"
-                    >
+                  {NETWORKS.map((n) => (
+                    <div key={n.name} className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-2.5">
                       <span className="text-xl">{n.emoji}</span>
                       <div>
                         <p className="text-sm font-semibold text-foreground">{n.name}</p>
@@ -192,11 +127,10 @@ export default function PublicBuyPage() {
                 </div>
               </div>
 
-              {/* Agent CTA */}
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-4">
-                <BriefcaseBusiness className="h-5 w-5 text-primary mb-2" />
+              <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+                <BriefcaseBusiness className="mb-2 h-5 w-5 text-primary" />
                 <p className="text-sm font-semibold text-foreground">Buying frequently?</p>
-                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   Get wholesale prices and earn margins as an agent.
                 </p>
                 <Button asChild size="sm" className="mt-3 h-8 w-full rounded-xl text-xs">

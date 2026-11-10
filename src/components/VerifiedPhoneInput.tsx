@@ -113,7 +113,7 @@ export const VerifiedPhoneInput: React.FC<VerifiedPhoneInputProps> = ({
       )}
 
       <div className="relative group">
-        <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-slate-400 group-focus-within:text-emerald-400 transition-colors" />
+        <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground transition-colors" />
         <Input
           type="tel"
           inputMode="numeric"
@@ -121,7 +121,7 @@ export const VerifiedPhoneInput: React.FC<VerifiedPhoneInputProps> = ({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           className={cn(
-            "h-12 w-full rounded-xl border border-slate-800 bg-[#0b1021] pl-10 pr-10 text-sm font-bold text-slate-100 placeholder:text-slate-500 focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all",
+            "h-12 w-full rounded-xl border border-input bg-background pl-10 pr-10 text-base font-semibold text-foreground placeholder:text-muted-foreground focus:border-emerald-500/60 focus:ring-2 focus:ring-emerald-500/20 transition-all",
             datahubStatus?.verified && "border-emerald-500/40 bg-emerald-950/10"
           )}
         />
@@ -141,9 +141,9 @@ export const VerifiedPhoneInput: React.FC<VerifiedPhoneInputProps> = ({
       {(accountName || datahubStatus) && (
         <div className="space-y-1 pt-0.5">
           {accountName && (
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-300 px-1">
-              <span className="text-slate-500">Account Name:</span>
-              <span className="text-emerald-400">{accountName}</span>
+            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground px-1">
+              <span className="text-muted-foreground">Account Name:</span>
+              <span className="text-emerald-600 dark:text-emerald-400">{accountName}</span>
             </div>
           )}
           {datahubStatus && (

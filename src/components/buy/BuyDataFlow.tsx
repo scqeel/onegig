@@ -21,7 +21,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { OrderSummary } from "@/components/buy/OrderSummary";
-import { BundleCard } from "@/components/buy/BundleCard";
+import { BundleCard, NetworkTag } from "@/components/buy/BundleCard";
+import { PaymentFailed, PaymentOtp, PaymentProgress, PaymentReceipt } from "@/components/checkout/PaymentScreens";
+import { CheckoutSheet, MomoNumberFields, PaymentMethodPicker, VerifiedName } from "@/components/checkout/CheckoutSheet";
 import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
 import { isAccountIncomplete } from "@/lib/accountCheck";
 
@@ -68,26 +70,6 @@ function getNetStyle(code: string) {
     activeRing: "ring-2 ring-primary/40",
     cardIdle: "border-border bg-secondary text-foreground hover:bg-primary/5 transition-colors",
     cardActive: "border-primary bg-primary text-primary-foreground shadow-soft ring-2 ring-primary/40",
-  };
-}
-
-function getApprovalInstructions(netCode: string) {
-  const code = String(netCode || "MTN").toUpperCase();
-  if (code === "MTN") {
-    return {
-      shortcode: "*170#",
-      steps: "Dial *170# > Option 6 (My Wallet) > Option 3 (Approvals) to approve."
-    };
-  }
-  if (code === "TELECEL" || code === "VODAFONE" || code === "VODA") {
-    return {
-      shortcode: "*110#",
-      steps: "Dial *110# > Option 4 (Make Payment) > Option 2 (My Approvals) to approve."
-    };
-  }
-  return {
-    shortcode: "*110#",
-    steps: "Dial *110# and check your Approvals menu to authorize the payment."
   };
 }
 
@@ -547,258 +529,74 @@ export function BuyDataFlow({
   // ── Success state ──
   if (phase === "success") {
     return (
-      <div className="relative py-8 px-4 w-full max-w-md mx-auto animate-in fade-in zoom-in duration-500">
-        <Confetti />
-        
-        {/* Receipt Card */}
-        <div className="bg-card rounded-2xl border border-border overflow-hidden relative">
-          <div className="p-8 pb-6 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/10 mb-5">
-              <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-            </div>
-            <h3 className="text-2xl font-bold text-foreground tracking-tight">Payment Successful</h3>
-            <p className="mt-3 text-sm font-medium text-muted-foreground">
-              Your <span className="font-semibold text-foreground">{bundle?.size_label}</span> is on its way to
-            </p>
-            <div className="mt-2 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-secondary text-lg font-bold text-foreground">
-              {phone}
-            </div>
-          </div>
-
-          <div className="px-8 pb-8">
-            <div className="pt-6 border-t border-dashed border-border space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground font-medium">Payment Method</span>
-                <span className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
-                  {payWithWallet ? (
-                    <><div className="h-2 w-2 rounded-full bg-primary" /> Wallet</>
-                  ) : (
-                    <><div className="h-2 w-2 rounded-full bg-yellow-500" /> MoMo ({momoNetwork})</>
-                  )}
-                </span>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground font-medium">Amount Paid</span>
-                <span className="text-sm font-bold text-foreground">{formatGHS(finalPrice)}</span>
-              </div>
-
-              {orderRef && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground font-medium">Transaction Ref</span>
-                  <span className="font-mono text-xs font-semibold text-muted-foreground uppercase">{orderRef.split('-')[0] + '...'}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-6 text-center text-xs font-semibold text-muted-foreground/80">
-          Delivery usually takes 10 - 60 minutes.
-        </p>
-
-        <div className="mt-6 grid grid-cols-2 gap-3 max-w-sm mx-auto">
-          <Button variant="outline" className="h-14 rounded-2xl" onClick={reset}>
-            Buy Again
-          </Button>
-          <Button
-            className="h-14 rounded-2xl"
-            onClick={() => {
-              if (onSuccess) onSuccess();
-              else nav(`/track?ref=${orderRef}`);
-            }}
-          >
-            Done
-          </Button>
-        </div>
-      </div>
+      <PaymentReceipt
+        lead={
+          <>
+            Your <span className="font-semibold text-foreground">{bundle?.size_label}</span> is on its way to{" "}
+            <span className="font-semibold text-foreground">{phone}</span>.
+          </>
+        }
+        amount={formatGHS(finalPrice)}
+        showDelivery
+        rows={[
+          { label: "Network", value: network?.name },
+          { label: "Paid with", value: payWithWallet ? "Wallet" : `MoMo (${momoNetwork})` },
+        ]}
+        reference={orderRef}
+        note="Delivery usually takes 10 - 60 minutes."
+        primary={{
+          label: onSuccess ? "Done" : "Track Order",
+          onClick: () => {
+            if (onSuccess) onSuccess();
+            else nav(`/track?ref=${orderRef || phone.replace(/\D/g, "")}`);
+          },
+        }}
+        secondary={{ label: "Buy Again", onClick: reset }}
+      />
     );
   }
 
   // ── OTP state ──
   if (phase === "otp") {
     return (
-      <div className="py-10 text-center animate-in fade-in zoom-in duration-300">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 mb-4 border border-primary/20">
-          <Lock className="h-10 w-10 text-primary" />
-        </div>
-        <h3 className="text-2xl font-bold text-foreground">Verification Required</h3>
-        <p className="mt-2 text-sm font-medium text-muted-foreground max-w-[280px] mx-auto">
-          Please enter the OTP or Voucher Code sent to your mobile number ({momoNumber}).
-        </p>
-
-        {errorMsg && (
-          <p className="mt-3 text-xs font-semibold text-destructive">{errorMsg}</p>
-        )}
-
-        <div className="mt-8 max-w-[280px] mx-auto space-y-5">
-          <div className="flex justify-center pb-2">
-            <InputOTP
-              maxLength={6}
-              value={otp}
-              onChange={(val) => {
-                setOtp(val);
-                if (val.length === 6 && phase === "otp") {
-                  submitOtp(val);
-                }
-              }}
-            >
-              <InputOTPGroup className="gap-2">
-                {[0, 1, 2, 3, 4, 5].map((i) => (
-                  <InputOTPSlot
-                    key={i}
-                    index={i}
-                    className="h-14 w-12 rounded-xl border border-border bg-background text-xl font-bold shadow-soft transition-all focus-visible:border-primary focus-visible:ring-4 focus-visible:ring-primary/20"
-                  />
-                ))}
-              </InputOTPGroup>
-            </InputOTP>
-          </div>
-
-          <div className="flex items-center justify-between px-2 pt-2">
-            <Button
-              variant="ghost"
-              onClick={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
-              className="h-auto p-0 text-xs font-semibold text-muted-foreground hover:text-foreground"
-            >
-              Cancel Order
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={buy}
-              className="h-auto p-0 text-xs text-foreground font-semibold hover:underline"
-            >
-              Try again
-            </Button>
-          </div>
-          {/* Visible submit button to allow manual submission */}
-          <div className="mt-6">
-            <Button
-              id="btn-buy-otp-submit"
-              onClick={() => submitOtp()}
-              disabled={otp.length < 4}
-              className="w-full h-12 rounded-xl"
-            >
-              Verify OTP
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PaymentOtp
+        phone={momoNumber}
+        value={otp}
+        onChange={(val) => {
+          setOtp(val);
+          if (val.length === 6 && phase === "otp") submitOtp(val);
+        }}
+        onSubmit={() => submitOtp()}
+        onCancel={() => { setPhase("select"); setOtp(""); setAuthMessage(null); }}
+        onResend={buy}
+        error={errorMsg}
+        submitId="btn-buy-otp-submit"
+      />
     );
   }
 
   // ── Processing state ──
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
     return (
-      <div className="py-14 text-center space-y-8 animate-in fade-in duration-300">
-        <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin [animation-duration:1.2s]" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-            <Zap className="h-7 w-7 text-primary" />
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="text-xl font-bold tracking-tight text-foreground flex items-center justify-center gap-2">
-            {phase === "processing" && <span>Initiating Payment</span>}
-            {phase === "polling" && <span>Awaiting Authorization</span>}
-            {phase === "delivering" && <span>Sending Data Bundle</span>}
-          </h3>
-
-          {phase === "processing" && (
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                A payment prompt is being sent to your phone. Please check your screen and enter PIN.
-              </div>
-            </div>
-          )}
-
-          {phase === "polling" && (
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-foreground bg-primary/5 px-5 py-2.5 rounded-full border border-primary/20 max-w-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                {authMessage || `Please check your phone (${momoNumber}) to authorize...`}
-              </div>
-            </div>
-          )}
-
-          {phase === "delivering" && (
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-2.5 text-xs font-semibold text-emerald-500 bg-emerald-500/5 px-5 py-2.5 rounded-full border border-emerald-500/20">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                Connecting to {network?.name} network...
-              </div>
-            </div>
-          )}
-
-          <p className="text-xs font-medium text-muted-foreground">
-            Do not close this window. Your bundle will be delivered automatically.
-          </p>
-        </div>
-
-        {(phase === "polling" || phase === "delivering") && (
-          <div className="flex items-center justify-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce" />
-            <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.2s]" />
-            <span className="h-2 w-2 rounded-full bg-primary/40 animate-bounce [animation-delay:0.4s]" />
-          </div>
-        )}
-      </div>
+      <PaymentProgress
+        stage={phase}
+        message={phase === "polling" ? authMessage : undefined}
+        networkCode={momoNetwork}
+        deliveringLabel="Sending your data"
+        showApprovalHelp={!payWithWallet}
+      />
     );
   }
 
   // ── Error state ──
   if (phase === "error") {
     return (
-      <div className="py-10 text-center animate-in fade-in zoom-in duration-300">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-          <RefreshCcw className="h-8 w-8 text-destructive animate-spin [animation-duration:10s]" />
-        </div>
-        <p className="mt-4 font-semibold text-destructive px-4 max-w-sm mx-auto">{errorMsg}</p>
-
-        {/* USSD Manual Approval Alert */}
-        <div className="mt-6 mx-auto max-w-sm rounded-2xl border border-amber-500/25 bg-amber-500/5 p-4 text-left">
-          <div className="flex gap-3">
-            <Smartphone className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="text-xs font-semibold text-amber-500 uppercase tracking-wider">Didn't receive the prompt?</h4>
-              <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                Sometimes telecom networks delay push notifications. You can manually authorize your payment:
-              </p>
-              <div className="mt-2 bg-background rounded-lg p-2.5 font-mono text-[11px] font-semibold text-foreground border border-border">
-                {getApprovalInstructions(momoNetwork).steps}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-7 flex flex-col gap-3 max-w-[280px] mx-auto">
-          <Button
-            className="h-12 rounded-xl w-full flex items-center justify-center gap-2"
-            onClick={payWithRedirect}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="14" x="2" y="5" rx="2" ry="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg>
-            Pay via Secure Web Page
-          </Button>
-          <Button
-            className="h-12 rounded-xl w-full"
-            variant="outline"
-            onClick={() => setPhase("select")}
-          >
-            Try Again
-          </Button>
-        </div>
-      </div>
+      <PaymentFailed
+        message={errorMsg}
+        networkCode={payWithWallet ? null : momoNetwork}
+        onPayOnline={payWithRedirect}
+        onRetry={() => setPhase("select")}
+      />
     );
   }
 
@@ -946,257 +744,88 @@ export function BuyDataFlow({
         )}
       </section>
 
-      {/* ── Checkout Dialog ── */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="w-[92vw] max-w-[370px] max-h-[90dvh] overflow-y-auto rounded-2xl border border-border bg-card p-0">
-          {/* Header */}
-          <div className="flex flex-col items-center justify-center pt-7 pb-3 px-5 text-center">
-            <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              {network ? (
-                <span className="text-2xl">{network.logo_emoji}</span>
-              ) : (
-                <Zap className="h-5 w-5 text-primary" />
-              )}
-            </div>
-            <DialogTitle className="text-xl font-bold tracking-tight text-foreground">
-              Confirm Payment
-            </DialogTitle>
-            <DialogDescription className="text-xs font-semibold text-muted-foreground mt-1">
-              You are purchasing data for a <span className="text-foreground font-semibold">{network?.name}</span> number.
-            </DialogDescription>
-          </div>
+      {/* ── Checkout ── */}
+      <CheckoutSheet
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        title="Confirm Payment"
+        description={`You are purchasing data for a ${network?.name ?? ""} number.`}
+        productLabel={`${network?.name ?? ""} bundle`}
+        productName={bundle?.size_label}
+        productTag={<NetworkTag code={network?.code} />}
+        rows={[
+          { label: "Price", value: formatGHS(basePrice) },
+          ...(!payWithWallet ? [{ label: "Processing Fee (3%)", value: formatGHS(paymentFee) }] : []),
+        ]}
+        total={formatGHS(finalPrice)}
+        payLabel={`Pay ${formatGHS(finalPrice)}`}
+        payIcon={payWithWallet ? <Lock className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+        onPay={buy}
+        payDisabled={
+          !bundle ||
+          phone.replace(/\D/g, "").length < 9 ||
+          !!recipientNetworkError ||
+          (!payWithWallet && !payWithSameNumber && (
+            momoNumber.replace(/\D/g, "").length < 9 ||
+            isVerifying ||
+            accountName === "Unknown Account" ||
+            accountName === "Account not found" ||
+            isSamePhoneNumber(phone, momoNumber)
+          ))
+        }
+        footerExtra={
+          !payWithWallet && activeGateway !== "theteller" ? (
+            <p className="mt-2.5 text-center text-xs text-muted-foreground">
+              Issues with prompts?{" "}
+              <button type="button" onClick={payWithRedirect} className="font-semibold text-foreground hover:underline">
+                Pay via Web Page instead
+              </button>
+            </p>
+          ) : undefined
+        }
+      >
+        <div>
+          <VerifiedPhoneInput value={phone} onChange={setPhone} networkCode={network?.code} label="Data Recipient" />
+          {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
+            <div className="mt-2"><VerifiedName name={recipientAccountName} /></div>
+          )}
+        </div>
 
-          <div className="px-5 space-y-4 pb-7">
-            {/* Order summary */}
-            {bundle && network && (
-              <OrderSummary
-                heading={{ eyebrow: `${network.name} Bundle`, title: bundle.size_label }}
-                rows={[
-                  { label: "Price", value: formatGHS(basePrice) },
-                  ...(!payWithWallet ? [{ label: "Processing Fee (3%)", value: formatGHS(paymentFee) }] : []),
-                  { label: "Total", value: formatGHS(finalPrice), emphasis: true },
-                ]}
-              />
-            )}
+        {profile && bundle && (
+          <PaymentMethodPicker
+            payWithWallet={payWithWallet}
+            onChange={setPayWithWallet}
+            balanceLabel={formatGHS(walletBalance)}
+            walletDisabled={walletBalance < finalPrice}
+            walletHint={
+              agentSlug && finalPrice > Number(bundle.base_price) ? (
+                <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                  Earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
+                </p>
+              ) : undefined
+            }
+          />
+        )}
 
-            {/* Form */}
-            <div className="space-y-3.5">
-              {/* Recipient Input with Active DataHub Verification */}
-              <VerifiedPhoneInput
-                value={phone}
-                onChange={setPhone}
-                networkCode={network?.code}
-                label="Data Recipient"
-              />
-                
-              {recipientAccountName && !isVerifyingRecipient && !recipientNetworkError && (
-                <div className="mt-1.5 text-[11px] font-semibold px-3 py-2 bg-emerald-500/5 text-emerald-500 rounded-xl border border-emerald-500/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                  <span className="truncate">{recipientAccountName}</span>
-                </div>
-              )}
-
-              {/* Momo inputs are hidden if paying with wallet */}
-              {!payWithWallet && (
-                <div className="space-y-3 pt-0.5 animate-in fade-in duration-300">
-                  {/* Toggle for same number vs different number */}
-                  <div className="flex items-center justify-between pb-1 border-b border-border">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      MoMo Payment Number
-                    </span>
-                    <div className="flex gap-1.5 bg-secondary p-1 rounded-lg">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPayWithSameNumber(true);
-                          setMomoNumber("");
-                        }}
-                        className={cn(
-                          "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
-                          payWithSameNumber
-                            ? "bg-background text-foreground shadow-soft"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        Same Number
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPayWithSameNumber(false);
-                          if (network?.code) setMomoNetwork(network.code);
-                        }}
-                        className={cn(
-                          "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
-                          !payWithSameNumber
-                            ? "bg-background text-foreground shadow-soft"
-                            : "text-muted-foreground hover:text-foreground"
-                        )}
-                      >
-                        Different
-                      </button>
-                    </div>
-                  </div>
-
-                  {payWithSameNumber ? (
-                    <div className="text-[11px] font-semibold text-muted-foreground bg-background p-3 rounded-xl border border-border flex items-center gap-2">
-                      <Smartphone className="h-4 w-4 text-primary shrink-0" />
-                      <span>Request prompt on recipient number: <span className="font-mono text-foreground">{phone}</span></span>
-                    </div>
-                  ) : (
-                    <div className="space-y-1.5 pt-0.5 animate-in slide-in-from-top-2 duration-300">
-                      <div className="flex gap-2">
-                        <div className="relative w-[95px] shrink-0">
-                          <select
-                            className="w-full h-12 rounded-xl border border-border bg-background pl-3.5 pr-7 text-xs font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
-                            value={momoNetwork}
-                            onChange={(e) => setMomoNetwork(e.target.value)}
-                          >
-                            <option value="MTN">MTN</option>
-                            <option value="TELECEL">Telecel</option>
-                            <option value="AIRTELTIGO">AT</option>
-                          </select>
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                        </div>
-                        <div className="relative flex-1 group">
-                          <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4.5 w-4.5 text-muted-foreground group-hover:text-primary group-focus-within:text-primary transition-colors duration-300" />
-                          <Input
-                            inputMode="tel"
-                            value={momoNumber}
-                            onChange={(e) => setMomoNumber(e.target.value)}
-                            placeholder="e.g. 024 123 4567"
-                            className="h-12 w-full rounded-xl border border-border bg-background pl-10 pr-4 text-sm font-semibold transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
-                          />
-                          {isVerifying && (
-                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                              <span className="block h-4 w-4 rounded-full border-2 border-border border-t-primary animate-spin" />
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {accountName && !isVerifying && (
-                        <div className="mt-1.5 text-[11px] font-semibold px-3 py-2 bg-emerald-500/5 text-emerald-500 rounded-xl border border-emerald-500/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                          <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                          <span className="truncate">{accountName}</span>
-                        </div>
-                      )}
-
-                      {isSamePhoneNumber(phone, momoNumber) && (
-                        <div className="mt-1.5 text-[10px] font-semibold px-3 py-2 bg-destructive/5 text-destructive rounded-xl border border-destructive/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                          <span className="shrink-0">⚠️</span>
-                          <span className="leading-tight">Recipient number cannot be the same as the paying MoMo number. Please use a different number to pay.</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {profile && bundle && (
-                <div
-                  className={cn(
-                    "mt-2 cursor-pointer rounded-2xl border border-border p-4 transition-colors duration-300 active:scale-[0.98]",
-                    payWithWallet
-                      ? "border-primary bg-primary/5"
-                      : "bg-background hover:bg-accent",
-                    walletBalance < finalPrice && "opacity-50 cursor-not-allowed border-dashed"
-                  )}
-                  onClick={() => {
-                    if (walletBalance >= finalPrice) {
-                      setPayWithWallet(!payWithWallet);
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className={cn(
-                        "flex h-5 w-5 items-center justify-center rounded-full border-2 transition-all shrink-0 duration-300",
-                        payWithWallet ? "border-primary bg-primary" : "border-border"
-                      )}>
-                        {payWithWallet && <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />}
-                      </div>
-                      <div className="flex flex-col gap-0.5">
-                        <span className={cn("text-xs font-semibold", payWithWallet ? "text-foreground" : "text-foreground")}>
-                          Pay with Wallet
-                        </span>
-                        {agentSlug && finalPrice > Number(bundle.base_price) ? (
-                          <div className="text-[9px] font-semibold text-muted-foreground flex flex-col gap-1 mt-1">
-                            <span>Balance: <span className="text-foreground font-bold">{formatGHS(walletBalance)}</span></span>
-                            <span className="text-emerald-500 bg-emerald-500/5 px-1.5 py-0.5 rounded-md border border-emerald-500/20 inline-block w-fit font-semibold">
-                              Earn {formatGHS(finalPrice - Number(bundle.base_price))} commission!
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-[9px] font-semibold text-muted-foreground mt-0.5">
-                            Balance: <span className="text-foreground font-semibold">{formatGHS(walletBalance)}</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {walletBalance < finalPrice && (
-                      <span className="text-[9px] font-semibold text-destructive bg-destructive/10 px-2 py-0.5 rounded-md shrink-0">
-                        Insufficient
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-2">
-                <Button
-                  onClick={buy}
-                  disabled={
-                    !bundle ||
-                    phone.replace(/\D/g, "").length < 9 ||
-                    !!recipientNetworkError ||
-                    (!payWithWallet && !payWithSameNumber && (
-                      momoNumber.replace(/\D/g, "").length < 9 ||
-                      isVerifying ||
-                      accountName === "Unknown Account" ||
-                      accountName === "Account not found" ||
-                      isSamePhoneNumber(phone, momoNumber)
-                    ))
-                  }
-                  className="h-12 w-full rounded-xl text-xs tracking-wider uppercase flex items-center justify-center gap-1.5"
-                >
-                  {payWithWallet ? (
-                    <>
-                      <Lock className="h-4 w-4" />
-                      Pay {formatGHS(finalPrice)} Securely
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      Pay {formatGHS(finalPrice)}
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {!payWithWallet && activeGateway !== "theteller" && (
-                <div className="text-center pt-0.5 animate-in fade-in duration-300">
-                  <span className="text-[10px] font-semibold text-muted-foreground">Issues with prompts? </span>
-                  <button
-                    type="button"
-                    onClick={payWithRedirect}
-                    className="text-[10px] font-semibold text-foreground hover:underline transition-colors"
-                  >
-                    Pay via Web Page instead
-                  </button>
-                </div>
-              )}
-
-              {/* Trust strip */}
-              <div className="flex items-center justify-center gap-1 text-[9px] font-semibold text-muted-foreground uppercase tracking-widest pt-3.5 border-t border-border">
-                <Lock className="h-3 w-3 text-emerald-500/80" />
-                Secured Payments · PCI-DSS
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        {!payWithWallet && (
+          <MomoNumberFields
+            sameNumber={payWithSameNumber}
+            onSameNumberChange={(same) => {
+              setPayWithSameNumber(same);
+              if (same) setMomoNumber("");
+              else if (network?.code) setMomoNetwork(network.code);
+            }}
+            promptPhone={phone}
+            network={momoNetwork}
+            onNetworkChange={setMomoNetwork}
+            number={momoNumber}
+            onNumberChange={setMomoNumber}
+            isVerifying={isVerifying}
+            accountName={accountName}
+            error={isSamePhoneNumber(phone, momoNumber) ? "Recipient number cannot be the same as the paying MoMo number. Please use a different number to pay." : null}
+          />
+        )}
+      </CheckoutSheet>
 
       <CompleteAccountModal
         isOpen={completeModalOpen}

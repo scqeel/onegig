@@ -227,12 +227,12 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
     <div className="space-y-4 animate-in fade-in duration-300">
       {/* ── STORE TRAFFIC ANALYTICS HUB ── */}
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6 flex items-center justify-between">
+        <div className="border-b border-border/60 bg-secondary/40 px-5 py-4 md:px-6 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Activity className="h-4.5 w-4.5 text-rose-500 animate-pulse" /> Live Storefront Traffic Analytics
+            <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+              <Activity className="h-4.5 w-4.5 text-rose-500" /> Live Storefront Traffic Analytics
             </h2>
-            <p className="mt-0.5 text-xs text-white/50">Monitor storefront traffic, conversion funnel, and live visitor activity.</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Monitor storefront traffic, conversion funnel, and live visitor activity.</p>
           </div>
           <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" /> Realtime
@@ -333,10 +333,10 @@ export function AgentStoreTab({ agentProfile, userId }: { agentProfile: any; use
 
       {/* Store link */}
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card shadow-soft">
-        <div className="border-b border-border/60 bg-[#080c1a] px-5 py-4 md:px-6 flex items-center justify-between">
+        <div className="border-b border-border/60 bg-secondary/40 px-5 py-4 md:px-6 flex items-center justify-between">
           <div>
-            <h2 className="text-base font-bold text-white">Store Link & Customer Sharing</h2>
-            <p className="mt-0.5 text-xs text-white/50">Share this link — customers buy directly without signing up.</p>
+            <h2 className="text-base font-bold text-foreground">Store Link & Customer Sharing</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">Share this link — customers buy directly without signing up.</p>
           </div>
         </div>
         <div className="p-5 md:p-6 space-y-4">

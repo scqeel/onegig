@@ -22,9 +22,7 @@ export default function PublicTrackPage() {
       title="Track Telecom Delivery Status"
       subtitle="Enter your phone number or Order Reference ID below to view real-time delivery status and updates."
     >
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-soft md:p-6">
-        <TrackOrder />
-      </div>
+      <TrackOrder />
 
       <div className="grid gap-4 text-xs sm:grid-cols-3">
         {FEATURES.map(({ icon: Icon, tone, title, desc }) => (

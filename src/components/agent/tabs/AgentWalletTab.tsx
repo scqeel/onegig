@@ -92,14 +92,13 @@ export function AgentWalletTab({ userId }: { userId: string }) {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="relative overflow-hidden rounded-3xl bg-[#080c1a] p-6 shadow-float">
-          <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/20 blur-2xl" />
+        <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft">
           <div className="relative">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white/40">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
               <Wallet className="h-3.5 w-3.5" /> Available Balance
             </div>
-            <p className="mt-3 text-4xl font-bold text-white">{isLoading ? "…" : formatGHS(walletData?.balance ?? 0)}</p>
-            <p className="mt-1 text-xs text-white/40">Ready to withdraw</p>
+            <p className="mt-3 text-4xl font-bold text-foreground">{isLoading ? "…" : formatGHS(walletData?.balance ?? 0)}</p>
+            <p className="mt-1 text-xs text-muted-foreground">Ready to withdraw</p>
           </div>
         </div>
         <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card p-6 shadow-soft">

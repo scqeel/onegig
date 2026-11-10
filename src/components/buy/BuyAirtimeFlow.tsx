@@ -16,7 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { OrderSummary } from "@/components/buy/OrderSummary";
+import { NetworkTag } from "@/components/buy/BundleCard";
+import { PaymentFailed, PaymentProgress, PaymentReceipt } from "@/components/checkout/PaymentScreens";
+import { CheckoutSheet, MomoNumberFields } from "@/components/checkout/CheckoutSheet";
 import { CompleteAccountModal } from "@/components/auth/CompleteAccountModal";
 import { isAccountIncomplete } from "@/lib/accountCheck";
 
@@ -282,73 +284,41 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
 
   if (phase === "success") {
     return (
-      <div className="rounded-[1.75rem] border border-border bg-card text-center py-12 px-6 max-w-md mx-auto animate-fade-in relative overflow-hidden">
-        <Confetti />
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 mb-6">
-          <CheckCircle2 className="w-10 h-10" />
-        </div>
-        <h2 className="text-2xl font-bold mb-2 text-foreground">Purchase Successful!</h2>
-        <p className="text-muted-foreground mb-6">
-          Your top-up of <span className="text-foreground font-semibold">{formatGHS(Number(amount))}</span> airtime to <span className="text-foreground font-semibold">{phone}</span> is completed.
-        </p>
-        {orderRef && (
-          <div className="bg-background border border-border rounded-lg p-3 mb-6 inline-block font-mono text-xs text-muted-foreground">
-            Receipt: {orderRef}
-          </div>
-        )}
-        <Button
-          onClick={() => {
+      <PaymentReceipt
+        title="Purchase Successful"
+        lead={<>Airtime top-up to <span className="font-semibold text-foreground">{phone}</span> is complete.</>}
+        amount={formatGHS(Number(amount))}
+        rows={[{ label: "Network", value: network }]}
+        reference={orderRef}
+        primary={{
+          label: "Buy More Airtime",
+          onClick: () => {
             setAmount("");
             setPhone(defaultPhone);
             setPhase("select");
-          }}
-          className="w-full"
-        >
-          Buy More Airtime
-        </Button>
-      </div>
+          },
+        }}
+      />
     );
   }
 
   if (phase === "error") {
     return (
-      <div className="rounded-[1.75rem] border border-destructive/20 bg-card text-center py-12 px-6 max-w-md mx-auto animate-fade-in">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-destructive/10 text-destructive mb-6">
-          <Zap className="w-8 h-8" />
-        </div>
-        <h2 className="text-xl font-bold mb-3 text-foreground">Transaction Failed</h2>
-        <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
-          {errorMsg || "An error occurred while processing your airtime purchase. Please try again."}
-        </p>
-        <Button onClick={() => setPhase("select")} variant="outline" className="w-full">
-          Try Again
-        </Button>
-      </div>
+      <PaymentFailed
+        title="Transaction Failed"
+        message={errorMsg || "An error occurred while processing your airtime purchase. Please try again."}
+        networkCode={paymentMethod === "momo" ? momoNetwork : null}
+        onRetry={() => setPhase("select")}
+      />
     );
   }
 
   if (phase === "processing" || phase === "polling" || phase === "delivering") {
-    return (
-      <div className="rounded-[1.75rem] border border-border bg-card text-center py-16 px-6 max-w-md mx-auto animate-fade-in">
-        <div className="relative w-20 h-20 mx-auto mb-8">
-          <div className="absolute inset-0 rounded-full border-4 border-primary/15" />
-          <div className="absolute inset-0 rounded-full border-4 border-t-primary animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center text-primary">
-            <RefreshCcw className="w-8 h-8" />
-          </div>
-        </div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">
-          {phase === "processing" ? "Processing payment..." : phase === "polling" ? "Awaiting authorization..." : "Delivering airtime..."}
-        </h3>
-        <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-          {authMessage || "This will take just a few moments. Please do not close this window."}
-        </p>
-      </div>
-    );
+    return <PaymentProgress stage={phase} message={authMessage} networkCode={momoNetwork} deliveringLabel="Delivering airtime" showApprovalHelp={paymentMethod === "momo"} />;
   }
 
   return (
-    <div className="border border-border bg-card p-6 sm:p-8 max-w-md mx-auto rounded-[1.75rem] relative overflow-hidden animate-fade-in">
+    <div className="border border-border bg-card p-6 sm:p-8 max-w-md mx-auto rounded-2xl shadow-soft relative overflow-hidden animate-fade-in">
       <div className="flex items-center gap-3.5 mb-6">
         <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
           <Zap className="w-6 h-6" />
@@ -462,143 +432,52 @@ export function BuyAirtimeFlow({ agentSlug, defaultPhone = "", brandColor, onSuc
         </Button>
       </div>
 
-      {/* Confirmation Dialog */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="bg-card border border-border max-w-sm max-h-[90dvh] overflow-y-auto rounded-[1.75rem] p-6">
-          <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-center text-foreground">Confirm Top-Up</DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground text-sm">
-              Please double check the details below. This transaction is irreversible.
-            </DialogDescription>
-          </DialogHeader>
-
-          <OrderSummary
-            className="my-2"
-            rows={[
-              { label: "Network", value: network },
-              { label: "Recipient Phone", value: phone },
-              { label: "Paying with", value: paymentMethod === "wallet" ? "API Wallet Balance" : `${activeGateway === "theteller" ? "theTeller" : "Paystack"} Mobile Money` },
-              { label: "Total Price", value: formatGHS(Number(amount)), emphasis: true },
-            ]}
+      {/* Checkout */}
+      <CheckoutSheet
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        title="Confirm Top-Up"
+        description="Please double check the details below. This transaction is irreversible."
+        productLabel="Airtime"
+        productName={formatGHS(Number(amount))}
+        productTag={<NetworkTag code={network} />}
+        rows={[
+          { label: "Recipient Phone", value: phone },
+          { label: "Paying with", value: paymentMethod === "wallet" ? "Wallet Balance" : "Mobile Money" },
+        ]}
+        total={formatGHS(Number(amount))}
+        payLabel="Confirm & Pay"
+        onPay={executeCheckout}
+        payDisabled={
+          paymentMethod === "momo" && !payWithSameNumber && (
+            momoNumber.replace(/\D/g, "").length < 9 ||
+            isVerifying ||
+            isSamePhoneNumber(phone, momoNumber) ||
+            accountName === "Unknown Account" ||
+            accountName === "Account not found"
+          )
+        }
+      >
+        {paymentMethod === "momo" && (
+          <MomoNumberFields
+            sameNumber={payWithSameNumber}
+            onSameNumberChange={(same) => {
+              setPayWithSameNumber(same);
+              if (same) setMomoNumber("");
+              else setMomoNetwork(network);
+            }}
+            promptPhone={phone}
+            network={momoNetwork}
+            onNetworkChange={(value) => setMomoNetwork(value as typeof momoNetwork)}
+            number={momoNumber}
+            onNumberChange={setMomoNumber}
+            atValue="AT"
+            isVerifying={isVerifying}
+            accountName={accountName}
+            error={isSamePhoneNumber(phone, momoNumber) ? "Recipient number cannot be the same as the paying MoMo number. Please use a different number to pay." : null}
           />
-
-          {paymentMethod === "momo" && (
-            <div className="space-y-3 pt-0.5 mb-4 animate-in fade-in duration-300">
-              {/* Toggle for same number vs different number */}
-              <div className="flex items-center justify-between pb-1 border-b border-border">
-                <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  MoMo Payment Number
-                </span>
-                <div className="flex gap-1.5 bg-secondary p-1 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPayWithSameNumber(true);
-                      setMomoNumber("");
-                    }}
-                    className={cn(
-                      "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
-                      payWithSameNumber
-                        ? "bg-background text-foreground shadow-soft"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Same Number
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPayWithSameNumber(false);
-                      setMomoNetwork(network);
-                    }}
-                    className={cn(
-                      "px-2.5 py-1 text-[9px] font-semibold uppercase tracking-wider rounded-md transition-colors duration-300",
-                      !payWithSameNumber
-                        ? "bg-background text-foreground shadow-soft"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    Different
-                  </button>
-                </div>
-              </div>
-
-              {payWithSameNumber ? (
-                <div className="text-[11px] font-semibold text-muted-foreground bg-background p-3 rounded-xl border border-border flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 text-primary shrink-0" />
-                  <span>Request prompt on recipient number: <span className="font-mono text-foreground">{phone}</span></span>
-                </div>
-              ) : (
-                <div className="space-y-1.5 pt-0.5 animate-in slide-in-from-top-2 duration-300">
-                  <div className="flex gap-2">
-                    <div className="relative w-[90px] shrink-0">
-                      <select
-                        className="w-full h-11 rounded-xl border border-border bg-background pl-3 pr-7 text-xs font-semibold outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer appearance-none"
-                        value={momoNetwork}
-                        onChange={(e) => setMomoNetwork(e.target.value as any)}
-                      >
-                        <option value="MTN">MTN</option>
-                        <option value="TELECEL">Telecel</option>
-                        <option value="AT">AT</option>
-                      </select>
-                      <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
-                    </div>
-                    <div className="relative flex-1 group">
-                      <Input
-                        inputMode="tel"
-                        value={momoNumber}
-                        onChange={(e) => setMomoNumber(e.target.value)}
-                        placeholder="e.g. 024 123 4567"
-                        className="h-11 w-full rounded-xl border border-border bg-background pl-3 pr-8 text-xs font-semibold transition-all duration-300 focus:border-primary focus:ring-4 focus:ring-primary/10"
-                      />
-                      {isVerifying && (
-                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                          <span className="block h-3.5 w-3.5 rounded-full border-2 border-border border-t-primary animate-spin" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {accountName && !isVerifying && (
-                    <div className="mt-1.5 text-[10px] font-semibold px-3 py-1.5 bg-emerald-500/5 text-emerald-500 rounded-xl border border-emerald-500/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
-                      <span className="truncate">{accountName}</span>
-                    </div>
-                  )}
-
-                  {isSamePhoneNumber(phone, momoNumber) && (
-                    <div className="mt-1.5 text-[10px] font-semibold px-3 py-1.5 bg-destructive/5 text-destructive rounded-xl border border-destructive/20 flex items-center gap-1.5 animate-in slide-in-from-top-1 duration-200">
-                      <span className="shrink-0">⚠️</span>
-                      <span className="leading-tight">Recipient number cannot be the same as the paying MoMo number. Please use a different number to pay.</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setCheckoutOpen(false)} className="flex-1 rounded-xl">
-              Cancel
-            </Button>
-            <Button
-              onClick={executeCheckout}
-              disabled={
-                paymentMethod === "momo" && !payWithSameNumber && (
-                  momoNumber.replace(/\D/g, "").length < 9 ||
-                  isVerifying ||
-                  isSamePhoneNumber(phone, momoNumber) ||
-                  accountName === "Unknown Account" ||
-                  accountName === "Account not found"
-                )
-              }
-              className="flex-1 rounded-xl"
-            >
-              Confirm & Pay
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        )}
+      </CheckoutSheet>
 
       <CompleteAccountModal
         isOpen={completeModalOpen}

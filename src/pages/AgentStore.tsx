@@ -768,7 +768,12 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         phase={phase}
         phone={phone}
         momoNumber={momoNumber}
+        momoNetwork={momoNetwork}
+        bundleLabel={selectedBundle?.size_label}
         networkName={selectedNetwork?.name}
+        amount={formatGHS(finalPrice)}
+        paidWithWallet={payWithWallet}
+        reference={orderRef}
         authMessage={authMessage}
         errorMsg={errorMsg}
         otp={otp}
@@ -779,6 +784,12 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         onCancel={backToStore}
         onPayWithRedirect={payWithRedirect}
         onReturnToStore={() => setPhase("select")}
+        onTrack={() => {
+          const ref = orderRef || phone.replace(/\D/g, "");
+          setPhase("select");
+          setActiveTab("trans");
+          nav(`?ref=${encodeURIComponent(ref)}`, { replace: true });
+        }}
       />
     );
   }
@@ -960,14 +971,14 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
             )}
 
             {activeTab === "trans" && (
-              <div className="space-y-2 rounded-2xl border border-border bg-card p-5 shadow-soft">
-                <h2 className="text-lg font-bold text-foreground">Track Order Status</h2>
-                <p className="text-xs text-muted-foreground">
-                  Enter your phone number below to view recent data purchase records and delivery status.
-                </p>
-                <div className="pt-2">
-                  <TrackOrder />
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">Track Order Status</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Enter your phone number below to view recent data purchase records and delivery status.
+                  </p>
                 </div>
+                <TrackOrder />
               </div>
             )}
 
@@ -995,6 +1006,8 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         onOpenChange={setCheckoutOpen}
         bundleLabel={selectedBundle?.size_label}
         networkName={selectedNetwork?.name}
+        networkCode={selectedNetwork?.code}
+        bundlePrice={baseFinalPrice}
         finalPrice={finalPrice}
         hasBundle={!!selectedBundle}
         phone={phone}
@@ -1023,7 +1036,7 @@ export default function AgentStorePage({ customDomainSlug }: { customDomainSlug?
         canPayWithWallet={!!profile && walletBalance > 0 && walletBalance >= finalPrice}
         payWithWallet={payWithWallet}
         onPayWithWalletChange={setPayWithWallet}
-        walletDetail={`You have ${formatGHS(walletBalance)} available.`}
+        walletBalanceLabel={formatGHS(walletBalance)}
         onPay={initiatePayment}
       />
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -170,32 +171,25 @@ export default function AdminRefunds() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-4 md:p-8 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Link to="/admin" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-              <ArrowLeft className="h-3.5 w-3.5" /> Back to Admin
-            </Link>
-          </div>
-          <h1 className="text-2xl font-bold text-foreground tracking-tight flex items-center gap-2">
-            <RotateCcw className="h-6 w-6 text-primary" /> Refund & Delivery Control Center
-          </h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Manage failed orders, issue automated wallet refunds, and retry provider dispatches.
-          </p>
-        </div>
-
+    <DashboardLayout
+      title="Refund & Delivery Control Center"
+      subtitle="Manage failed orders, issue automated wallet refunds, and retry provider dispatches."
+      tools="notifications"
+      sidebarItems={[
+        { label: "Back to Admin", to: "/admin", icon: <ArrowLeft className="h-4 w-4" /> },
+        { label: "Refund Center", to: "/admin/refunds", active: true, icon: <RotateCcw className="h-4 w-4" /> },
+      ]}
+      topActions={
         <Button
           onClick={() => qc.invalidateQueries({ queryKey: ["admin-refund-orders"] })}
           variant="outline"
-          className="text-xs font-semibold"
+          className="h-10 rounded-xl text-xs font-semibold"
         >
-          <RefreshCcw className="h-3.5 w-3.5 mr-1.5" /> Refresh Queue
+          <RefreshCcw className="mr-1.5 h-3.5 w-3.5" /> Refresh Queue
         </Button>
-      </div>
-
+      }
+    >
+      <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 space-y-1">
@@ -203,7 +197,7 @@ export default function AdminRefunds() {
           <p className="text-2xl font-bold text-foreground">{failedCount}</p>
         </div>
         <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-1">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-primary">Refunded Orders</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-foreground">Refunded Orders</p>
           <p className="text-2xl font-bold text-foreground">{refundedCount}</p>
         </div>
         <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4 space-y-1">
@@ -273,7 +267,7 @@ export default function AdminRefunds() {
                 {filtered.map((o) => (
                   <tr key={o.id} className="hover:bg-accent transition-colors">
                     <td className="p-3.5">
-                      <div className="font-mono text-primary font-semibold">#{o.id.slice(0, 8)}</div>
+                      <div className="font-mono text-foreground font-semibold">#{o.id.slice(0, 8)}</div>
                       <div className="text-[10px] text-muted-foreground">{new Date(o.created_at).toLocaleString()}</div>
                       <div className="text-[11px] font-semibold text-foreground mt-1">
                         {o.network?.logo_emoji} {o.bundle?.size_label || "Data Bundle"}
@@ -296,7 +290,7 @@ export default function AdminRefunds() {
                       <span
                         className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${
                           o.status === "refunded"
-                            ? "bg-primary/10 text-primary border-primary/30"
+                            ? "bg-primary/10 text-foreground border-primary/30"
                             : o.status === "failed"
                             ? "bg-destructive/10 text-destructive border-destructive/30"
                             : "bg-amber-500/10 text-amber-500 border-amber-500/30"
@@ -339,6 +333,7 @@ export default function AdminRefunds() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
